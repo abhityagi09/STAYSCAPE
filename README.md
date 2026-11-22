@@ -1,70 +1,70 @@
-# Getting Started with Create React App
+# STAYSCAPE
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Multi-vendor hotel discovery, booking and property management platform.
 
-## Available Scripts
+**Current status: Phase 1 — foundation, authentication, RBAC and UI system.** Property listings,
+search inventory, bookings and payments arrive in later phases; the UI says so honestly wherever
+those modules will appear. See [`docs/implementation-progress.md`](docs/implementation-progress.md).
 
-In the project directory, you can run:
+| Workspace         | Stack                                                                                                                    |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `apps/web`        | React 19, Vite 7, TypeScript, React Router 7, TanStack Query 5, Redux Toolkit 2, React Hook Form + Zod 4, Tailwind CSS 4 |
+| `apps/api`        | Node.js 22, Express 5, TypeScript, MongoDB 8 (Mongoose 8), Redis 7 + BullMQ 5, Argon2id, JWT                             |
+| `packages/shared` | Types, enums, Zod schemas, permission matrix and API contracts used by both apps                                         |
+| `packages/config` | Shared TypeScript, ESLint and Prettier configuration                                                                     |
+| `infrastructure`  | Dockerfiles, nginx, MongoDB replica-set init                                                                             |
+| `tests/e2e`       | Playwright end-to-end tests                                                                                              |
 
-### `npm start`
+## Quick start
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+Requirements: Node.js ≥ 22.12, npm ≥ 10, Docker with Compose v2.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+```bash
+npm install
+cp .env.example .env
+npm run services:up        # MongoDB replica set, Redis, Mailpit (Docker)
+npm run dev                # API on :4000, web on :5173
+```
 
-### `npm test`
+- Web app: http://localhost:5173
+- API docs (Swagger UI): http://localhost:4000/api/v1/docs
+- Captured emails (Mailpit): http://localhost:8025
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Create a local super-administrator (development only):
 
-### `npm run build`
+```bash
+ADMIN_BOOTSTRAP_PASSWORD='Choose-A-Str0ng-One' npm run bootstrap:admin
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### Full stack in Docker
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+```bash
+npm run docker:up          # web + API + dependencies; web on http://localhost:8080
+npm run docker:down
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## Commands
 
-### `npm run eject`
+| Command                                 | Purpose                                                                                 |
+| --------------------------------------- | --------------------------------------------------------------------------------------- |
+| `npm run dev`                           | Shared package watch + API (tsx watch) + web (Vite)                                     |
+| `npm run build`                         | Production builds of shared, API (tsup) and web (Vite)                                  |
+| `npm run lint`                          | ESLint (flat config, incl. jsx-a11y) across the repo                                    |
+| `npm run typecheck`                     | `tsc --noEmit` in every workspace and the e2e suite                                     |
+| `npm run test`                          | Vitest: shared unit, API integration (in-memory Mongo replica set), web component tests |
+| `npm run test:e2e`                      | Playwright against real API/Mongo/Redis/Mailpit (needs `npm run services:up`)           |
+| `npm run services:up` / `services:down` | Start/stop MongoDB, Redis, Mailpit                                                      |
+| `npm run docker:up` / `docker:down`     | Full containerised stack                                                                |
+| `npm run bootstrap:admin`               | Development-only SUPER_ADMIN bootstrap                                                  |
+| `npm run db:indexes`                    | Synchronise MongoDB indexes (production release step)                                   |
+| `npm run check:env`                     | Check `.env` and local service reachability                                             |
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## Documentation
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+- [Architecture](docs/architecture.md)
+- [Authentication](docs/authentication.md)
+- [Roles & permissions](docs/rbac.md)
+- [Database](docs/database.md)
+- [API](docs/api.md)
+- [Development, testing & troubleshooting](docs/development.md)
+- [Implementation progress](docs/implementation-progress.md)

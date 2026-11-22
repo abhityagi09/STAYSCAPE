@@ -1,0 +1,117 @@
+# STAYSCAPE local stack.
+#
+#   Full stack (web on http://localhost:8080):   npm run docker:up
+#   Dependencies only, for `npm run dev`:         npm run services:up
+#
+# All ports bind to 127.0.0.1. Defaults are for LOCAL DEVELOPMENT ONLY — see
+# docs/development.md ("Production configuration") before deploying anywhere.
+name: stayscape
+
+services:
+  mongo:
+    image: mongo:8.0
+    command: ['--replSet', 'rs0', '--bind_ip_all', '--port', '27017']
+    ports:
+      - '127.0.0.1:27017:27017'
+    volumes:
+      - mongo-data:/data/db
+      - mongo-config:/data/configdb
+      - ./infrastructure/mongo/init-replica-set.js:/scripts/init-replica-set.js:ro
+    healthcheck:
+      # Initialises the replica set on first run; healthy only once this node is primary.
+      test: ['CMD', 'mongosh', '--quiet', '--file', '/scripts/init-replica-set.js']
+      interval: 5s
+      timeout: 10s
+      retries: 30
+      start_period: 10s
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.4-alpine
+    command: ['redis-server', '--appendonly', 'yes', '--save', '60', '1']
+    ports:
+      - '127.0.0.1:6379:6379'
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  mailpit:
+    # Local mail capture: SMTP on 1025, inbox UI on http://localhost:8025. Sends nothing externally.
+    image: axllent/mailpit:v1.27
+    ports:
+      - '127.0.0.1:1025:1025'
+      - '127.0.0.1:8025:8025'
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: '1'
+      MP_SMTP_AUTH_ALLOW_INSECURE: '1'
+      MP_MAX_MESSAGES: '2000'
+    healthcheck:
+      test: ['CMD', '/mailpit', 'readyz']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/api.Dockerfile
+    environment:
+      NODE_ENV: development
+      PORT: '4000'
+      API_PUBLIC_URL: http://localhost:8080
+      WEB_APP_URL: http://localhost:8080
+      CORS_ORIGINS: http://localhost:8080
+      TRUST_PROXY: '1'
+      MONGO_URI: mongodb://mongo:27017/stayscape?directConnection=true
+      REDIS_URL: redis://redis:6379
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-only-docker-secret-0123456789abcdefghijklmnop}
+      COOKIE_SECURE: 'false'
+      COOKIE_SAMESITE: strict
+      MAIL_PROVIDER: smtp
+      SMTP_HOST: mailpit
+      SMTP_PORT: '1025'
+      STORAGE_DRIVER: local
+      UPLOAD_DIR: ./var/uploads
+      RATE_LIMIT_MAX: '1000'
+      AUTH_RATE_LIMIT_MAX: '100'
+      LOGIN_RATE_LIMIT_MAX: '20'
+      RUN_WORKERS: 'true'
+      LOG_LEVEL: info
+      API_DOCS_ENABLED: 'true'
+    ports:
+      - '127.0.0.1:4000:4000'
+    volumes:
+      - api-uploads:/app/apps/api/var/uploads
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mailpit:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/web.Dockerfile
+      args:
+        VITE_API_BASE_URL: /api/v1
+    ports:
+      - '127.0.0.1:8080:80'
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  mongo-data:
+  mongo-config:
+  redis-data:
+  api-uploads:
