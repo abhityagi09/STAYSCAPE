@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { afterAll, beforeAll, beforeEach, inject } from 'vitest';
 import { ALL_MODELS } from '@/infrastructure/models';
+import { ensureInventoryValidator } from '@/modules/inventory/inventory.models';
 
 const dbName = `stayscape_test_${process.env.VITEST_POOL_ID ?? '0'}_${process.pid}`;
 
@@ -10,6 +11,7 @@ beforeAll(async () => {
   await Promise.all(
     ALL_MODELS.map((model) => model.createCollection().then(() => model.syncIndexes())),
   );
+  await ensureInventoryValidator();
 });
 
 beforeEach(async () => {

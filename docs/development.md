@@ -24,7 +24,16 @@ npm run dev                 # shared (watch) + API :4000 + web :5173
 
 ### Development credentials
 
-There are **no seeded users**. Register through the UI, or create a local super-administrator:
+Load the marketplace development data (idempotent, safe to re-run; refused in production and against
+non-local databases):
+
+```bash
+SEED_USER_PASSWORD='Choose-A-Str0ng-One' npm run seed
+# partners: seed.partner1..8@stayscape.dev · traveller: seed.traveller@stayscape.dev
+```
+
+All seeded properties, images and ratings are fictional and labelled as development data in the UI.
+Otherwise register through the UI. To review partners and listings, create a local super-administrator:
 
 ```bash
 ADMIN_BOOTSTRAP_PASSWORD='Choose-A-Str0ng-One' npm run bootstrap:admin
@@ -46,11 +55,11 @@ and `STORAGE_DRIVER=s3` without bucket/region.
 
 ## Testing
 
-| Command                                               | Scope                                                                               | Needs                                                                                                                                                  |
-| ----------------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `npm run test`                                        | shared unit (10), API integration (62), web components/pages (39)                   | nothing — the API suite starts an in-memory MongoDB replica set (first run downloads a MongoDB binary, ~600 MB, cached in `~/.cache/mongodb-binaries`) |
-| `npm run test:e2e`                                    | Playwright: auth journeys incl. real email via Mailpit, RBAC, responsive navigation | `npm run services:up`; once: `npx playwright install chromium`. Starts API and web automatically, or reuses running ones                               |
-| `E2E_BASE_URL=http://localhost:8080 npm run test:e2e` | Same suite against the Docker stack                                                 | `npm run docker:up`                                                                                                                                    |
+| Command                                               | Scope                                                                                                                                                                                | Needs                                                                                                                                                  |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `npm run test`                                        | shared unit (10), API integration (95), web components/pages (57)                                                                                                                    | nothing — the API suite starts an in-memory MongoDB replica set (first run downloads a MongoDB binary, ~600 MB, cached in `~/.cache/mongodb-binaries`) |
+| `npm run test:e2e`                                    | Playwright: auth journeys incl. real email via Mailpit, RBAC, responsive layouts, partner → admin → publish → customer quote, map and comparison (expects seed data: `npm run seed`) | `npm run services:up`; once: `npx playwright install chromium`. Starts API and web automatically, or reuses running ones                               |
+| `E2E_BASE_URL=http://localhost:8080 npm run test:e2e` | Same suite against the Docker stack                                                                                                                                                  | `npm run docker:up`                                                                                                                                    |
 
 API tests use the real Express app, Mongoose models, transactions, Argon2 and JWT; only the
 mail transport (in-memory) and job queue (inline) are substituted, and rate limits use the memory
@@ -105,18 +114,23 @@ services; Docker image builds. (Defined but not yet executed on GitHub — no re
 | No emails in Mailpit                                           | Check `MAIL_PROVIDER=smtp`, `SMTP_HOST/PORT`, and `RUN_WORKERS=true` (or a running worker)                        |
 | First `npm run test` slow                                      | One-time MongoDB binary download for the in-memory replica set                                                    |
 | `Refusing to build: NODE_ENV=…`                                | Remove `NODE_ENV` from `.env`/shell for web builds                                                                |
+| Map area is blank                                              | Tiles load from `VITE_MAP_STYLE_URL` (default OpenFreeMap); check network access. The results list still works    |
+| `Set SEED_USER_PASSWORD …` from `npm run seed`                 | Export a 10+ character password with upper, lower and a digit                                                     |
 
 ## Exact versions installed
 
 Runtime: Node.js 22.17.1, npm 10.9.2, MongoDB 8.0 (Docker), Redis 7.4 (Docker), Mailpit v1.27,
 nginx 1.27, MongoDB 7.0.24 (in-memory test binary).
 
-| Area               | Packages                                                                                                                                                                                                                                                                                                                                                                                                          |
-| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Language & tooling | typescript 5.9.3, tsx 4.23.15, tsup 8.5.1, eslint 9.39.5, typescript-eslint 8.73.0, eslint-plugin-react-hooks 5.2.0, eslint-plugin-jsx-a11y 6.10.2, eslint-config-prettier 10.1.8, prettier 3.10.1, concurrently 9.2.5                                                                                                                                                                                            |
-| API                | express 5.3.0, mongoose 8.24.10, ioredis 5.11.1, bullmq 5.81.6, argon2 0.44.0, jsonwebtoken 9.0.3, zod 4.6.7, helmet 8.3.0, cors 2.8.6, cookie-parser 1.4.7, express-rate-limit 7.5.1, rate-limit-redis 4.3.1, pino 9.14.0, pino-http 10.5.0, multer 2.5.0, nodemailer 7.0.13, @aws-sdk/client-s3 3.1175.0, swagger-ui-express 5.0.1, dotenv 17.4.2                                                               |
-| Web                | react 19.3.1, react-dom 19.3.1, react-router 7.18.6, @tanstack/react-query 5.108.2, @reduxjs/toolkit 2.15.0, react-redux 9.3.1, axios 1.21.1, react-hook-form 7.92.0, @hookform/resolvers 5.9.2, tailwindcss 4.3.5, @tailwindcss/vite 4.3.5, vite 7.3.8, @vitejs/plugin-react 5.2.0, lucide-react 1.77.0, clsx 2.1.1, tailwind-merge 3.7.1, @fontsource-variable/inter 5.3.0, @fontsource-variable/fraunces 5.3.0 |
-| Testing            | vitest 3.2.7, supertest 7.3.2, mongodb-memory-server 10.4.3, @testing-library/react 16.3.3, @testing-library/user-event 14.6.13, @testing-library/jest-dom 6.9.1, jsdom 26.1.0, @playwright/test 1.65.1                                                                                                                                                                                                           |
+| Area               | Packages                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Language & tooling | typescript 5.9.3, tsx 4.23.15, tsup 8.5.1, eslint 9.39.5, typescript-eslint 8.73.0, eslint-plugin-react-hooks 5.2.0, eslint-plugin-jsx-a11y 6.10.2, eslint-config-prettier 10.1.8, prettier 3.10.1, concurrently 9.2.5                                                                                                                                                                                                                |
+| API                | express 5.3.0, mongoose 8.24.10, ioredis 5.11.1, bullmq 5.81.6, argon2 0.44.0, jsonwebtoken 9.0.3, zod 4.6.7, helmet 8.3.0, cors 2.8.6, cookie-parser 1.4.7, express-rate-limit 7.5.1, rate-limit-redis 4.3.1, pino 9.14.0, pino-http 10.5.0, multer 2.5.0, sharp 0.34.5, nodemailer 7.0.13, @aws-sdk/client-s3 3.1175.0, swagger-ui-express 5.0.1, dotenv 17.4.2                                                                     |
+| Web                | react 19.3.1, react-dom 19.3.1, react-router 7.18.6, @tanstack/react-query 5.108.2, @reduxjs/toolkit 2.15.0, react-redux 9.3.1, axios 1.21.1, react-hook-form 7.92.0, @hookform/resolvers 5.9.2, tailwindcss 4.3.5, @tailwindcss/vite 4.3.5, vite 7.3.8, @vitejs/plugin-react 5.2.0, lucide-react 1.77.0, maplibre-gl 5.24.1, clsx 2.1.1, tailwind-merge 3.7.1, @fontsource-variable/inter 5.3.0, @fontsource-variable/fraunces 5.3.0 |
+| Testing            | vitest 3.2.7, supertest 7.3.2, mongodb-memory-server 10.4.3, @testing-library/react 16.3.3, @testing-library/user-event 14.6.13, @testing-library/jest-dom 6.9.1, jsdom 26.1.0, @playwright/test 1.65.1                                                                                                                                                                                                                               |
 
-Recharts is part of the target stack but is not installed yet: Phase 1 has no charts (dashboards
-show no metrics until real data exists). It will be added with the reporting module.
+Recharts is part of the target stack but is not installed yet: Phases 1–2 have no charts (dashboards
+show no metrics until real booking data exists). It will be added with Phase 3 reporting.
+
+Maps use **MapLibre GL** (open-source, Mapbox-GL-compatible) behind `lib/map/provider.ts`, so a Mapbox
+style URL with a token works without code changes; the default OpenFreeMap tiles need no key.

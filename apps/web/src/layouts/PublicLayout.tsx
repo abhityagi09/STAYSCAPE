@@ -9,7 +9,7 @@ import { cn } from '@/lib/cn';
 import { UserMenu } from './UserMenu';
 
 export const PUBLIC_NAV = [
-  { to: '/search', label: 'Find a stay' },
+  { to: '/hotels', label: 'Find a stay' },
   { to: '/#destinations', label: 'Destinations' },
   { to: '/#inspiration', label: 'Inspiration' },
   { to: '/partners', label: 'List your property' },

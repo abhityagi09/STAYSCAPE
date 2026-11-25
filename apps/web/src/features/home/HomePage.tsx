@@ -1,30 +1,73 @@
-import { Link } from 'react-router';
+import type { ReactNode } from 'react';
+import { Link, useNavigate } from 'react-router';
 import {
   ArrowRight,
   BadgeCheck,
   Building,
   Building2,
+  Hotel,
   House,
   Leaf,
+  ReceiptText,
+  ShieldCheck,
   Sparkles,
   TreePalm,
-  Hotel,
-  ShieldCheck,
-  ReceiptText,
 } from 'lucide-react';
-import { ButtonLink, EmptyState } from '@/components/ui';
-import { CATEGORIES, DESTINATIONS, TRAVEL_NOTES } from './sections/content';
+import type { HotelCardDto, PropertyType } from '@stayscape/shared';
+import { ButtonLink, EmptyState, ErrorState } from '@/components/ui';
+import { DEFAULT_SEARCH, nextWeekend, toSearchParams } from '@/features/marketplace/search-state';
+import {
+  useDestinations,
+  useFeatured,
+  useHotelSearch,
+  useTrending,
+} from '@/features/marketplace/api';
+import { HotelCard, HotelCardSkeleton } from '@/features/marketplace/components/HotelCard';
+import { StaySearchBar } from '@/features/marketplace/components/StaySearchBar';
+import { errorMessage } from '@/lib/api/errors';
+import { todayIsoDate } from '@/components/ui';
+import { TRAVEL_NOTES } from './sections/content';
 import { Newsletter } from './sections/Newsletter';
-import { SearchForm } from './sections/SearchForm';
 
-const categoryIcons = {
-  hotels: Hotel,
-  resorts: TreePalm,
-  villas: House,
-  boutique: Sparkles,
-  homestays: Leaf,
-  apartments: Building,
-} as const;
+const CATEGORIES: Array<{ type: PropertyType; label: string; blurb: string; icon: typeof Hotel }> =
+  [
+    {
+      type: 'HOTEL',
+      label: 'Hotels',
+      blurb: 'City stays with service you can count on',
+      icon: Hotel,
+    },
+    {
+      type: 'RESORT',
+      label: 'Resorts',
+      blurb: 'Pools, spas and long, slow mornings',
+      icon: TreePalm,
+    },
+    {
+      type: 'VILLA',
+      label: 'Villas',
+      blurb: 'Private space for families and friends',
+      icon: House,
+    },
+    {
+      type: 'BOUTIQUE',
+      label: 'Boutique',
+      blurb: 'Small, characterful, design-led',
+      icon: Sparkles,
+    },
+    {
+      type: 'HOMESTAY',
+      label: 'Homestays',
+      blurb: 'Local hosts and home-cooked meals',
+      icon: Leaf,
+    },
+    {
+      type: 'APARTMENT',
+      label: 'Apartments',
+      blurb: 'Room to live for longer trips',
+      icon: Building,
+    },
+  ];
 
 function SectionHeading({
   id,
@@ -37,10 +80,10 @@ function SectionHeading({
   eyebrow: string;
   title: string;
   description?: string;
-  action?: React.ReactNode;
+  action?: ReactNode;
 }) {
   return (
-    <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div className="max-w-2xl">
         <p className="eyebrow">{eyebrow}</p>
         <h2 id={id} className="mt-3 font-display text-3xl font-semibold tracking-tight sm:text-4xl">
@@ -53,10 +96,103 @@ function SectionHeading({
   );
 }
 
+/** A row of real listings with loading, empty and error states. */
+function HotelRail({
+  id,
+  eyebrow,
+  title,
+  description,
+  query,
+  href,
+  viewAll,
+}: {
+  id: string;
+  eyebrow: string;
+  title: string;
+  description?: string;
+  query: {
+    data?: HotelCardDto[] | undefined;
+    isPending: boolean;
+    error: unknown;
+    refetch: () => unknown;
+  };
+  href: (h: HotelCardDto) => string;
+  viewAll: string;
+}) {
+  return (
+    <section aria-labelledby={id} className="container-page mt-20">
+      <SectionHeading
+        id={id}
+        eyebrow={eyebrow}
+        title={title}
+        description={description}
+        action={
+          <Link
+            to={viewAll}
+            className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
+          >
+            View all <ArrowRight className="size-4" aria-hidden="true" />
+          </Link>
+        }
+      />
+      {query.isPending ? (
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }, (_, i) => (
+            <HotelCardSkeleton key={i} />
+          ))}
+        </div>
+      ) : query.error ? (
+        <ErrorState description={errorMessage(query.error)} onRetry={() => void query.refetch()} />
+      ) : !query.data?.length ? (
+        <EmptyState
+          compact
+          icon={<Building2 />}
+          title="Nothing to show yet"
+          description="Listings appear here as verified properties go live."
+        />
+      ) : (
+        <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {query.data.slice(0, 4).map((h) => (
+            <li key={h.id}>
+              <HotelCard hotel={h} href={href(h)} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 export default function HomePage() {
+  const navigate = useNavigate();
+  const weekend = nextWeekend(todayIsoDate());
+  const weekendQs = toSearchParams({ ...weekend }).toString();
+  const destinations = useDestinations();
+  const featured = useFeatured(8);
+  const trending = useTrending(8);
+  const topRated = useHotelSearch({ sort: 'rating_desc', page: 1 });
+  const luxury = useHotelSearch({ stars: [5], sort: 'rating_desc' });
+  const budget = useHotelSearch({ ...weekend, sort: 'price_asc' });
+  const weekendEscapes = useHotelSearch({
+    ...weekend,
+    propertyTypes: ['RESORT', 'VILLA', 'HOMESTAY'],
+    sort: 'recommended',
+  });
+  const pick = (q: ReturnType<typeof useHotelSearch>) => ({
+    data: q.data?.items,
+    isPending: q.isPending,
+    error: q.error,
+    refetch: q.refetch,
+  });
+  const fmt = new Intl.DateTimeFormat(undefined, {
+    day: 'numeric',
+    month: 'short',
+    timeZone: 'UTC',
+  });
+  const weekendLabel = `${fmt.format(new Date(`${weekend.checkIn}T00:00:00Z`))} – ${fmt.format(new Date(`${weekend.checkOut}T00:00:00Z`))}`;
+
   return (
     <>
-      {/* Hero */}
       <section
         aria-labelledby="hero-title"
         className="hero-texture relative overflow-hidden pt-[72px] text-ivory"
@@ -93,10 +229,14 @@ export default function HomePage() {
         </div>
       </section>
       <div className="container-page relative z-10 -mt-28 lg:-mt-32">
-        <SearchForm className="animate-rise-in [animation-delay:180ms]" />
+        <StaySearchBar
+          className="animate-rise-in [animation-delay:180ms]"
+          initial={{ ...DEFAULT_SEARCH }}
+          onSearch={(values) => navigate(`/hotels?${toSearchParams(values).toString()}`)}
+          onOpenHotel={(slug) => navigate(`/hotels/${slug}`)}
+        />
       </div>
 
-      {/* Trust strip */}
       <section
         aria-label="Why STAYSCAPE"
         className="container-page mt-12 grid gap-6 sm:grid-cols-3"
@@ -131,101 +271,141 @@ export default function HomePage() {
         ))}
       </section>
 
-      {/* Categories */}
-      <section aria-labelledby="categories-title" className="container-page mt-24">
+      <section
+        id="destinations"
+        aria-labelledby="destinations-title"
+        className="container-page mt-20 scroll-mt-24"
+      >
+        <SectionHeading
+          id="destinations-title"
+          eyebrow="Destinations"
+          title="Where travellers are heading"
+        />
+        {destinations.isPending ? (
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {Array.from({ length: 8 }, (_, i) => (
+              <div key={i} className="h-48 animate-pulse rounded-3xl bg-surface-sunken" />
+            ))}
+          </div>
+        ) : destinations.isError ? (
+          <ErrorState
+            description={errorMessage(destinations.error)}
+            onRetry={() => void destinations.refetch()}
+          />
+        ) : destinations.data.length === 0 ? (
+          <EmptyState compact title="Destinations coming soon" />
+        ) : (
+          <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {destinations.data.slice(0, 8).map((d, i) => (
+              <li key={d.id}>
+                <Link
+                  to={`/hotels?destination=${encodeURIComponent(d.slug)}`}
+                  className="group relative flex min-h-48 flex-col justify-end overflow-hidden rounded-3xl p-5 text-ivory shadow-md transition-transform duration-500 hover:-translate-y-1"
+                  style={{
+                    background: `linear-gradient(150deg, hsl(${(i * 47) % 360} 40% 30%), hsl(${(i * 47 + 40) % 360} 45% 14%))`,
+                  }}
+                >
+                  <p className="text-xs font-semibold tracking-[0.18em] text-gold-300 uppercase">
+                    {d.region}
+                  </p>
+                  <h3 className="mt-1 font-display text-2xl font-semibold">{d.name}</h3>
+                  <p className="mt-1 text-sm text-ivory/80">
+                    {d.propertyCount} {d.propertyCount === 1 ? 'stay' : 'stays'}
+                  </p>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <HotelRail
+        id="trending"
+        eyebrow="Trending"
+        title="Popular right now"
+        query={{
+          data: trending.data,
+          isPending: trending.isPending,
+          error: trending.error,
+          refetch: trending.refetch,
+        }}
+        href={(h) => `/hotels/${h.slug}`}
+        viewAll="/hotels?sort=popularity"
+      />
+      <HotelRail
+        id="featured"
+        eyebrow="Featured"
+        title="Hand-picked stays"
+        query={{
+          data: featured.data,
+          isPending: featured.isPending,
+          error: featured.error,
+          refetch: featured.refetch,
+        }}
+        href={(h) => `/hotels/${h.slug}`}
+        viewAll="/hotels"
+      />
+      <HotelRail
+        id="top-rated"
+        eyebrow="Top rated"
+        title="Guests' favourites"
+        query={pick(topRated)}
+        href={(h) => `/hotels/${h.slug}`}
+        viewAll="/hotels?sort=rating_desc"
+      />
+      <HotelRail
+        id="budget"
+        eyebrow="Budget-friendly"
+        title={`Great value this weekend (${weekendLabel})`}
+        description="Live prices for 2 guests, 1 room, including taxes."
+        query={pick(budget)}
+        href={(h) => `/hotels/${h.slug}?${weekendQs}`}
+        viewAll={`/hotels?${weekendQs}&sort=price_asc`}
+      />
+      <HotelRail
+        id="luxury"
+        eyebrow="Luxury"
+        title="Five-star indulgence"
+        query={pick(luxury)}
+        href={(h) => `/hotels/${h.slug}`}
+        viewAll="/hotels?stars=5"
+      />
+      <HotelRail
+        id="weekend"
+        eyebrow="Weekend escapes"
+        title={`Resorts, villas & homestays free ${weekendLabel}`}
+        query={pick(weekendEscapes)}
+        href={(h) => `/hotels/${h.slug}?${weekendQs}`}
+        viewAll={`/hotels?${weekendQs}&propertyTypes=RESORT,VILLA,HOMESTAY`}
+      />
+
+      <section aria-labelledby="categories-title" className="container-page mt-20">
         <SectionHeading
           id="categories-title"
           eyebrow="Browse by style"
           title="Find the stay that fits the trip"
         />
         <ul className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
-          {CATEGORIES.map((category) => {
-            const Icon = categoryIcons[category.slug];
-            return (
-              <li key={category.slug}>
-                <Link
-                  to={`/search?category=${category.slug}`}
-                  className="group flex h-full flex-col gap-3 rounded-2xl border border-border bg-surface p-5 transition-[box-shadow,transform,border-color] duration-300 hover:-translate-y-0.5 hover:border-border-strong hover:shadow-md"
-                >
-                  <span className="flex size-11 items-center justify-center rounded-xl bg-primary-soft text-primary transition-colors group-hover:bg-primary group-hover:text-primary-fg">
-                    <Icon className="size-5" aria-hidden="true" />
-                  </span>
-                  <span className="font-semibold text-fg">{category.label}</span>
-                  <span className="text-xs text-fg-muted">{category.blurb}</span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </section>
-
-      {/* Destinations */}
-      <section
-        id="destinations"
-        aria-labelledby="destinations-title"
-        className="container-page mt-24 scroll-mt-24"
-      >
-        <SectionHeading
-          id="destinations-title"
-          eyebrow="Destinations"
-          title="Places we're curating first"
-          description="We're onboarding partners region by region. These are the first destinations on our list."
-        />
-        <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {DESTINATIONS.map((destination, index) => (
-            <li key={destination.name}>
+          {CATEGORIES.map(({ type, label, blurb, icon: Icon }) => (
+            <li key={type}>
               <Link
-                to={`/search?destination=${encodeURIComponent(destination.name)}`}
-                className={`group relative flex min-h-64 flex-col justify-end overflow-hidden rounded-3xl bg-gradient-to-br p-6 text-ivory shadow-md transition-transform duration-500 hover:-translate-y-1 ${destination.tint} ${index === 0 ? 'lg:row-span-2 lg:min-h-[34rem]' : ''}`}
+                to={`/hotels?propertyTypes=${type}`}
+                className="group flex h-full flex-col gap-3 rounded-2xl border border-border bg-surface p-5 transition-[box-shadow,transform] duration-300 hover:-translate-y-0.5 hover:shadow-md"
               >
-                <svg
-                  className="absolute -top-10 -right-10 size-56 text-white/10 transition-transform duration-700 group-hover:scale-110"
-                  viewBox="0 0 100 100"
-                  aria-hidden="true"
-                >
-                  <circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" />
-                  <circle cx="50" cy="50" r="30" fill="none" stroke="currentColor" />
-                </svg>
-                <p className="text-xs font-semibold tracking-[0.18em] text-gold-300 uppercase">
-                  {destination.region}
-                </p>
-                <h3 className="mt-2 font-display text-3xl font-semibold">{destination.name}</h3>
-                <p className="mt-2 max-w-xs text-sm text-ivory/80">{destination.note}</p>
-                <p className="mt-4 text-xs text-ivory/60">Best season · {destination.season}</p>
+                <span className="flex size-11 items-center justify-center rounded-xl bg-primary-soft text-primary transition-colors group-hover:bg-primary group-hover:text-primary-fg">
+                  <Icon className="size-5" aria-hidden="true" />
+                </span>
+                <span className="font-semibold text-fg">{label}</span>
+                <span className="text-xs text-fg-muted">{blurb}</span>
               </Link>
             </li>
           ))}
         </ul>
       </section>
 
-      {/* Featured accommodation — real data only */}
-      <section aria-labelledby="featured-title" className="container-page mt-24">
-        <SectionHeading
-          id="featured-title"
-          eyebrow="Featured stays"
-          title="Hand-picked accommodation"
-        />
-        <EmptyState
-          icon={<Building2 />}
-          title="Our first verified stays are on their way"
-          description="We only feature properties that have passed verification and can take real bookings. None are live yet — when they are, they'll appear right here."
-          action={
-            <ButtonLink
-              to="/partners"
-              variant="outline"
-              size="sm"
-              rightIcon={<ArrowRight className="size-4" aria-hidden="true" />}
-            >
-              Own a property? Join early
-            </ButtonLink>
-          }
-        />
-      </section>
-
-      {/* Promotions */}
       <section
         aria-label="Get started"
-        className="container-page mt-24 grid gap-5 lg:grid-cols-[1.3fr_1fr]"
+        className="container-page mt-20 grid gap-5 lg:grid-cols-[1.3fr_1fr]"
       >
         <div className="relative overflow-hidden rounded-3xl bg-forest-900 p-8 text-ivory sm:p-12">
           <p className="eyebrow !text-gold-300">For property owners</p>
@@ -233,16 +413,15 @@ export default function HomePage() {
             Bring your property to travellers who value it.
           </h2>
           <p className="mt-3 max-w-md text-ivory/75">
-            Transparent onboarding, your own staff permissions, and verification that builds guest
-            trust.
+            Transparent onboarding, team permissions, real-time inventory and pricing tools.
           </p>
           <ButtonLink
-            to="/partners"
+            to="/partner/onboarding"
             variant="accent"
             className="mt-8"
             rightIcon={<ArrowRight className="size-4" aria-hidden="true" />}
           >
-            See how onboarding works
+            Become a partner
           </ButtonLink>
           <Building2
             className="absolute -right-6 -bottom-6 size-48 text-white/5"
@@ -252,10 +431,12 @@ export default function HomePage() {
         <div className="flex flex-col justify-between rounded-3xl border border-border bg-accent-soft p-8 sm:p-12">
           <div>
             <p className="eyebrow">For travellers</p>
-            <h2 className="mt-3 font-display text-3xl font-semibold">Create your free account</h2>
+            <h2 className="mt-3 font-display text-3xl font-semibold">
+              Save stays, compare and plan
+            </h2>
             <p className="mt-3 text-fg-muted">
-              Set your currency and language, control notifications and be ready to book as stays go
-              live.
+              Create a free account to save favourites and compare up to four properties side by
+              side.
             </p>
           </div>
           <ButtonLink to="/register" className="mt-8 w-fit">
@@ -264,11 +445,10 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Inspiration */}
       <section
         id="inspiration"
         aria-labelledby="inspiration-title"
-        className="container-page mt-24 scroll-mt-24"
+        className="container-page mt-20 scroll-mt-24"
       >
         <SectionHeading
           id="inspiration-title"

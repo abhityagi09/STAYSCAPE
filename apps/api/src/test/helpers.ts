@@ -24,6 +24,9 @@ export function testConfig(overrides: Record<string, string> = {}) {
     MONGO_URI: 'mongodb://unused-in-tests',
     REDIS_URL: 'redis://unused-in-tests',
     JWT_ACCESS_SECRET: 'test-only-secret-value-that-is-long-enough-123',
+    DATA_ENCRYPTION_KEY: 'test-only-data-encryption-key-0123456789abcdef',
+    QUOTE_SIGNING_SECRET: 'test-only-quote-signing-secret-0123456789abcd',
+    SEARCH_CACHE_TTL_SECONDS: '0',
     API_PUBLIC_URL: 'http://localhost:4000',
     WEB_APP_URL: 'http://localhost:5173',
     MAIL_PROVIDER: 'memory',
@@ -55,7 +58,19 @@ export function createTestContext(
   const mailer = new MemoryMailProvider();
   const emailQueue = new InlineJobQueue<EmailJobs>(createEmailHandlers(mailer));
   const storage = new LocalStorageProvider(uploadDir, config.MEDIA_PUBLIC_BASE_URL);
-  const container = buildContainer({ config, logger, redis: null, mailer, emailQueue, storage });
+  const privateStorage = new LocalStorageProvider(
+    mkdtempSync(join(tmpdir(), 'stayscape-private-')),
+    'private://',
+  );
+  const container = buildContainer({
+    config,
+    logger,
+    redis: null,
+    mailer,
+    emailQueue,
+    storage,
+    privateStorage,
+  });
   const app = createApp(container, {
     healthChecks: { mongodb: pingMongo, redis: async () => 1 },
     ...options.app,

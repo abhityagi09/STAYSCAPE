@@ -6,6 +6,7 @@ export default defineConfig({
     worker: 'src/worker.ts',
     'scripts/bootstrap-admin': 'src/scripts/bootstrap-admin.ts',
     'scripts/sync-indexes': 'src/scripts/sync-indexes.ts',
+    'scripts/seed': 'src/scripts/seed.ts',
   },
   format: ['esm'],
   platform: 'node',

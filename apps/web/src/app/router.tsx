@@ -1,4 +1,4 @@
-import { createBrowserRouter, type RouteObject } from 'react-router';
+import { Navigate, createBrowserRouter, useLocation, type RouteObject } from 'react-router';
 import { RedirectIfAuthenticated, RequireAuth } from '@/features/auth/guards';
 import { AuthLayout } from '@/layouts/AuthLayout';
 import { PublicLayout } from '@/layouts/PublicLayout';
@@ -15,6 +15,14 @@ const partner = () => import('@/features/partner/pages/PartnerPages');
 const admin = () => import('@/features/admin/pages/AdminPages');
 const legal = () => import('@/pages/LegalPages');
 const workspaces = () => import('@/layouts/workspaces');
+const market = () => import('@/features/marketplace/pages/MarketplacePages');
+const review = () => import('@/features/admin/pages/MarketplaceReviewPages');
+
+/** Old /search links keep working. */
+function SearchRedirect() {
+  const location = useLocation();
+  return <Navigate to={`/hotels${location.search}`} replace />;
+}
 
 export const routes: RouteObject[] = [
   {
@@ -30,13 +38,23 @@ export const routes: RouteObject[] = [
               (m) => m.default,
             ),
           },
+          { path: 'search', element: <SearchRedirect /> },
           {
-            path: 'search',
+            path: 'hotels',
             lazy: lazy(
-              () => import('@/features/home/SearchPage'),
+              () => import('@/features/marketplace/pages/SearchResultsPage'),
               (m) => m.default,
             ),
           },
+          {
+            path: 'hotels/:slug',
+            lazy: lazy(
+              () => import('@/features/marketplace/pages/HotelDetailPage'),
+              (m) => m.default,
+            ),
+          },
+          { path: 'compare', lazy: lazy(market, (m) => m.ComparePage) },
+          { path: 'checkout', lazy: lazy(market, (m) => m.CheckoutPreviewPage) },
           { path: 'partners', lazy: lazy(legal, (m) => m.PartnersLandingPage) },
           { path: 'terms', lazy: lazy(legal, (m) => m.TermsPage) },
           { path: 'privacy', lazy: lazy(legal, (m) => m.PrivacyPage) },
@@ -95,6 +113,7 @@ export const routes: RouteObject[] = [
               { path: 'preferences', lazy: lazy(account, (m) => m.PreferencesPage) },
               { path: 'security', lazy: lazy(account, (m) => m.SecurityPage) },
               { path: 'notifications', lazy: lazy(account, (m) => m.NotificationsPage) },
+              { path: 'saved', lazy: lazy(market, (m) => m.SavedStaysPage) },
             ],
           },
         ],
@@ -108,6 +127,34 @@ export const routes: RouteObject[] = [
             children: [
               { index: true, lazy: lazy(partner, (m) => m.PartnerDashboardPage) },
               { path: 'onboarding', lazy: lazy(partner, (m) => m.PartnerOnboardingPage) },
+              {
+                element: <RequireAuth permissions={['partner:access']} />,
+                children: [
+                  { path: 'properties', lazy: lazy(partner, (m) => m.PropertiesPage) },
+                  {
+                    path: 'properties/new',
+                    lazy: lazy(partner, (m) => () => <m.PropertyFormPage mode="create" />),
+                  },
+                  { path: 'inventory', lazy: lazy(partner, (m) => m.InventoryPage) },
+                  {
+                    path: 'properties/:id',
+                    lazy: lazy(partner, (m) => m.PropertyLayout),
+                    children: [
+                      { index: true, lazy: lazy(partner, (m) => m.PropertyOverviewPage) },
+                      {
+                        path: 'edit',
+                        lazy: lazy(partner, (m) => () => <m.PropertyFormPage mode="edit" />),
+                      },
+                      { path: 'media', lazy: lazy(partner, (m) => m.PropertyMediaPage) },
+                      { path: 'policies', lazy: lazy(partner, (m) => m.PropertyPoliciesPage) },
+                      { path: 'rooms', lazy: lazy(partner, (m) => m.RoomsPage) },
+                      { path: 'rooms/new', lazy: lazy(partner, (m) => m.RoomFormPage) },
+                      { path: 'rooms/:roomId/edit', lazy: lazy(partner, (m) => m.RoomFormPage) },
+                      { path: 'rates', lazy: lazy(partner, (m) => m.RatesPage) },
+                    ],
+                  },
+                ],
+              },
             ],
           },
         ],
@@ -131,6 +178,22 @@ export const routes: RouteObject[] = [
                 children: [{ index: true, lazy: lazy(admin, (m) => m.AdminAuditPage) }],
               },
               { path: 'settings', lazy: lazy(admin, (m) => m.AdminSettingsPage) },
+              {
+                path: 'partners',
+                element: <RequireAuth permissions={['partners:approve']} />,
+                children: [
+                  { index: true, lazy: lazy(review, (m) => m.AdminPartnersPage) },
+                  { path: ':id', lazy: lazy(review, (m) => m.AdminPartnerDetailPage) },
+                ],
+              },
+              {
+                path: 'properties',
+                element: <RequireAuth permissions={['hotels:moderate']} />,
+                children: [
+                  { index: true, lazy: lazy(review, (m) => m.AdminPropertiesPage) },
+                  { path: ':id', lazy: lazy(review, (m) => m.AdminPropertyDetailPage) },
+                ],
+              },
             ],
           },
         ],

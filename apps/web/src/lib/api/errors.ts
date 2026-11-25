@@ -1,5 +1,5 @@
 import { isAxiosError, isCancel } from 'axios';
-import type { ApiErrorBody, ErrorCode, FieldErrors } from '@stayscape/shared';
+import type { ApiErrorBody, ApiErrorDetails, ErrorCode, FieldErrors } from '@stayscape/shared';
 
 export type ClientErrorCode = ErrorCode | 'NETWORK_ERROR' | 'TIMEOUT' | 'CANCELLED' | 'UNKNOWN';
 
@@ -11,6 +11,7 @@ export class ApiClientError extends Error {
     public readonly code: ClientErrorCode,
     public readonly fieldErrors: FieldErrors = {},
     public readonly requestId?: string,
+    public readonly details: ApiErrorDetails = {},
   ) {
     super(message);
     this.name = 'ApiClientError';
@@ -60,6 +61,7 @@ export function normalizeApiError(error: unknown): ApiClientError {
         data.error.code,
         data.error.details?.fieldErrors ?? {},
         data.error.requestId,
+        data.error.details ?? {},
       );
     }
     if (status >= 500)

@@ -57,6 +57,7 @@ npm run docker:down
 | `npm run docker:up` / `docker:down`     | Full containerised stack                                                                |
 | `npm run bootstrap:admin`               | Development-only SUPER_ADMIN bootstrap                                                  |
 | `npm run db:indexes`                    | Synchronise MongoDB indexes (production release step)                                   |
+| `npm run seed`                          | Idempotent development marketplace data (needs `SEED_USER_PASSWORD`; dev/local only)    |
 | `npm run check:env`                     | Check `.env` and local service reachability                                             |
 
 ## Documentation
@@ -66,5 +67,6 @@ npm run docker:down
 - [Roles & permissions](docs/rbac.md)
 - [Database](docs/database.md)
 - [API](docs/api.md)
+- [Marketplace: onboarding, listings, inventory, pricing, search](docs/marketplace.md)
 - [Development, testing & troubleshooting](docs/development.md)
 - [Implementation progress](docs/implementation-progress.md)
