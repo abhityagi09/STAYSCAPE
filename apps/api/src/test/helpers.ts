@@ -36,7 +36,7 @@ export function testConfig(overrides: Record<string, string> = {}) {
     RATE_LIMIT_MAX: '10000',
     AUTH_RATE_LIMIT_MAX: '10000',
     LOGIN_RATE_LIMIT_MAX: '10000',
-    LOG_LEVEL: 'silent',
+    LOG_LEVEL: process.env.TEST_LOG_LEVEL ?? 'silent',
     RUN_WORKERS: 'false',
     API_DOCS_ENABLED: 'true',
     ...overrides,

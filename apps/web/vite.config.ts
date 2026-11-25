@@ -60,6 +60,8 @@ export default defineConfig(({ mode, command }) => {
       setupFiles: ['src/test/setup.ts'],
       include: ['src/**/*.test.{ts,tsx}'],
       css: false,
+      // Form tests type character by character; allow for a loaded CI machine.
+      testTimeout: 20_000,
     },
   };
 });

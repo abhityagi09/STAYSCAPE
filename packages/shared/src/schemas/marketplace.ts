@@ -330,6 +330,13 @@ export const cancellationPolicySchema = z.object({
   freeCancellationHours: z.number().int().min(0).max(720).default(48),
   /** Refund percentage after the deadline, in basis points (10000 = 100%). */
   refundBasisPointsAfterDeadline: z.number().int().min(0).max(10_000).default(0),
+  /**
+   * Optional fixed cancellation charge (minor units) applied instead of the percentage once the
+   * free-cancellation deadline has passed (or at any time for PARTIALLY_REFUNDABLE).
+   */
+  fixedChargeMinor: z.number().int().min(0).max(100_000_000).nullable().default(null),
+  /** Share refunded when the guest does not arrive (basis points). Usually 0. */
+  noShowRefundBasisPoints: z.number().int().min(0).max(10_000).default(0),
   description: optionalText(500),
 });
 

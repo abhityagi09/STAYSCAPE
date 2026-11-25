@@ -75,6 +75,8 @@ export interface CancellationPolicy {
   type: CancellationPolicyType;
   freeCancellationHours: number;
   refundBasisPointsAfterDeadline: number;
+  fixedChargeMinor?: number | null;
+  noShowRefundBasisPoints?: number;
   description?: string;
 }
 
@@ -117,6 +119,8 @@ const ratePlanSchema = new Schema<RatePlanAttrs>(
       type: { type: String, enum: CANCELLATION_POLICY_TYPES, required: true },
       freeCancellationHours: { type: Number, default: 48 },
       refundBasisPointsAfterDeadline: { type: Number, default: 0 },
+      fixedChargeMinor: { type: Number, default: null },
+      noShowRefundBasisPoints: { type: Number, default: 0 },
       description: String,
     },
     currency: { type: String, default: 'INR' },

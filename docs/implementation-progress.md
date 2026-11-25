@@ -1,7 +1,7 @@
 # Implementation progress
 
-Last updated: 2026-11-25 · Current phase: **Phase 2 — complete** (see verification below). Phase 1
-verified 2026-11-22 and re-verified with Phase 2.
+Last updated: 2026-11-26 · Current phase: **Phase 3 — complete** (see verification below). Phases 1–2
+re-verified with Phase 3.
 
 Legend: ✅ done and tested · 🟡 done, not verifiable without external credentials · ⏳ planned for a later phase
 
@@ -33,6 +33,77 @@ Legend: ✅ done and tested · 🟡 done, not verifiable without external creden
 | Docker Compose (Mongo RS, Redis, Mailpit, API, Web)                                                                                | ✅                       |                                                                                                            |
 | GitHub Actions CI                                                                                                                  | 🟡                       | Workflow written; not run (no GitHub remote)                                                               |
 | Documentation                                                                                                                      | ✅                       |                                                                                                            |
+
+## Phase 3 modules (reservations, payments, refunds, customer experience)
+
+Design: [reservations.md](reservations.md). Endpoints: [api.md](api.md). Collections: [database.md](database.md).
+
+| Module                                                                                                                                                                                                                               | Status                   | Notes                                                                                           |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------ | ----------------------------------------------------------------------------------------------- |
+| `bookings` — holds (atomic multi-night reservation, TTL, expiry worker), idempotent booking creation, snapshots, list/detail, lifecycle (check-in/out, completion), partner reservation operations                                   | ✅                       |                                                                                                 |
+| `payments` — provider abstraction, order creation, signature + provider verification, webhooks (raw body, unique event ids), settlement state machine, reconciliation, late-payment re-allocation / exception workflow               | ✅ sandbox / 🟡 Razorpay | Razorpay adapter built on the official REST API; not run against Razorpay (no test keys)        |
+| `refunds` — approval, atomic processing claim, lost-response recovery by receipt, provider-confirmed completion, failure compensation + escalation, admin retry/decisions, partial & full                                            | ✅ sandbox / 🟡 Razorpay |                                                                                                 |
+| `cancellations` — policy engine (free window, percentage, fixed, non-refundable, partial, no-show, property-local deadlines incl. DST), preview, idempotent cancel                                                                   | ✅                       |                                                                                                 |
+| `outbox` + notifications — transactional outbox, BullMQ dispatch, in-app + email templates, delivery log with duplicate suppression, retries, dead-letter inspection and manual retry, preferences                                   | ✅                       | Emails verified end to end through SMTP → Mailpit                                               |
+| `documents` — numbered invoices (configurable issuer), confirmation PDFs, private storage, owner-only downloads, self-healing re-render                                                                                              | ✅ local / 🟡 S3         |                                                                                                 |
+| `wishlists` — named lists, notes, live availability, secure share links                                                                                                                                                              | ✅                       | Replaces the Phase 2 single-list `wishlistitems`                                                |
+| `reviews` — verified eligibility, six categories, photos, edit limits, reports, moderation, owner responses, rating recalculation                                                                                                    | ✅                       |                                                                                                 |
+| `support` — tickets linked to own bookings, messages, private attachments, statuses                                                                                                                                                  | ✅                       | Agent console is Phase 4                                                                        |
+| `customerDashboard` — overview from the customer's own records                                                                                                                                                                       | ✅                       |                                                                                                 |
+| Web: `/checkout`, `/checkout/payment`, `/checkout/confirmation`, `/checkout/failure`                                                                                                                                                 | ✅                       | Hold countdown, expiry handling, preserved guest details, Razorpay Checkout or labelled sandbox |
+| Web: `/account` overview, bookings (search/filter), booking detail (status-specific actions, PDFs, cancel, refund request, review), payments, refunds, wishlists (+ shared view), reviews, notifications, profile, settings, support | ✅                       |                                                                                                 |
+| Web: partner reservations and guest reviews; admin operations                                                                                                                                                                        | ✅                       | Initial operations page; Phase 4 expands administration                                         |
+
+### Defects found and fixed during Phase 3 verification (2026-11-26)
+
+| Defect                                                                                            | Fix                                                             | Regression coverage                           |
+| ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | --------------------------------------------- |
+| nginx refused to start: the new `Permissions-Policy` value nested double quotes                   | Single-quoted header value                                      | Docker stack e2e (11/11)                      |
+| An invoice whose file was missing (other worker host / lost volume) could not be downloaded       | Re-render the stored invoice record (same number)               | API test deletes the file and downloads again |
+| Concurrent duplicate cancellations returned 409 to the loser                                      | Return the existing cancellation                                | API race test                                 |
+| Admin retry of a failed refund re-adopted the failed provider refund                              | Only adopt non-failed provider refunds; retry clears the old id | API test                                      |
+| Lost refund responses were not recovered by reconciliation (wall-clock staleness)                 | Staleness uses the reconciliation clock                         | API test (one provider refund only)           |
+| Concurrent booking creation for one hold returned 409 to the loser                                | Return the winner's booking                                     | API race test                                 |
+| The new `/account` overview dropped the Phase 1 greeting, email-verification banner and checklist | Restored on the overview                                        | Phase 1 e2e journey                           |
+
+### Phase 3 acceptance checklist (verified 2026-11-26)
+
+| Criterion                                                | Result                          | Evidence                                                                                                                             |
+| -------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Customers can select a room                              | ✅ PASS                         | e2e `booking.spec.ts`; web checkout tests                                                                                            |
+| Backend generates an accurate quote                      | ✅ PASS                         | Hold priced server-side (₹5,000 × 3 + 5% = ₹15,750); client price fields rejected (422)                                              |
+| Inventory holds work                                     | ✅ PASS                         | API: nights exclude the check-out date, release once, idempotent replay                                                              |
+| Simultaneous reservations cannot overbook                | ✅ PASS                         | API: final-room race (one 201, one 409); 12 parallel holds on 5 rooms → 5                                                            |
+| Booking creation works                                   | ✅ PASS                         | API: idempotent, one booking per hold, concurrent duplicates; e2e                                                                    |
+| Payment gateway test checkout works                      | ✅ PASS (sandbox) / 🟡 Razorpay | e2e pays through the labelled sandbox; Razorpay needs test keys                                                                      |
+| Payment verification works                               | ✅ PASS                         | API: forged signature → 400; provider fetch + amount/order checks                                                                    |
+| Webhooks are idempotent                                  | ✅ PASS                         | API: duplicate event → `duplicate`, one email; bad signature → 400                                                                   |
+| Successful payment confirms a valid booking              | ✅ PASS                         | API + e2e; held → booked, hold consumed                                                                                              |
+| Failed payments are handled correctly                    | ✅ PASS                         | API + e2e declined card → retry → confirmed; out-of-order failure ignored                                                            |
+| Expired holds release inventory                          | ✅ PASS                         | API: repeated and concurrent expiry runs release exactly once                                                                        |
+| Cancellation policies work                               | ✅ PASS                         | 5 engine tests (time zones, DST, rounding) + 5 API policy tests                                                                      |
+| Refund workflows work                                    | ✅ PASS                         | API: full, partial, fixed, duplicate, failed + retry, lost response, pending → webhook, requests; e2e refund confirmed by the worker |
+| Booking history works                                    | ✅ PASS                         | API list/search/filters; web URL-synced filters                                                                                      |
+| Customer dashboard works                                 | ✅ PASS                         | API: counts from own records only                                                                                                    |
+| Wishlists work                                           | ✅ PASS                         | API: lists, notes, availability, ownership, sharing                                                                                  |
+| Verified reviews work                                    | ✅ PASS                         | API: eligibility, one per stay, edits, reports, moderation, responses, rating summary                                                |
+| Notifications queued and delivered via the test provider | ✅ PASS                         | API retry/de-dup/preference tests; e2e emails in Mailpit exactly once per event                                                      |
+| Invoices are generated                                   | ✅ PASS                         | API + e2e PDF download (`SSI-2026-…`)                                                                                                |
+| Critical tests pass                                      | ✅ PASS                         | 214 unit/integration (10 shared + 136 API + 68 web) and 11 e2e on dev servers **and** the Docker production build                    |
+| Production builds succeed                                | ✅ PASS                         | `npm run build`; `docker compose up --build` healthy                                                                                 |
+
+### Phase 3 known limitations
+
+- Razorpay test mode is implemented but not exercised against Razorpay (no keys in this environment);
+  the sandbox mirrors its signature and webhook formats. See development.md for the checklist.
+- One room category and rate plan per booking (the data model stores an item array; per-stay fees
+  would need allocation across items before enabling more).
+- Confirmations are rendered on demand (they reflect current status); only invoices are stored.
+  Cancelled bookings with a cancellation charge do not get a separate credit note.
+- Stays are presumed completed the day after check-out unless the property records a no-show.
+- Invoice numbers are gap-tolerant (a concurrent or failed generation can skip a number).
+- The support agent console, payouts and reporting/charts are Phase 4.
+- A missing local media file returns 500 instead of 404 (pre-existing static-file handler behaviour).
 
 ## Phase 2 modules (marketplace, search, property management, inventory)
 
@@ -135,5 +206,5 @@ Design and business rules: [marketplace.md](marketplace.md). Endpoints: [api.md]
 
 ## Upcoming phases
 
-- **Phase 3**: bookings (transactional inventory holds), Razorpay payments + refunds (idempotent), payouts, reporting (Recharts).
-- **Later**: reviews, AI features, mobile push.
+- **Phase 4**: full administration (support agent console, payouts, reporting with Recharts, moderation tooling).
+- **Later**: AI features, mobile push.

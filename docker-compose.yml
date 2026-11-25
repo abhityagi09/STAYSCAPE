@@ -74,6 +74,13 @@ services:
       DATA_ENCRYPTION_KEY: ${DATA_ENCRYPTION_KEY:-dev-only-docker-data-key-0123456789abcdefghijk}
       QUOTE_SIGNING_SECRET: ${QUOTE_SIGNING_SECRET:-dev-only-docker-quote-secret-0123456789abcdefgh}
       PRIVATE_UPLOAD_DIR: ./var/private
+      # Labelled sandbox gateway by default; set PAYMENT_PROVIDER=razorpay and the RAZORPAY_* keys
+      # in your shell or .env to use Razorpay test mode.
+      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-sandbox}
+      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:-}
+      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:-}
+      RAZORPAY_WEBHOOK_SECRET: ${RAZORPAY_WEBHOOK_SECRET:-}
+      SANDBOX_PAYMENT_SECRET: ${SANDBOX_PAYMENT_SECRET:-dev-only-docker-sandbox-secret-0123456789abcdefgh}
       COOKIE_SECURE: 'false'
       COOKIE_SAMESITE: strict
       MAIL_PROVIDER: smtp

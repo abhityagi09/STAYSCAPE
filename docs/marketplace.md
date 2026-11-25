@@ -88,18 +88,22 @@ any (except SUSPENDED) → ARCHIVED (refused while future bookings or holds exis
   booked; the API returns `409` with the conflicting dates.
 - Room types that have ever had holds or bookings are archived instead of deleted.
 
-### Reservation API for Phase 3
+### Reservation primitives (used by Phase 3)
 
-`InventoryService.hold / confirm / release / expireHolds`
+`InventoryService.reserveHeld / releaseHeld / commitHeld / bookDirect / releaseBooked` — each takes
+the caller's MongoDB session and applies one conditional `updateMany` across every night, throwing
+(and so aborting the caller's transaction) unless every night matched. Holds, bookings and their
+idempotency live in the booking module — see [reservations.md](reservations.md).
 
-| Call                                                                   | Effect                                                                      | Idempotency                              |
-| ---------------------------------------------------------------------- | --------------------------------------------------------------------------- | ---------------------------------------- |
-| `hold({ holdKey, roomType, checkIn, checkOut, quantity, ttlMinutes })` | `heldRooms += quantity` on every night, only if each night has availability | same `holdKey` returns the existing hold |
-| `confirm(holdKey)`                                                     | `heldRooms → bookedRooms`                                                   | no-op unless the hold is `HELD`          |
-| `release(holdKey)`                                                     | `heldRooms -= quantity`                                                     | no-op unless `HELD`                      |
-| `expireHolds()`                                                        | releases expired holds (job every minute)                                   | safe to run concurrently                 |
+| Primitive       | Effect                                          | Condition on every night |
+| --------------- | ----------------------------------------------- | ------------------------ |
+| `reserveHeld`   | `heldRooms += n`                                | available ≥ n            |
+| `releaseHeld`   | `heldRooms −= n`                                | heldRooms ≥ n            |
+| `commitHeld`    | held → booked                                   | heldRooms ≥ n            |
+| `bookDirect`    | `bookedRooms += n` (late payment re-allocation) | available ≥ n            |
+| `releaseBooked` | `bookedRooms −= n` (cancellation, no-show)      | bookedRooms ≥ n          |
 
-Concurrency is covered by a test that fires 12 simultaneous single-room holds at 5 rooms and
+Concurrency is covered by a test that fires 12 simultaneous single-room reservations at 5 rooms and
 expects exactly 5 to succeed with every night held equally.
 
 ## Pricing engine

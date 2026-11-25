@@ -84,11 +84,10 @@ export class InlineJobQueue<TJobs extends Record<string, unknown>> implements Jo
   constructor(private readonly handlers: { [K in keyof TJobs]: JobHandler<TJobs[K]> }) {}
 
   async enqueue<K extends keyof TJobs & string>(name: K, data: TJobs[K], options: JobOptions = {}) {
-    if (options.jobId) {
-      if (this.seen.has(options.jobId)) return;
-      this.seen.add(options.jobId);
-    }
+    if (options.jobId && this.seen.has(options.jobId)) return;
+    // Like BullMQ, only a job that completed is final; a failed one can run again (retry).
     await this.handlers[name](data);
+    if (options.jobId) this.seen.add(options.jobId);
   }
 
   async close() {}

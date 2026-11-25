@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { makeUser, renderWithProviders } from '@/test/render';
 import { SiteHeader } from './PublicLayout';
-import { AdminLayout, CustomerLayout } from './workspaces';
+import { AdminLayout, CustomerLayout, PartnerLayout } from './workspaces';
 
 describe('responsive navigation', () => {
   it('opens the mobile menu drawer and closes it with Escape, restoring focus', async () => {
@@ -56,17 +56,50 @@ describe('responsive navigation', () => {
     expect(within(sidebar).queryByRole('link', { name: /Audit log/ })).not.toBeInTheDocument();
   });
 
-  it('labels unavailable customer modules honestly instead of linking to them', async () => {
+  it('links the Phase 3 customer modules and still labels unbuilt modules honestly', async () => {
     const routes = [
       {
         path: '/account',
         element: <CustomerLayout />,
         children: [{ index: true, element: <p>content</p> }],
       },
+      {
+        path: '/partner',
+        element: <PartnerLayout />,
+        children: [{ index: true, element: <p>partner</p> }],
+      },
     ];
     renderWithProviders(routes, { route: '/account', user: makeUser() });
     const sidebar = (await screen.findAllByRole('navigation', { name: 'Workspace' }))[0]!;
-    expect(within(sidebar).queryByRole('link', { name: /Trips/ })).not.toBeInTheDocument();
-    expect(within(sidebar).getByText('Trips').closest('[aria-disabled="true"]')).not.toBeNull();
+    for (const name of [
+      'Bookings',
+      'Payments',
+      'Refunds',
+      'Wishlists',
+      'Reviews',
+      'Help & support',
+      'Settings',
+    ]) {
+      expect(within(sidebar).getByRole('link', { name: new RegExp(name) })).toBeInTheDocument();
+    }
+  });
+
+  it('labels partner payouts as not yet available instead of linking to them', async () => {
+    renderWithProviders(
+      [
+        {
+          path: '/partner',
+          element: <PartnerLayout />,
+          children: [{ index: true, element: <p>partner</p> }],
+        },
+      ],
+      {
+        route: '/partner',
+        user: makeUser({ roles: ['CUSTOMER', 'HOTEL_OWNER'] }),
+      },
+    );
+    const sidebar = (await screen.findAllByRole('navigation', { name: 'Workspace' }))[0]!;
+    expect(within(sidebar).queryByRole('link', { name: /Payouts/ })).not.toBeInTheDocument();
+    expect(within(sidebar).getByText('Payouts').closest('[aria-disabled="true"]')).not.toBeNull();
   });
 });

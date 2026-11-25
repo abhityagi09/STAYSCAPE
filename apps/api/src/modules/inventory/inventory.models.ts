@@ -82,33 +82,3 @@ export async function ensureInventoryValidator(): Promise<void> {
     validationAction: 'error',
   });
 }
-
-/** A temporary claim on inventory (used by Phase 3 checkout). Idempotent by `holdKey`. */
-export interface InventoryHoldAttrs {
-  holdKey: string;
-  hotelId: Types.ObjectId;
-  roomTypeId: Types.ObjectId;
-  dates: string[];
-  quantity: number;
-  status: 'HELD' | 'RELEASED' | 'CONFIRMED' | 'EXPIRED';
-  expiresAt: Date;
-  createdAt: Date;
-  updatedAt: Date;
-}
-export type InventoryHoldRecord = InventoryHoldAttrs & { _id: Types.ObjectId };
-
-const inventoryHoldSchema = new Schema<InventoryHoldAttrs>(
-  {
-    holdKey: { type: String, required: true, maxlength: 120 },
-    hotelId: { type: Schema.Types.ObjectId, ref: 'Hotel', required: true },
-    roomTypeId: { type: Schema.Types.ObjectId, ref: 'RoomType', required: true },
-    dates: { type: [String], required: true },
-    quantity: { type: Number, required: true, min: 1 },
-    status: { type: String, enum: ['HELD', 'RELEASED', 'CONFIRMED', 'EXPIRED'], default: 'HELD' },
-    expiresAt: { type: Date, required: true },
-  },
-  { timestamps: true, versionKey: false },
-);
-inventoryHoldSchema.index({ holdKey: 1 }, { unique: true, name: 'uniq_hold_key' });
-inventoryHoldSchema.index({ status: 1, expiresAt: 1 }, { name: 'status_expiry' });
-export const InventoryHoldModel = model<InventoryHoldAttrs>('InventoryHold', inventoryHoldSchema);

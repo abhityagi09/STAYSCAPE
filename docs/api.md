@@ -116,6 +116,65 @@ Staff permissions apply only to their assigned properties; owners have all of th
 | GET    | /admin/hotels, /admin/hotels/:hotelId  | `hotels:moderate`  | Listings (status, revision, search) with rooms and rate plans                                                             |
 | POST   | /admin/hotels/:hotelId/decision        | `hotels:moderate`  | START_REVIEW · APPROVE · REJECT · APPROVE_REVISION · REJECT_REVISION · SUSPEND · REINSTATE · FEATURE                      |
 
+## Reservations, payments and account (Phase 3) — **B**
+
+State-creating POSTs marked **IK** require an `Idempotency-Key` header (8–128 chars); a replay
+returns the original result, a reused key with a different body returns 422
+`IDEMPOTENCY_KEY_REUSED`. Request bodies are strict (unknown keys → 422). See
+[reservations.md](reservations.md) for the state machines.
+
+| Method                            | Path                                                                    | Notes                                                                                                                                                                                   |
+| --------------------------------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| POST                              | /bookings/holds                                                         | **IK** `{ hotelId, checkIn, checkOut, items: [{ roomTypeId, ratePlanId, rooms, adults, childrenAges, extraBeds }] }` → `HoldDto` (server-priced, expires in `BOOKING_HOLD_TTL_MINUTES`) |
+| GET / DELETE                      | /bookings/holds/:reference                                              | Own hold / release it (idempotent)                                                                                                                                                      |
+| POST                              | /bookings                                                               | **IK** `{ holdReference, guestDetails, acceptTerms: true }` → `BookingDetailDto` (`PENDING_PAYMENT`)                                                                                    |
+| GET                               | /bookings                                                               | page, limit, view (`all · upcoming · pending · past · cancelled`), status, q                                                                                                            |
+| GET                               | /bookings/:reference                                                    | Detail incl. snapshots, payments, refunds, timeline and allowed `actions`                                                                                                               |
+| GET                               | /bookings/:reference/cancellation                                       | Policy preview: eligibility, charge, refundable amount                                                                                                                                  |
+| POST                              | /bookings/:reference/cancel                                             | **IK** `{ reason? }` → charge, refund, `alreadyCancelled`                                                                                                                               |
+| POST                              | /bookings/:reference/refund-requests                                    | `{ reason }` — cancelled bookings; needs an admin decision                                                                                                                              |
+| POST                              | /bookings/:reference/payments                                           | **IK** → `CheckoutConfigDto` (key id + order id; never a secret)                                                                                                                        |
+| POST                              | /bookings/:reference/payments/verify                                    | `{ providerOrderId, providerPaymentId, signature }` → outcome `CONFIRMED · PROCESSING · RECONCILIATION_REQUIRED · FAILED`                                                               |
+| POST                              | /bookings/:reference/payments/sandbox-complete                          | **Sandbox provider only** (route absent with Razorpay): `{ outcome, deliverWebhook }`                                                                                                   |
+| GET                               | /bookings/:reference/documents/confirmation · /invoice                  | PDF downloads (owner only, `no-store`)                                                                                                                                                  |
+| POST                              | /bookings/:reference/review                                             | Verified review for a completed stay                                                                                                                                                    |
+| POST                              | /payments/webhooks/razorpay                                             | **No auth** — HMAC `X-Razorpay-Signature` over the raw body, `X-Razorpay-Event-Id` de-duplicated                                                                                        |
+| GET                               | /account/overview · /payments · /refunds · /reviews · /reviews/eligible | Dashboard data from the caller's own records                                                                                                                                            |
+| GET / POST / GET / PATCH / DELETE | /wishlists[/:id]                                                        | Named lists; `GET /:id?checkIn&checkOut` adds live prices                                                                                                                               |
+| PUT / DELETE                      | /wishlists/:id/items/:hotelId                                           | Save (with `{ note }`) / remove                                                                                                                                                         |
+| POST / DELETE                     | /wishlists/:id/share                                                    | Create/rotate or revoke the share link                                                                                                                                                  |
+| GET                               | /wishlists/shared/:token                                                | **Public**, read-only (no notes, no ids)                                                                                                                                                |
+| GET / PUT / DELETE                | /wishlist, /wishlist/ids, /wishlist/:hotelId                            | Heart button (default list)                                                                                                                                                             |
+| POST                              | /reviews/photos                                                         | multipart `file` (image)                                                                                                                                                                |
+| PUT                               | /reviews/:id                                                            | Edit within the window/edit limit                                                                                                                                                       |
+| POST                              | /reviews/:id/report                                                     | `{ reason, details? }` (idempotent per user)                                                                                                                                            |
+| GET                               | /hotels/:idOrSlug/reviews                                               | **Public**: page, limit, sort (`recent · highest · lowest`) + category summary                                                                                                          |
+| GET / POST                        | /support/tickets                                                        | List / create (multipart: subject, category, bookingReference?, message, file?)                                                                                                         |
+| GET                               | /support/tickets/:id · /attachments/:mediaId                            | Own tickets / private attachments                                                                                                                                                       |
+| POST                              | /support/tickets/:id/messages · /close                                  | Reply (multipart) / close                                                                                                                                                               |
+
+### Property side — `bookings:read-property` + resource access (`BOOKINGS_MANAGE` for staff)
+
+| Method | Path                                                               | Notes                                                             |
+| ------ | ------------------------------------------------------------------ | ----------------------------------------------------------------- |
+| GET    | /partner/hotels/:hotelId/bookings                                  | view `arrivals · upcoming · past · all` (confirmed-or-later only) |
+| POST   | /partner/hotels/:hotelId/bookings/:reference/check-in · /check-out | On/after the arrival date / after check-in                        |
+| POST   | /partner/hotels/:hotelId/bookings/:reference/no-show               | `{ note? }` — policy no-show refund, frees remaining nights       |
+| POST   | /partner/hotels/:hotelId/bookings/:reference/reject                | `{ reason }` — before check-in, full refund                       |
+| GET    | /partner/hotels/:hotelId/reviews                                   | Reviews of the property                                           |
+| PUT    | /partner/hotels/:hotelId/reviews/:reviewId/response                | `{ body }` (no delete endpoint exists)                            |
+
+### Operations — `admin:access`
+
+| Method     | Path                                          | Permission         | Notes                                                                                                                    |
+| ---------- | --------------------------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| GET        | /admin/operations                             | `payments:read`    | Reconciliation exceptions, refunds needing attention, refund requests, failed deliveries, flagged reviews, outbox counts |
+| POST       | /admin/refunds/:id/retry                      | `refunds:manage`   | FAILED → APPROVED → processed again                                                                                      |
+| POST       | /admin/refunds/:id/decision                   | `refunds:manage`   | `{ decision: APPROVE, amountMinor }` or `{ decision: REJECT, reason }`                                                   |
+| POST       | /admin/bookings/:reference/refunds            | `refunds:manage`   | **IK** `{ amountMinor, reason }` partial/full refund                                                                     |
+| POST       | /admin/notifications/deliveries/:id/retry     | `payments:read`    | Re-run a failed notification delivery                                                                                    |
+| GET / POST | /admin/reviews, /admin/reviews/:id/moderation | `reviews:moderate` | `{ decision: REMOVE · RESTORE · DISMISS_REPORTS, reason }`                                                               |
+
 ## Error codes
 
 `VALIDATION_ERROR` (422, with `details.fieldErrors`), `BAD_REQUEST` (400), `AUTH_REQUIRED`,
@@ -124,3 +183,6 @@ Staff permissions apply only to their assigned properties; owners have all of th
 `ACCOUNT_DEACTIVATED`, `FORBIDDEN` (403), `NOT_FOUND` (404), `CONFLICT`, `EMAIL_TAKEN` (409),
 `VERIFICATION_TOKEN_INVALID` (400), `PAYLOAD_TOO_LARGE` (413), `UNSUPPORTED_MEDIA_TYPE` (415),
 `RATE_LIMITED` (429), `SERVICE_UNAVAILABLE` (503), `INTERNAL_ERROR` (500 — details only in logs).
+Phase 3: `IDEMPOTENCY_KEY_REQUIRED` (400), `IDEMPOTENCY_KEY_REUSED` (422), `INVENTORY_UNAVAILABLE`,
+`HOLD_EXPIRED`, `INVALID_STATE` (409), `NOT_ELIGIBLE` (403/409), `PAYMENT_VERIFICATION_FAILED` (400),
+`PAYMENT_PROVIDER_ERROR` (502).

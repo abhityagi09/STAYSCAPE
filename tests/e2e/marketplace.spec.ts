@@ -180,8 +180,8 @@ test('partner onboarding → approval → listing → publication → customer q
   const summary = customer.getByRole('complementary', { name: 'Booking summary' });
   await expect(summary).toContainText('₹6,720.00');
   await summary.getByRole('button', { name: 'Continue to booking' }).click();
-  await expect(customer.getByText('Price and availability confirmed just now.')).toBeVisible();
-  await expect(customer.getByRole('button', { name: 'Booking available soon' })).toBeDisabled();
+  // Booking needs an account; the selection is kept for after sign-in (full flow: booking.spec.ts).
+  await expect(customer.getByRole('link', { name: 'Sign in to continue' })).toBeVisible();
 });
 
 test('map discovery and comparison on seeded listings', async ({ page }) => {

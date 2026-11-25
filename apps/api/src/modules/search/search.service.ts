@@ -21,7 +21,6 @@ import {
   AmenityModel,
   DestinationModel,
   SearchEventModel,
-  WishlistItemModel,
   type AmenityRecord,
   type DestinationRecord,
 } from '@/modules/catalog/catalog.models';
@@ -40,7 +39,7 @@ import {
 const escapeRegex = (v: string) => v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const exactCI = (v: string) => new RegExp(`^${escapeRegex(v)}$`, 'i');
 /** Fields needed for cards — heavy fields (description, revision, taxConfig…) are excluded. */
-const CARD_PROJECTION = {
+export const CARD_PROJECTION = {
   name: 1,
   slug: 1,
   propertyType: 1,
@@ -87,7 +86,8 @@ export class SearchService {
     private readonly logger: Logger,
   ) {}
 
-  private async cards(
+  /** Build public hotel cards (shared with wishlists). */
+  async cards(
     hotels: HotelRecord[],
     extras: Map<string, Pick<HotelCardDto, 'distanceKm' | 'price'>> = new Map(),
   ): Promise<HotelCardDto[]> {
@@ -701,48 +701,6 @@ export class SearchService {
         slug: h.slug,
       })),
     ];
-  }
-
-  // ------------------------------------------------------------------ wishlist
-  async wishlist(userId: string): Promise<HotelCardDto[]> {
-    const items = await WishlistItemModel.find({ userId })
-      .sort({ createdAt: -1 })
-      .limit(200)
-      .lean<Array<{ hotelId: Types.ObjectId }>>();
-    const hotels = await HotelModel.find(
-      { _id: { $in: items.map((i) => i.hotelId) }, publicationStatus: 'PUBLISHED' },
-      CARD_PROJECTION,
-    ).lean<HotelRecord[]>();
-    const ordered = items
-      .map((i) => hotels.find((h) => h._id.equals(i.hotelId)))
-      .filter((h): h is HotelRecord => Boolean(h));
-    return this.cards(ordered);
-  }
-
-  async wishlistIds(userId: string): Promise<string[]> {
-    return (
-      await WishlistItemModel.find({ userId }, { hotelId: 1 }).lean<
-        Array<{ hotelId: Types.ObjectId }>
-      >()
-    ).map((i) => i.hotelId.toString());
-  }
-
-  async addToWishlist(userId: string, hotelId: string): Promise<void> {
-    if (
-      !Types.ObjectId.isValid(hotelId) ||
-      !(await HotelModel.exists({ _id: hotelId, publicationStatus: 'PUBLISHED' }))
-    )
-      throw Errors.notFound('Property');
-    await WishlistItemModel.updateOne(
-      { userId, hotelId },
-      { $setOnInsert: { userId, hotelId } },
-      { upsert: true },
-    );
-  }
-
-  async removeFromWishlist(userId: string, hotelId: string): Promise<void> {
-    if (!Types.ObjectId.isValid(hotelId)) throw Errors.notFound('Property');
-    await WishlistItemModel.deleteOne({ userId, hotelId });
   }
 
   static weekendFor(timeZone = 'Asia/Kolkata') {

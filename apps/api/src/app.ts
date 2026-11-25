@@ -26,6 +26,19 @@ import {
   createPartnerApplicationRouter,
 } from '@/modules/partners/partners.routes';
 import { createPublicRouters } from '@/modules/search/public.routes';
+import {
+  createAccountRouter,
+  createBookingsRouter,
+  createPaymentWebhookHandler,
+  createPublicReviewsHandler,
+  createReviewsRouter,
+  createSupportRouter,
+  createWishlistRouters,
+} from '@/modules/bookings/bookings.routes';
+import {
+  createAdminOperationsRouter,
+  createPartnerBookingsRouter,
+} from '@/modules/bookings/partner-admin.routes';
 
 export interface AppOptions {
   healthChecks?: Partial<HealthChecks>;
@@ -86,6 +99,10 @@ export function createApp(container: Container, options: AppOptions = {}): Expre
     }),
   );
 
+  // Payment webhooks need the exact raw bytes for signature verification: registered before the
+  // JSON parser and outside the rate limiter (authenticated by HMAC signature instead).
+  app.post(`${API_PREFIX}/payments/webhooks/razorpay`, ...createPaymentWebhookHandler(container));
+
   app.use(express.json({ limit: config.REQUEST_BODY_LIMIT }));
   app.use(express.urlencoded({ extended: false, limit: config.REQUEST_BODY_LIMIT }));
   app.use(cookieParser());
@@ -106,11 +123,20 @@ export function createApp(container: Container, options: AppOptions = {}): Expre
   api.use('/audit', createAuditRouter(container));
   api.use('/newsletter', createNewsletterRouter(container, limiters));
   const publicRouters = createPublicRouters(container);
+  api.get('/hotels/:idOrSlug/reviews', ...createPublicReviewsHandler(container));
   api.use('/hotels', publicRouters.hotels);
   api.use('/destinations', publicRouters.destinations);
   api.use('/amenities', publicRouters.amenities);
   api.use('/availability', publicRouters.availability);
-  api.use('/wishlist', publicRouters.wishlist);
+  const wishlistRouters = createWishlistRouters(container);
+  api.use('/wishlist', wishlistRouters.heart);
+  api.use('/wishlists', wishlistRouters.lists);
+  api.use('/bookings', createBookingsRouter(container));
+  api.use('/account', createAccountRouter(container));
+  api.use('/reviews', createReviewsRouter(container));
+  api.use('/support', createSupportRouter(container));
+  api.use('/partner/hotels', createPartnerBookingsRouter(container));
+  api.use('/admin', createAdminOperationsRouter(container));
   api.use('/partner/hotels', createPartnerHotelsRouter(container));
   api.use('/partner', createPartnerApplicationRouter(container, limiters));
   api.use('/admin/partners', createAdminPartnersRouter(container));

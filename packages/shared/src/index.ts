@@ -11,3 +11,6 @@ export * from './constants/marketplace';
 export * from './schemas/marketplace';
 export * from './contracts/marketplace-dto';
 export * from './utils/local-date';
+export * from './constants/booking';
+export * from './schemas/booking';
+export * from './contracts/booking-dto';

@@ -68,5 +68,6 @@ npm run docker:down
 - [Database](docs/database.md)
 - [API](docs/api.md)
 - [Marketplace: onboarding, listings, inventory, pricing, search](docs/marketplace.md)
+- [Reservations: holds, bookings, payments, refunds, notifications](docs/reservations.md)
 - [Development, testing & troubleshooting](docs/development.md)
 - [Implementation progress](docs/implementation-progress.md)

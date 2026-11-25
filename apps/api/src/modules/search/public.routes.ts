@@ -4,7 +4,6 @@ import {
   compareQuerySchema,
   destinationSuggestionQuerySchema,
   nearbyQuerySchema,
-  objectIdSchema,
   quoteRequestSchema,
   roomOffersQuerySchema,
   searchCriteriaSchema,
@@ -12,8 +11,8 @@ import {
   type SearchCriteria,
 } from '@stayscape/shared';
 import type { Container } from '@/container';
-import { sendMessage, sendSuccess } from '@/lib/http';
-import { requireAuth, validatedParams, validatedQuery } from '@/lib/request-context';
+import { sendSuccess } from '@/lib/http';
+import { validatedParams, validatedQuery } from '@/lib/request-context';
 import { validate } from '@/middleware/validate';
 
 const limitQuery = z.object({ limit: z.coerce.number().int().min(1).max(24).default(8) });
@@ -95,36 +94,5 @@ export function createPublicRouters(container: Container) {
     },
   );
 
-  const wishlist = Router();
-  wishlist.use(container.authenticate);
-  wishlist.get('/', async (req, res) =>
-    sendSuccess(res, await search.wishlist(requireAuth(req).userId)),
-  );
-  wishlist.get('/ids', async (req, res) =>
-    sendSuccess(res, await search.wishlistIds(requireAuth(req).userId)),
-  );
-  wishlist.put(
-    '/:hotelId',
-    validate({ params: z.object({ hotelId: objectIdSchema }) }),
-    async (req, res) => {
-      await search.addToWishlist(
-        requireAuth(req).userId,
-        validatedParams<{ hotelId: string }>(req).hotelId,
-      );
-      sendMessage(res, 'Saved.');
-    },
-  );
-  wishlist.delete(
-    '/:hotelId',
-    validate({ params: z.object({ hotelId: objectIdSchema }) }),
-    async (req, res) => {
-      await search.removeFromWishlist(
-        requireAuth(req).userId,
-        validatedParams<{ hotelId: string }>(req).hotelId,
-      );
-      sendMessage(res, 'Removed.');
-    },
-  );
-
-  return { hotels, destinations, amenities, availability, wishlist };
+  return { hotels, destinations, amenities, availability };
 }

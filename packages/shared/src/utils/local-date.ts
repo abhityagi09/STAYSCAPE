@@ -73,3 +73,41 @@ export function isValidTimeZone(timeZone: string): boolean {
     return false;
   }
 }
+
+/** Offset (ms) of `timeZone` from UTC at the given instant (positive east of Greenwich). */
+function zoneOffsetMs(timeZone: string, instant: number): number {
+  const fields = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).formatToParts(new Date(instant));
+  const get = (type: string) => Number(fields.find((f) => f.type === type)?.value);
+  const asUtc = Date.UTC(
+    get('year'),
+    get('month') - 1,
+    get('day'),
+    get('hour'),
+    get('minute'),
+    get('second'),
+  );
+  return asUtc - Math.floor(instant / 1000) * 1000;
+}
+
+/**
+ * The UTC instant of a wall-clock time at the property ("2026-12-10" + "14:00" in Asia/Kolkata).
+ * Used for cancellation deadlines and check-in cut-offs. Correct across DST changes: the offset
+ * is re-evaluated at the candidate instant (two passes cover every transition).
+ */
+export function zonedTimeToUtc(date: LocalDate, time: string, timeZone: string): Date {
+  const [y, m, d] = parts(date);
+  const [hh, mm] = time.split(':').map(Number);
+  const wall = Date.UTC(y, m - 1, d, hh ?? 0, mm ?? 0);
+  let instant = wall - zoneOffsetMs(timeZone, wall);
+  instant = wall - zoneOffsetMs(timeZone, instant);
+  return new Date(instant);
+}

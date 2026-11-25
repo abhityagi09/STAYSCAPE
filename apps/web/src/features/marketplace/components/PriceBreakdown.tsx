@@ -10,8 +10,16 @@ const dateFmt = new Intl.DateTimeFormat(undefined, {
 });
 const day = (iso: string) => dateFmt.format(new Date(`${iso}T00:00:00Z`));
 
-/** Every line that makes up a quote — the total is always fully explained. */
-export function PriceBreakdown({ quote }: { quote: QuoteDto }) {
+/** Anything with a full price breakdown: a quote, a hold or a booking snapshot. */
+export type PriceBreakdownSource = Pick<
+  QuoteDto,
+  'currency' | 'taxes' | 'fees' | 'totals' | 'rooms' | 'nights' | 'nightly'
+> & {
+  expiresAt?: string | null;
+};
+
+/** Every line that makes up a price — the total is always fully explained. */
+export function PriceBreakdown({ quote, note }: { quote: PriceBreakdownSource; note?: string }) {
   const money = (v: number) => formatMinorUnits(v, quote.currency);
   const { totals } = quote;
   return (
@@ -101,11 +109,15 @@ export function PriceBreakdown({ quote }: { quote: QuoteDto }) {
           },
         ]}
       />
-      <p className="text-xs text-fg-subtle">
-        Quote valid until{' '}
-        {new Date(quote.expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.
-        Prices are rechecked before booking.
-      </p>
+      {note ? (
+        <p className="text-xs text-fg-subtle">{note}</p>
+      ) : quote.expiresAt ? (
+        <p className="text-xs text-fg-subtle">
+          Quote valid until{' '}
+          {new Date(quote.expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          . Prices are rechecked before booking.
+        </p>
+      ) : null}
     </div>
   );
 }

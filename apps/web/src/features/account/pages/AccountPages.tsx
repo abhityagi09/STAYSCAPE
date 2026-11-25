@@ -29,7 +29,7 @@ function useUser(): UserDto | null {
   return useAuth().user;
 }
 
-function AccountChecklist({ user }: { user: UserDto }) {
+export function AccountChecklist({ user }: { user: UserDto }) {
   // Derived entirely from the real account record.
   const steps = [
     { done: true, label: 'Create your account', to: '/account/profile' },

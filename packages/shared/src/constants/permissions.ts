@@ -27,6 +27,8 @@ export const PERMISSIONS = [
   'payments:read',
   'refunds:manage',
   'reports:view',
+  'reviews:moderate',
+  'support:create',
   'audit:read',
   'roles:assign-privileged',
   'system:configure',
@@ -39,6 +41,7 @@ const CUSTOMER: Permission[] = [
   'bookings:read-own',
   'bookings:cancel-own',
   'reviews:create',
+  'support:create',
 ];
 
 const HOTEL_STAFF: Permission[] = ['partner:access', 'rooms:manage', 'bookings:read-property'];
@@ -60,6 +63,7 @@ const ADMIN: Permission[] = [
   'partners:approve',
   'refunds:manage',
   'reports:view',
+  'reviews:moderate',
   'audit:read',
 ];
 
