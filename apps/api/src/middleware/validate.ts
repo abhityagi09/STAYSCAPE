@@ -54,3 +54,21 @@ export function validate(schemas: Schemas): RequestHandler {
     next();
   };
 }
+
+/**
+ * Validate a PATCH body and keep only the top-level fields the client actually sent.
+ * (Zod applies inner `.default()`s even under `.partial()`, which would otherwise silently
+ * reset omitted fields such as photo lists to their defaults.)
+ */
+export function validatePatch(schema: ZodType): RequestHandler {
+  return (req, _res, next) => {
+    const raw = (req.body ?? {}) as Record<string, unknown>;
+    const present = new Set(Object.keys(raw));
+    const result = schema.safeParse(raw);
+    if (!result.success) return next(Errors.validation(zodErrorDetails(result.error)));
+    req.body = Object.fromEntries(
+      Object.entries(result.data as Record<string, unknown>).filter(([key]) => present.has(key)),
+    );
+    next();
+  };
+}

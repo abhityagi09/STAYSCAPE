@@ -51,6 +51,11 @@ jobs:
       - run: cp .env.example .env
       - name: Start MongoDB replica set, Redis and Mailpit
         run: docker compose up -d --wait mongo redis mailpit
+      - name: Seed development data and an e2e administrator
+        run: npm run seed && npm run bootstrap:admin
+        env:
+          SEED_USER_PASSWORD: Seed-Dev-Passw0rd
+          ADMIN_BOOTSTRAP_PASSWORD: E2e-Admin-Passw0rd
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
       - if: failure()

@@ -160,10 +160,12 @@ describe('configuration safety', () => {
         MONGO_URI: 'mongodb://db',
         REDIS_URL: 'redis://cache',
         JWT_ACCESS_SECRET: 'dev-only-change-me-dev-only-change-me-xx',
+        DATA_ENCRYPTION_KEY: 'dev-only-data-key-0123456789abcdefghijkl',
+        QUOTE_SIGNING_SECRET: 'dev-only-quote-secret-0123456789abcdefgh',
         COOKIE_SECURE: 'false',
         MAIL_PROVIDER: 'log',
       }),
-    ).toThrowError(/JWT_ACCESS_SECRET|COOKIE_SECURE|MAIL_PROVIDER|CORS_ORIGINS/);
+    ).toThrowError(/JWT_ACCESS_SECRET[\s\S]*DATA_ENCRYPTION_KEY[\s\S]*QUOTE_SIGNING_SECRET/);
     expect(testConfig().isTest).toBe(true);
   });
 

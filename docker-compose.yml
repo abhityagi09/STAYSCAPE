@@ -71,6 +71,9 @@ services:
       MONGO_URI: mongodb://mongo:27017/stayscape?directConnection=true
       REDIS_URL: redis://redis:6379
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-only-docker-secret-0123456789abcdefghijklmnop}
+      DATA_ENCRYPTION_KEY: ${DATA_ENCRYPTION_KEY:-dev-only-docker-data-key-0123456789abcdefghijk}
+      QUOTE_SIGNING_SECRET: ${QUOTE_SIGNING_SECRET:-dev-only-docker-quote-secret-0123456789abcdefgh}
+      PRIVATE_UPLOAD_DIR: ./var/private
       COOKIE_SECURE: 'false'
       COOKIE_SAMESITE: strict
       MAIL_PROVIDER: smtp
@@ -88,6 +91,7 @@ services:
       - '127.0.0.1:4000:4000'
     volumes:
       - api-uploads:/app/apps/api/var/uploads
+      - api-private:/app/apps/api/var/private
     depends_on:
       mongo:
         condition: service_healthy
@@ -115,3 +119,4 @@ volumes:
   mongo-config:
   redis-data:
   api-uploads:
+  api-private:

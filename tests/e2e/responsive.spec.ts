@@ -13,19 +13,19 @@ test('mobile navigation opens, navigates and closes', async ({ page }) => {
   await expect(drawer).toBeHidden();
 });
 
-test('homepage search validates and carries criteria to the search page', async ({ page }) => {
+test('homepage search carries criteria to the results page', async ({ page }) => {
   await page.goto('/');
+  await page.getByRole('combobox', { name: 'Destination' }).fill('Goa');
   await page.getByRole('button', { name: 'Search', exact: true }).click();
-  await expect(page.getByText('Where are you going?')).toBeVisible();
-  await page.getByLabel('Destination').fill('Goa');
-  await page.getByRole('button', { name: 'Search', exact: true }).click();
-  await expect(page).toHaveURL(/\/search\?destination=Goa/);
-  await expect(page.getByText('Destination: Goa')).toBeVisible();
-  await expect(page.getByText('No bookable stays yet')).toBeVisible();
+  await expect(page).toHaveURL(/\/hotels\?destination=Goa/);
+  await expect(page.getByRole('heading', { name: 'Stays in Goa' })).toBeVisible();
+  // Mobile layout: filters live in a drawer.
+  await page.getByRole('button', { name: /^Filters/ }).click();
+  await expect(page.getByRole('dialog', { name: 'Filters' })).toBeVisible();
 });
 
 test('pages have no horizontal overflow at phone width', async ({ page }) => {
-  for (const path of ['/', '/login', '/register', '/search', '/terms']) {
+  for (const path of ['/', '/login', '/register', '/hotels', '/hotels?destination=goa', '/terms']) {
     await page.goto(path);
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,

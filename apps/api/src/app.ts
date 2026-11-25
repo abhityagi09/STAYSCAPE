@@ -20,6 +20,12 @@ import { createNotificationsRouter } from '@/modules/notifications/notifications
 import { createPermissionsRouter } from '@/modules/permissions/permissions.routes';
 import { createRolesRouter } from '@/modules/roles/roles.routes';
 import { createUsersRouter } from '@/modules/users/users.routes';
+import { createAdminHotelsRouter, createPartnerHotelsRouter } from '@/modules/hotels/hotels.routes';
+import {
+  createAdminPartnersRouter,
+  createPartnerApplicationRouter,
+} from '@/modules/partners/partners.routes';
+import { createPublicRouters } from '@/modules/search/public.routes';
 
 export interface AppOptions {
   healthChecks?: Partial<HealthChecks>;
@@ -99,6 +105,16 @@ export function createApp(container: Container, options: AppOptions = {}): Expre
   api.use('/notifications', createNotificationsRouter(container));
   api.use('/audit', createAuditRouter(container));
   api.use('/newsletter', createNewsletterRouter(container, limiters));
+  const publicRouters = createPublicRouters(container);
+  api.use('/hotels', publicRouters.hotels);
+  api.use('/destinations', publicRouters.destinations);
+  api.use('/amenities', publicRouters.amenities);
+  api.use('/availability', publicRouters.availability);
+  api.use('/wishlist', publicRouters.wishlist);
+  api.use('/partner/hotels', createPartnerHotelsRouter(container));
+  api.use('/partner', createPartnerApplicationRouter(container, limiters));
+  api.use('/admin/partners', createAdminPartnersRouter(container));
+  api.use('/admin/hotels', createAdminHotelsRouter(container));
 
   if (container.storage instanceof LocalStorageProvider) {
     api.use(

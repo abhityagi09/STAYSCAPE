@@ -39,7 +39,7 @@ const customerSections: NavSection[] = [
     title: 'Travel',
     items: [
       { to: '/account/trips', label: 'Trips', icon: CalendarCheck, upcoming: 'Soon' },
-      { to: '/account/saved', label: 'Saved stays', icon: Heart, upcoming: 'Soon' },
+      { to: '/account/saved', label: 'Saved stays', icon: Heart },
       { to: '/account/reviews', label: 'Reviews', icon: Star, upcoming: 'Soon' },
     ],
   },
@@ -67,8 +67,18 @@ const partnerSections: NavSection[] = [
   {
     title: 'Property management',
     items: [
-      { to: '/partner/properties', label: 'Properties', icon: Building2, upcoming: 'Phase 2' },
-      { to: '/partner/rooms', label: 'Rooms & rates', icon: BedDouble, upcoming: 'Phase 2' },
+      {
+        to: '/partner/properties',
+        label: 'Properties',
+        icon: Building2,
+        permissions: ['partner:access'],
+      },
+      {
+        to: '/partner/inventory',
+        label: 'Inventory calendar',
+        icon: BedDouble,
+        permissions: ['partner:access'],
+      },
       {
         to: '/partner/reservations',
         label: 'Reservations',
@@ -110,14 +120,12 @@ const adminSections: NavSection[] = [
         label: 'Partner approvals',
         icon: ShieldCheck,
         permissions: ['partners:approve'],
-        upcoming: 'Phase 2',
       },
       {
         to: '/admin/properties',
         label: 'Property moderation',
         icon: House,
         permissions: ['hotels:moderate'],
-        upcoming: 'Phase 2',
       },
       {
         to: '/admin/payments',

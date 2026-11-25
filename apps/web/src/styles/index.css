@@ -295,3 +295,24 @@
     scroll-behavior: auto !important;
   }
 }
+
+/*
+ * Map popups follow the theme. MapLibre's own stylesheet is unlayered and hard-codes a white
+ * background, so these overrides are unlayered too and win on specificity (two classes).
+ */
+.stayscape-popup .maplibregl-popup-content {
+  background: var(--surface);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.18);
+  padding: 0.75rem 2rem 0.75rem 0.875rem;
+}
+.stayscape-popup .maplibregl-popup-tip {
+  display: none;
+}
+.stayscape-popup .maplibregl-popup-close-button {
+  color: var(--fg);
+  font-size: 1.125rem;
+  padding: 0.25rem 0.5rem;
+}

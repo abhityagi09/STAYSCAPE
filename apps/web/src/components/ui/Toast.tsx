@@ -113,7 +113,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       <section
         aria-label="Notifications"
-        className="pointer-events-none fixed inset-x-0 bottom-0 z-[60] flex justify-center p-4 sm:inset-x-auto sm:right-0 sm:justify-end"
+        // Top-right, below the 64–72px sticky headers: bottom placement covered page actions
+        // (save buttons, the comparison tray) and hover-to-pause then kept them covered.
+        className="pointer-events-none fixed inset-x-0 top-[76px] z-[60] flex justify-center p-4 sm:inset-x-auto sm:right-0 sm:justify-end"
       >
         <ol className="flex w-full max-w-sm flex-col gap-2">
           {toasts.map((t) => (

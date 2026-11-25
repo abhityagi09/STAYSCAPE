@@ -62,7 +62,15 @@ const envSchema = z
     SMTP_USER: optionalString,
     SMTP_PASSWORD: optionalString,
 
+    DATA_ENCRYPTION_KEY: z.string().min(32, 'DATA_ENCRYPTION_KEY must be at least 32 characters'),
+    QUOTE_SIGNING_SECRET: z.string().min(32, 'QUOTE_SIGNING_SECRET must be at least 32 characters'),
+    QUOTE_TTL_SECONDS: z.coerce.number().int().min(60).max(3600).default(900),
+    SEARCH_CACHE_TTL_SECONDS: z.coerce.number().int().min(0).max(3600).default(60),
+    MEDIA_ORPHAN_TTL_HOURS: z.coerce.number().int().min(1).max(720).default(24),
+
     STORAGE_DRIVER: z.enum(['local', 's3']).default('local'),
+    PRIVATE_UPLOAD_DIR: z.string().default('./var/private'),
+    S3_PRIVATE_BUCKET: optionalString,
     UPLOAD_DIR: z.string().default('./var/uploads'),
     MEDIA_PUBLIC_BASE_URL: z.string().default('/api/v1/media'),
     S3_BUCKET: optionalString,
@@ -96,6 +104,12 @@ const envSchema = z
     if (env.JWT_ACCESS_SECRET.includes(DEV_SECRET_MARKER)) {
       fail('JWT_ACCESS_SECRET', 'Development secrets must not be used in production');
     }
+    for (const key of ['DATA_ENCRYPTION_KEY', 'QUOTE_SIGNING_SECRET'] as const) {
+      if (env[key].includes(DEV_SECRET_MARKER))
+        fail(key, 'Development secrets must not be used in production');
+    }
+    if (env.STORAGE_DRIVER === 's3' && !env.S3_PRIVATE_BUCKET)
+      fail('S3_PRIVATE_BUCKET', 'A private bucket is required for verification documents');
     if (!env.COOKIE_SECURE) fail('COOKIE_SECURE', 'Cookies must be Secure in production');
     if (env.MAIL_PROVIDER !== 'smtp')
       fail('MAIL_PROVIDER', 'Only the smtp mail provider is allowed in production');

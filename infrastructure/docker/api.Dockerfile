@@ -27,7 +27,7 @@ COPY apps/web/package.json apps/web/
 RUN npm ci --omit=dev -w @stayscape/api && npm cache clean --force
 COPY --from=build /app/apps/api/dist ./apps/api/dist
 WORKDIR /app/apps/api
-RUN mkdir -p var/uploads && chown -R node:node var
+RUN mkdir -p var/uploads var/private && chown -R node:node var
 USER node
 EXPOSE 4000
 HEALTHCHECK --interval=10s --timeout=3s --start-period=20s --retries=5 \

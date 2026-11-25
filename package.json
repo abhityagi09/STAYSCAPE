@@ -2,7 +2,7 @@
   "name": "stayscape",
   "version": "0.1.0",
   "private": true,
-  "description": "STAYSCAPE — multi-vendor hotel discovery, booking and property management platform",
+  "description": "STAYSCAPE \u2014 multi-vendor hotel discovery, booking and property management platform",
   "type": "module",
   "workspaces": [
     "packages/config",
@@ -33,7 +33,8 @@
     "docker:down": "docker compose down",
     "bootstrap:admin": "npm run bootstrap:admin -w @stayscape/api",
     "db:indexes": "npm run db:indexes -w @stayscape/api",
-    "check:env": "node scripts/check-env.mjs"
+    "check:env": "node scripts/check-env.mjs",
+    "seed": "npm run seed -w @stayscape/api"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
