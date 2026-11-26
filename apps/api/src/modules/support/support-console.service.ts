@@ -263,8 +263,8 @@ export class SupportConsoleService {
       resolved: row?.resolved ?? 0,
       escalated: row?.escalated ?? 0,
       responded: row?.responded ?? 0,
-      averageFirstResponseMinutes: row?.firstResponse != null ? Math.round(row.firstResponse / 60_000) : null,
-      averageResolutionHours: row?.resolution != null ? Math.round((row.resolution / 3_600_000) * 10) / 10 : null,
+      averageFirstResponseMinutes: row?.firstResponse !== null && row?.firstResponse !== undefined ? Math.round(row.firstResponse / 60_000) : null,
+      averageResolutionHours: row?.resolution !== null && row?.resolution !== undefined ? Math.round((row.resolution / 3_600_000) * 10) / 10 : null,
       byAgent: byAgent.map((a) => ({ agentId: a._id.toString(), name: people.get(a._id.toString())?.name ?? 'Unknown', assigned: a.assigned, resolved: a.resolved })),
     };
   }

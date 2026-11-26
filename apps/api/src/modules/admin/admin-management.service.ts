@@ -44,8 +44,10 @@ export class AdminManagementService {
   }
 
   // ------------------------------------------------------------------ catalogue
-  private model(kind: CatalogKind): Model<any> {
-    return kind === 'amenity' ? AmenityModel : kind === 'destination' ? DestinationModel : PropertyCategoryModel;
+  private model(kind: CatalogKind): Model<Record<string, unknown>> {
+    if (kind === 'amenity') return AmenityModel as unknown as Model<Record<string, unknown>>;
+    if (kind === 'destination') return DestinationModel as unknown as Model<Record<string, unknown>>;
+    return PropertyCategoryModel as unknown as Model<Record<string, unknown>>;
   }
 
   async listCatalog(kind: CatalogKind, q: { page: number; limit: number; q?: string | undefined; active?: boolean | undefined }) {

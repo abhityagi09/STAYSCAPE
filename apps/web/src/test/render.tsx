@@ -32,6 +32,10 @@ export function makeUser(overrides: Partial<UserDto> = {}): UserDto {
         smsBookingUpdates: false,
         pushEnabled: false,
       },
+      personalization: {
+        recommendations: false,
+        consentedAt: null,
+      },
     },
     lastLoginAt: null,
     createdAt: new Date().toISOString(),

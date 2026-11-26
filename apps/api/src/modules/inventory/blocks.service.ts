@@ -7,7 +7,7 @@ import type { AuditService } from '@/modules/audit/audit.service';
 import type { PartnerAccessService } from '@/modules/partners/partner-access.service';
 import { RoomTypeModel, type RoomTypeRecord } from '@/modules/rooms/room.models';
 import type { AuthContext } from '@/types/express';
-import { AVAILABLE_EXPR, DailyInventoryModel, InventoryBlockModel, INVENTORY_BLOCK_REASONS, type InventoryBlockRecord } from './inventory.models';
+import { AVAILABLE_EXPR, DailyInventoryModel, InventoryBlockModel, type INVENTORY_BLOCK_REASONS, type InventoryBlockRecord } from './inventory.models';
 import { InventoryConflictError, type InventoryService } from './inventory.service';
 
 const toDto = (b: InventoryBlockRecord) => ({

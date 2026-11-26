@@ -243,6 +243,8 @@ describe('hotel detail page', () => {
     checkOutTime: '11:00',
     nearbyAttractions: [],
     contactDetails: { phone: '+919800000000', email: 'a@b.co' },
+    accessibility: [],
+    trustScore: null,
     roomTypes: [
       {
         id: 'r1',

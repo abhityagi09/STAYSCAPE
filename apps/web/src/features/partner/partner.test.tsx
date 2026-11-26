@@ -93,6 +93,8 @@ describe('inventory calendar', () => {
       date: addDays(from, i),
       totalRooms: 5,
       blockedRooms: i === 3 ? 2 : 0,
+      maintenanceRooms: 0,
+      stopSell: false,
       heldRooms: 0,
       bookedRooms: i === 4 ? 5 : 0,
       available: i === 3 ? 3 : i === 4 ? 0 : 5,

@@ -10,7 +10,6 @@ import {
   type PartnerDocumentType,
   type PartnerVerificationStatus,
   type StaffInvitationStatus,
-  type StaffPermission,
 } from '@stayscape/shared';
 
 export interface PartnerDocument {
