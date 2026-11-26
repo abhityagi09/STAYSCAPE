@@ -56,6 +56,8 @@ import { SupportConsoleService } from '@/modules/support/support-console.service
 import { TrustService } from '@/modules/trust/trust.service';
 import { IntelligenceService } from '@/modules/intelligence/intelligence.service';
 import { RewardsService } from '@/modules/rewards/rewards.service';
+import { TripsService } from '@/modules/trips/trips.service';
+import { CorporateService } from '@/modules/corporate/corporate.service';
 import { AdminManagementService } from '@/modules/admin/admin-management.service';
 import { InventoryBlocksService } from '@/modules/inventory/blocks.service';
 import { ContentService } from '@/modules/content/content.service';
@@ -198,6 +200,8 @@ export function buildContainer(core: CoreDependencies) {
   });
   const bookingNotifications = new BookingNotificationsService(core.mailer, config, logger);
   const documents = new DocumentsService(core.privateStorage, config, logger);
+  const trips = new TripsService({ audit, notifications });
+  const corporate = new CorporateService({ quotes, documents, notifications, audit });
   const wishlists = new WishlistsService({ config, search, quotes, encryptor });
   const reviews = new ReviewsService({
     config,
@@ -268,6 +272,8 @@ export function buildContainer(core: CoreDependencies) {
       trust,
       intelligence,
       rewards,
+      trips,
+      corporate,
       inventoryBlocks,
       content,
       lifecycle,
