@@ -103,6 +103,8 @@ const envSchema = z
     PAYOUT_PROVIDER: z.enum(['disabled']).default('disabled'),
     // ---- AI travel assistant (Phase 4). Backend only: the key is never sent to the browser.
     /** anthropic: Claude via the official SDK. rules: deterministic, no-AI dev/test assistant. */
+    /** Display-only currency conversion source: ecb (published reference rates) or disabled. */
+    FX_PROVIDER: z.enum(['ecb', 'disabled']).default('ecb'),
     AI_PROVIDER: z.enum(['anthropic', 'rules']).default('rules'),
     ANTHROPIC_API_KEY: optionalString,
     AI_MODEL: z.string().default('claude-opus-5-5'),

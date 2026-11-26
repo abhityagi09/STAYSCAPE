@@ -7,6 +7,7 @@ import { createAdminContentRouter, createPublicContentRouter } from '@/modules/c
 import { createIntelligenceRouters } from '@/modules/intelligence/intelligence.routes';
 import { createRewardsRouter } from '@/modules/rewards/rewards.routes';
 import { createAssistantRouter } from '@/modules/assistant/assistant.routes';
+import { createCurrencyRouter } from '@/modules/currency/currency.routes';
 import { createChannelWebhookHandler, createPartnerChannelsRouter } from '@/modules/channels/channels.routes';
 import { createTripsRouter } from '@/modules/trips/trips.routes';
 import { createAdminCorporateRouter, createCorporateRouter } from '@/modules/corporate/corporate.routes';
@@ -171,6 +172,7 @@ export function createApp(container: Container, options: AppOptions = {}): Expre
   api.use('/rewards', createRewardsRouter(container));
   api.use('/trips', createTripsRouter(container));
   api.use('/assistant', createAssistantRouter(container));
+  api.use('/currency', createCurrencyRouter(container));
   api.use('/partner/hotels', createPartnerChannelsRouter(container));
   api.use('/corporate', createCorporateRouter(container));
   api.use('/admin/organizations', createAdminCorporateRouter(container));

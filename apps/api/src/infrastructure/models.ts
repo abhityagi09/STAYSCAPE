@@ -40,6 +40,7 @@ import { TripModel } from '@/modules/trips/trips.service';
 import { AssistantUsageModel } from '@/modules/assistant/assistant.service';
 import { ChannelConnectionModel, ChannelEventModel, ChannelReservationModel } from '@/modules/channels/channels.service';
 import { ChannelSimulatorInboxModel } from '@/modules/channels/channel.adapter';
+import { ExchangeRateSnapshotModel } from '@/modules/currency/currency.service';
 import { OrgInvitationModel, OrgMemberModel, OrganizationModel, TravelRequestModel } from '@/modules/corporate/corporate.service';
 import { CommissionRuleModel, LedgerEntryModel, SettlementAllocationModel, SettlementModel } from '@/modules/finance/finance.models';
 import { MediaAssetModel } from '@/modules/media/media-asset.model';
@@ -104,6 +105,7 @@ export const ALL_MODELS = [
   ChannelEventModel,
   ChannelReservationModel,
   ChannelSimulatorInboxModel,
+  ExchangeRateSnapshotModel,
   OrganizationModel,
   OrgMemberModel,
   OrgInvitationModel,

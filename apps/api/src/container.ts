@@ -58,6 +58,7 @@ import { IntelligenceService } from '@/modules/intelligence/intelligence.service
 import { RewardsService } from '@/modules/rewards/rewards.service';
 import { AssistantService } from '@/modules/assistant/assistant.service';
 import { ChannelsService } from '@/modules/channels/channels.service';
+import { CurrencyService, EcbRatesProvider } from '@/modules/currency/currency.service';
 import { LocalSimulatorAdapter } from '@/modules/channels/channel.adapter';
 import { TripsService } from '@/modules/trips/trips.service';
 import { CorporateService } from '@/modules/corporate/corporate.service';
@@ -169,6 +170,7 @@ export function buildContainer(core: CoreDependencies) {
   const trust = new TrustService({ access: partnerAccess, audit, cache });
   const search = new SearchService(quotes, media, cache, logger, trust);
   const assistant = new AssistantService({ config, search, quotes, logger });
+  const currency = new CurrencyService({ provider: config.FX_PROVIDER === 'ecb' ? new EcbRatesProvider() : null, logger });
   const channels = new ChannelsService({ config, access: partnerAccess, inventory, encryptor, audit, logger }, [new LocalSimulatorAdapter()]);
   const intelligence = new IntelligenceService({ quotes, search, notifications, logger });
 
@@ -280,6 +282,7 @@ export function buildContainer(core: CoreDependencies) {
       trips,
       assistant,
       channels,
+      currency,
       corporate,
       inventoryBlocks,
       content,
