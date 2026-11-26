@@ -1,3 +1,4 @@
+import { TrustService } from '@/modules/trust/trust.service';
 import { HotelDailyStatModel } from '@/modules/analytics/hotel-stats.model';
 import { Types, type PipelineStage } from 'mongoose';
 import {
@@ -85,6 +86,7 @@ export class SearchService {
     private readonly media: MediaService,
     private readonly cache: CacheService,
     private readonly logger: Logger,
+    private readonly trust?: TrustService,
   ) {}
 
   /** Build public hotel cards (shared with wishlists). */
@@ -148,6 +150,13 @@ export class SearchService {
     if (c.petFriendly) amenities.add(FILTER_AMENITIES.petFriendly);
     if (c.accessible) amenities.add(FILTER_AMENITIES.accessible);
     if (amenities.size) filter.amenities = { $all: [...amenities] };
+    // Accessibility features, optionally only those checked by Stayscape staff (provenance).
+    if (c.accessibilityFeatures?.length)
+      filter.accessibilityFeatures = {
+        $all: c.accessibilityFeatures.map((code) => ({
+          $elemMatch: { code, ...(c.accessibilityVerifiedOnly ? { source: 'ADMIN_VERIFIED' } : {}) },
+        })),
+      };
 
     // Without dates, rate-plan-level filters are answered from the hotel's active rate plans.
     if (!c.checkIn && (c.breakfast || c.freeCancellation)) {
@@ -517,6 +526,8 @@ export class SearchService {
           ratePlans.filter((p) => p.roomTypeId.equals(r._id)),
         ),
       ),
+      accessibility: TrustService.toAccessibilityDtos(hotel),
+      trustScore: this.trust ? await this.trust.forHotel(hotel).catch(() => null) : null,
     };
   }
 

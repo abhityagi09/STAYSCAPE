@@ -7,6 +7,8 @@ import {
   hotelContentSchema,
   hotelDecisionSchema,
   inventoryQuerySchema,
+  accessibilityDeclarationSchema,
+  accessibilityVerificationSchema,
   inventoryBlockSchema,
   inventoryUpdateSchema,
   listAdminHotelsQuerySchema,
@@ -277,6 +279,11 @@ export function createPartnerHotelsRouter(container: Container): Router {
     },
   );
 
+  // Accessibility declaration (provenance: PARTNER_DECLARED until Stayscape verifies it).
+  router.put('/:hotelId/accessibility', validate({ params: hotelParam, body: accessibilityDeclarationSchema }), async (req, res) =>
+    sendSuccess(res, await container.services.trust.declareAccessibility(requireAuth(req), hp(req), (req.body as { features: Array<{ code: string; note: string }> }).features, requestContext(req))),
+  );
+
   // Maintenance / renovation / owner-use blocks.
   const blockParams = hotelParam.extend({ blockId: objectIdSchema });
   router.get('/:hotelId/inventory/blocks', validate({ params: hotelParam, query: z.object({ status: z.enum(['ACTIVE', 'RELEASED']).default('ACTIVE') }) }), async (req, res) =>
@@ -315,6 +322,9 @@ export function createAdminHotelsRouter(container: Container): Router {
   router.use(container.authenticate, requirePermission('hotels:moderate'));
   router.get('/', validate({ query: listAdminHotelsQuerySchema }), async (req, res) =>
     sendSuccess(res, await hotels.listForAdmin(validatedQuery(req))),
+  );
+  router.post('/:hotelId/accessibility/verify', validate({ params: hotelParam, body: accessibilityVerificationSchema }), async (req, res) =>
+    sendSuccess(res, await container.services.trust.verifyAccessibility(requireAuth(req).userId, validatedParams<{ hotelId: string }>(req).hotelId, req.body as { codes: string[]; verified: boolean; evidence: string }, requestContext(req))),
   );
   router.get('/:hotelId', validate({ params: hotelParam }), async (req, res) =>
     sendSuccess(res, await hotels.getForAdmin(validatedParams<{ hotelId: string }>(req).hotelId)),

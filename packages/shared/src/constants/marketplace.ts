@@ -262,3 +262,36 @@ export const MEDIA_PURPOSES = [
   'CONTENT_IMAGE',
 ] as const;
 export type MediaPurpose = (typeof MEDIA_PURPOSES)[number];
+
+/** Property accessibility features. Each listing records who stated it (partner) and who checked it (admin). */
+export const ACCESSIBILITY_FEATURES = [
+  'STEP_FREE_ENTRANCE',
+  'ELEVATOR',
+  'ACCESSIBLE_PARKING',
+  'WIDE_DOORWAYS',
+  'ACCESSIBLE_BATHROOM',
+  'ROLL_IN_SHOWER',
+  'GRAB_BARS',
+  'LOWERED_BED',
+  'VISUAL_ALARMS',
+  'HEARING_LOOP',
+  'BRAILLE_SIGNAGE',
+  'SERVICE_ANIMALS_WELCOME',
+] as const;
+export type AccessibilityFeature = (typeof ACCESSIBILITY_FEATURES)[number];
+export const ACCESSIBILITY_FEATURE_LABELS: Record<AccessibilityFeature, string> = {
+  STEP_FREE_ENTRANCE: 'Step-free entrance',
+  ELEVATOR: 'Elevator to all guest floors',
+  ACCESSIBLE_PARKING: 'Accessible parking',
+  WIDE_DOORWAYS: 'Doorways at least 81 cm wide',
+  ACCESSIBLE_BATHROOM: 'Accessible bathroom',
+  ROLL_IN_SHOWER: 'Roll-in shower',
+  GRAB_BARS: 'Grab bars by toilet and shower',
+  LOWERED_BED: 'Bed height suitable for transfers',
+  VISUAL_ALARMS: 'Visual fire alarms',
+  HEARING_LOOP: 'Hearing loop at reception',
+  BRAILLE_SIGNAGE: 'Braille or tactile signage',
+  SERVICE_ANIMALS_WELCOME: 'Service animals welcome',
+};
+export const ACCESSIBILITY_SOURCES = ['PARTNER_DECLARED', 'ADMIN_VERIFIED'] as const;
+export type AccessibilitySource = (typeof ACCESSIBILITY_SOURCES)[number];

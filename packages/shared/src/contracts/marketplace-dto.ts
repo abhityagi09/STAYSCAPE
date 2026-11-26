@@ -1,5 +1,7 @@
 import type { CurrencyCode } from '../constants/account';
 import type {
+  AccessibilityFeature,
+  AccessibilitySource,
   AmenityCategory,
   BedType,
   BusinessType,
@@ -235,6 +237,35 @@ export interface HotelDetailDto extends HotelCardDto {
   nearbyAttractions: Array<{ name: string; distanceKm: number; category: string }>;
   contactDetails: { phone: string; email: string; website?: string };
   roomTypes: RoomTypePublicDto[];
+  accessibility: AccessibilityFeatureDto[];
+  trustScore: TrustScoreDto | null;
+}
+
+export interface AccessibilityFeatureDto {
+  code: AccessibilityFeature;
+  label: string;
+  note: string;
+  /** Provenance: stated by the property, or checked by Stayscape staff (with the date). */
+  source: AccessibilitySource;
+  verifiedAt: string | null;
+}
+
+export interface TrustScoreComponentDto {
+  key: 'guest_reviews' | 'reliability' | 'verification' | 'responsiveness' | 'complaints' | 'completeness';
+  label: string;
+  /** 0-100 for this component. */
+  score: number;
+  weight: number;
+  detail: string;
+}
+
+/** Documented in docs/trustscore.md. Null overall score when there is not enough data. */
+export interface TrustScoreDto {
+  score: number | null;
+  confidence: 'LOW' | 'MEDIUM' | 'HIGH';
+  basis: { reviews: number; completedStays: number; months: number };
+  components: TrustScoreComponentDto[];
+  computedAt: string;
 }
 
 export interface QuoteLineDto {

@@ -53,6 +53,7 @@ import { RefundsService } from '@/modules/payments/refunds.service';
 import { ReviewsService } from '@/modules/reviews/reviews.service';
 import { SupportService } from '@/modules/support/support.service';
 import { SupportConsoleService } from '@/modules/support/support-console.service';
+import { TrustService } from '@/modules/trust/trust.service';
 import { AdminManagementService } from '@/modules/admin/admin-management.service';
 import { InventoryBlocksService } from '@/modules/inventory/blocks.service';
 import { ContentService } from '@/modules/content/content.service';
@@ -158,7 +159,8 @@ export function buildContainer(core: CoreDependencies) {
   const rooms = new RoomsService({ access: partnerAccess, inventory, media, audit, cache });
   const inventoryBlocks = new InventoryBlocksService({ access: partnerAccess, inventory, audit });
   const quotes = new QuoteService(inventory, config);
-  const search = new SearchService(quotes, media, cache, logger);
+  const trust = new TrustService({ access: partnerAccess, audit, cache });
+  const search = new SearchService(quotes, media, cache, logger, trust);
 
   // ---- Phase 3: reservations, payments, refunds, customer experience
   const lateQueue = core.domainEventQueue ? null : new LateBoundInlineQueue();
@@ -259,6 +261,7 @@ export function buildContainer(core: CoreDependencies) {
       support,
       supportConsole,
       adminManagement,
+      trust,
       inventoryBlocks,
       content,
       lifecycle,

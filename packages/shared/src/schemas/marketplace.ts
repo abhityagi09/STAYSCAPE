@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import {
   ADJUSTMENT_RULE_TYPES,
+  ACCESSIBILITY_FEATURES,
   AMENITY_CATEGORIES,
   BED_TYPES,
   BUSINESS_TYPES,
@@ -595,6 +596,8 @@ export const searchCriteriaObject = z.object({
   wifi: z.boolean().default(false),
   petFriendly: z.boolean().default(false),
   accessible: z.boolean().default(false),
+  accessibilityFeatures: z.array(z.enum(ACCESSIBILITY_FEATURES)).max(ACCESSIBILITY_FEATURES.length).default([]),
+  accessibilityVerifiedOnly: z.boolean().default(false),
   freeCancellation: z.boolean().default(false),
   instantConfirmation: z.boolean().default(false),
   bbox: z
@@ -665,6 +668,8 @@ export const searchQuerySchema = searchCriteriaObject
     wifi: flag.default(false),
     petFriendly: flag.default(false),
     accessible: flag.default(false),
+    accessibilityFeatures: csv(z.enum(ACCESSIBILITY_FEATURES)).default([]),
+    accessibilityVerifiedOnly: flag.default(false),
     freeCancellation: flag.default(false),
     instantConfirmation: flag.default(false),
     bbox: z
@@ -750,3 +755,15 @@ export const inventoryBlockSchema = z
     note: z.string().trim().max(300).default(''),
   })
   .refine((u) => diffDays(u.from, u.to) >= 0 && diffDays(u.from, u.to) <= 365, { message: 'Blocks can cover up to one year', path: ['to'] });
+
+export const accessibilityDeclarationSchema = z.strictObject({
+  features: z
+    .array(z.strictObject({ code: z.enum(ACCESSIBILITY_FEATURES), note: z.string().trim().max(200).default('') }))
+    .max(ACCESSIBILITY_FEATURES.length)
+    .refine((f) => new Set(f.map((x) => x.code)).size === f.length, 'Each feature once'),
+});
+export const accessibilityVerificationSchema = z.strictObject({
+  codes: z.array(z.enum(ACCESSIBILITY_FEATURES)).min(1).max(ACCESSIBILITY_FEATURES.length),
+  verified: z.boolean(),
+  evidence: z.string().trim().min(5).max(300),
+});
