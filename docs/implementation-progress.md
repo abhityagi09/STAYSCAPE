@@ -1,7 +1,7 @@
 # Implementation progress
 
-Last updated: 2026-11-26 · Current phase: **Phase 3 — complete** (see verification below). Phases 1–2
-re-verified with Phase 3.
+Last updated: 2026-11-26 · Current phase: **Phase 4 — complete** (see verification below). Phases 1–3
+re-verified with Phase 4 (the full unit, API and end-to-end suites).
 
 Legend: ✅ done and tested · 🟡 done, not verifiable without external credentials · ⏳ planned for a later phase
 
@@ -33,6 +33,111 @@ Legend: ✅ done and tested · 🟡 done, not verifiable without external creden
 | Docker Compose (Mongo RS, Redis, Mailpit, API, Web)                                                                                | ✅                       |                                                                                                            |
 | GitHub Actions CI                                                                                                                  | 🟡                       | Workflow written; not run (no GitHub remote)                                                               |
 | Documentation                                                                                                                      | ✅                       |                                                                                                            |
+
+## Phase 4 modules (operations, administration, intelligent features)
+
+Design: [phase4.md](phase4.md). Metrics: [analytics.md](analytics.md). TrustScore:
+[trustscore.md](trustscore.md).
+
+| #   | Module                                                                                                                                                                              | Status                                               | Tests                                                                 |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- | --------------------------------------------------------------------- |
+| 1   | Partner performance dashboard (KPIs, filters, trends, CSV, metric definitions)                                                                                                      | ✅                                                   | `analytics.test.ts`, web `ops.test.tsx`                               |
+| 2   | Reservation operations (search, filters, guest details, room assignment, check-in/out/no-show, notes, per-property permissions)                                                     | ✅                                                   | `partner-ops.test.ts`                                                 |
+| 3   | Advanced inventory and pricing (bulk updates, stop-sell, maintenance blocks, min/max stay, CTA/CTD, weekend/seasonal/event, promotional, occupancy, long-stay; snapshots immutable) | ✅                                                   | `inventory-ops.test.ts`, existing pricing tests                       |
+| 4   | Staff management (invite, accept, properties, permissions, suspend, remove, activity log)                                                                                           | ✅                                                   | `partner-ops.test.ts`, web `ops.test.tsx`                             |
+| 5   | Admin dashboard with period comparison                                                                                                                                              | ✅                                                   | `analytics.test.ts`, web `ops.test.tsx`, e2e                          |
+| 6   | Admin management (customers, catalogue, escalations, payment exceptions, refunds, review moderation, before/after audit)                                                            | ✅                                                   | `admin-management.test.ts`                                            |
+| 7   | Commission engine                                                                                                                                                                   | ✅                                                   | `commission.test.ts`, `finance.test.ts`                               |
+| 8   | Append-only ledger and settlements (payouts disabled; paid only with evidence)                                                                                                      | ✅                                                   | `finance.test.ts`, web `ops.test.tsx`, e2e                            |
+| 9   | Coupons (atomic limits, release on expiry, redemption, eligibility)                                                                                                                 | ✅                                                   | `coupons.test.ts`                                                     |
+| 10  | Support administration (queue, assignment, priority, internal notes, property thread, escalation, resolution, response-time metrics)                                                | ✅                                                   | `support-console.test.ts`, web `ops.test.tsx`, e2e                    |
+| 11  | CMS (drafts, publishing, scheduling, SEO, media, preview, revisions, public APIs)                                                                                                   | ✅                                                   | `content.test.ts`, web `ops.test.tsx`, e2e                            |
+| 12  | AI travel assistant (backend only, tool use, structured output, validation, quotas, cost tracking, fallback)                                                                        | ✅ code and tests / 🟡 live Claude API not exercised | `assistant.test.ts` (scripted SDK stand-in), e2e (deterministic mode) |
+| 13  | Recommendations (deterministic, explainable, consent-aware, can be disabled)                                                                                                        | ✅                                                   | `intelligence.test.ts`                                                |
+| 14  | TrustScore (documented formula, confidence)                                                                                                                                         | ✅                                                   | `trust.test.ts`                                                       |
+| 15  | TripSpace (`/trips`, `/trips/new`, `/trips/:id`, `/trips/:id/edit`, collaborators, sharing)                                                                                         | ✅                                                   | `trips.test.ts`, web `ops.test.tsx`, e2e                              |
+| 16  | Price intelligence (observations, flexible dates, history, alerts job, last-minute deals)                                                                                           | ✅                                                   | `intelligence.test.ts`                                                |
+| 17  | Loyalty (ledger, completed-stay earning, reversals, no negative balances, tiers, redemption)                                                                                        | ✅                                                   | `rewards.test.ts`                                                     |
+| 18  | Referrals (verified qualifying stay, abuse limits)                                                                                                                                  | ✅                                                   | `rewards.test.ts`                                                     |
+| 19  | Corporate travel (organisations, roles, policies, budgets, approvals, reports, invoices, isolation)                                                                                 | ✅                                                   | `corporate.test.ts`                                                   |
+| 20  | i18n (English, Hindi, persisted) and currency display (ECB rates, no invented rates)                                                                                                | ✅                                                   | web `ops.test.tsx`, `currency.test.ts`, e2e                           |
+| 21  | Accessibility features with provenance and search filters                                                                                                                           | ✅                                                   | `trust.test.ts`, web `ops.test.tsx`                                   |
+| 22  | Channel-manager architecture (adapter contract, local simulator, webhooks, mapping, idempotency, conflicts, retries, sync)                                                          | ✅ simulator / ⏳ no third-party adapter             | `channels.test.ts` (contract suite)                                   |
+| 23  | Advanced analytics via aggregation pipelines, date filters, export                                                                                                                  | ✅                                                   | `analytics.test.ts`                                                   |
+| 24  | Tests (API, web dashboards, e2e)                                                                                                                                                    | ✅                                                   | see the checklist below                                               |
+
+### Defects found and fixed during Phase 4 verification (2026-11-26)
+
+- Maintenance blocks reported the wrong conflicting dates (the lookup ran after a partial update in
+  the same transaction). The check now runs first; the conditional update still guards concurrency.
+- Customer ticket attachments needed the same channel filter as messages, so an internal or property
+  attachment can never be downloaded by the customer. Phase 3 rows without a channel count as
+  customer messages.
+- Analytics view counts used the UTC date. They now use the property's local date, consistent with
+  stay nights.
+- Public CMS responses set `Cache-Control: public, max-age=60` before the lookup, so a 404 was
+  cached by browsers. A page published moments later stayed "not found" for up to a minute (found by
+  the new e2e). Only successful responses are cached now, covered by an API regression test.
+- The assistant page crashed in Chromium: an effect implicitly returned `scrollIntoView()`, which now
+  returns a Promise, and React called it as a cleanup. jsdom does not return one, so only the browser
+  e2e caught it. Fixed with a block-bodied effect.
+- The assistant sent the newest message twice: React Query ran the mutation after the re-render, so
+  the message was also included in `history`. History is now captured when the message is sent.
+- The CMS renderer mapped `##` to `h3`. Fixed to `h2`, since the page title is the only `h1`.
+- `createdAt` is immutable in Mongoose, so a referral-window test could not backdate an account. The
+  test now writes the raw document. This was a test issue, not a product defect.
+
+### Phase 4 acceptance checklist (verified 2026-11-26)
+
+| Criterion                                                                                              | Result                               | Evidence                                                                           |
+| ------------------------------------------------------------------------------------------------------ | ------------------------------------ | ---------------------------------------------------------------------------------- |
+| Partners see accurate KPIs for permitted properties only                                               | ✅ PASS                              | API: hand-computed occupancy, ADR, RevPAR, GBV, cancellation rate; staff scope 404 |
+| Staff permissions enforced per operation and per property                                              | ✅ PASS                              | API `partner-ops.test.ts`                                                          |
+| Inventory blocks and stop-sell never touch existing reservations; price snapshots never change         | ✅ PASS                              | API `inventory-ops.test.ts`                                                        |
+| Admin dashboard with period comparison                                                                 | ✅ PASS                              | API, web, e2e                                                                      |
+| Admin changes audited before/after                                                                     | ✅ PASS                              | API (catalogue, support, escalations, CMS)                                         |
+| Commission snapshotted; ledger append-only and balanced                                                | ✅ PASS                              | API `finance.test.ts`                                                              |
+| Settlements never marked paid without evidence; payouts disabled                                       | ✅ PASS                              | API (initiate → 409, evidence required); web; e2e                                  |
+| Coupon limits hold under concurrency                                                                   | ✅ PASS                              | API: 8 concurrent customers, limit 3 → exactly 3 holds                             |
+| Support least privilege (internal notes and contact details isolated)                                  | ✅ PASS                              | API `support-console.test.ts`, web                                                 |
+| CMS drafts never public; scheduling and previews work                                                  | ✅ PASS                              | API, web, e2e                                                                      |
+| AI never invents hotels or prices; tool arguments validated; quotas, timeouts, cost tracking, fallback | ✅ PASS (scripted SDK) / 🟡 live API | `assistant.test.ts`. Live Claude calls need `ANTHROPIC_API_KEY`                    |
+| Recommendations explainable and consent-aware                                                          | ✅ PASS                              | API `intelligence.test.ts`                                                         |
+| Price alerts notify once per new low                                                                   | ✅ PASS                              | API                                                                                |
+| Loyalty earned only after completed stays, never negative, no duplicates                               | ✅ PASS                              | API `rewards.test.ts` (incl. concurrent redemptions → one wins)                    |
+| Referral rewards only after a verified qualifying stay                                                 | ✅ PASS                              | API                                                                                |
+| Corporate data isolation, policies and approvals                                                       | ✅ PASS                              | API `corporate.test.ts`                                                            |
+| TripSpace sharing exposes no private data                                                              | ✅ PASS                              | API `trips.test.ts`, web, e2e                                                      |
+| English/Hindi switch persists                                                                          | ✅ PASS                              | web, e2e                                                                           |
+| No invented exchange rates                                                                             | ✅ PASS                              | API (recorded ECB fixture; AED unavailable); live ECB fetch verified once manually |
+| Channel events signed, idempotent, conflicts detected, retried                                         | ✅ PASS (simulator)                  | API contract suite + integration                                                   |
+| Earlier phases unaffected                                                                              | ✅ PASS                              | Full suites: shared 10, API 189, web 83; e2e 14/14                                 |
+
+Commands run on 2026-11-26 (Windows 11, Node v22.17.1, Docker Desktop):
+
+- `npx prettier --check .`: all files formatted.
+- `npm run lint`: 0 problems.
+- `npm run typecheck`: passed.
+- `npm test`: shared 10/10, API 189/189 (28 files), web 83/83 (9 files).
+- `npm run build`: passed. One pre-existing warning: the shared vendor chunk is over 500 kB (map
+  library); the Phase 4 pages are separate lazy chunks.
+- `npm run docker:up`, then `E2E_BASE_URL=http://localhost:8080 npx playwright test --trace off`:
+  14/14 passed, including 3 new Phase 4 journeys.
+
+### Phase 4 known limitations
+
+- **AI assistant:** the live Claude API was not called (no key configured). Set `AI_PROVIDER=anthropic`
+  and `ANTHROPIC_API_KEY` to enable it. Until then the deterministic assistant answers.
+- **Payouts:** disabled until a payout provider is onboarded and compliance is complete. Settlements
+  are paid manually by bank transfer and recorded with evidence.
+- **Channel managers:** only the local simulator exists. Real providers need API access and their
+  own adapter.
+- **Currency:** conversion is display-only from ECB reference rates. AED is not published by the ECB
+  and is therefore not converted.
+- **Hindi:** navigation and the new Phase 4 screens are translated. Older screens fall back to
+  English text.
+- **Recharts:** not used. Charts are inline SVG with table alternatives, to avoid a new dependency.
+- Corporate travel requests take property, room and rate ids; there is no property picker yet.
 
 ## Phase 3 modules (reservations, payments, refunds, customer experience)
 
@@ -198,7 +303,7 @@ Design and business rules: [marketplace.md](marketplace.md). Endpoints: [api.md]
 
 ## Known limitations / follow-ups
 
-- Hindi is selectable as a preference but the UI is not yet translated (labelled in the UI).
+- Hindi translation covers navigation and Phase 4 screens; older screens still use English text.
 - Phone numbers are stored but not verified (no SMS provider yet).
 - React Router 7 publishes only its `development` build in its default export map, so the web bundle includes it (React itself is the production build).
 - Access tokens cannot be revoked mid-lifetime by signature alone. Each request checks the session store instead (one extra indexed query per request). Add a Redis cache if this becomes a hotspot.
@@ -206,5 +311,6 @@ Design and business rules: [marketplace.md](marketplace.md). Endpoints: [api.md]
 
 ## Upcoming phases
 
-- **Phase 4**: full administration (support agent console, payouts, reporting with Recharts, moderation tooling).
-- **Later**: AI features, mobile push.
+- **Phase 5**: to be specified. Candidates from Phase 4: a third-party channel-manager adapter (with
+  API access), a payout provider, the live Claude API (with a key), complete Hindi coverage, mobile
+  push.

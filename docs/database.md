@@ -122,6 +122,69 @@ support attachments) with a new `uploader_purpose` index; the Phase 2 `inventory
 `wishlistitems` collections are replaced by `bookingholds` and `wishlists` (drop them in existing
 environments; `npm run db:indexes` syncs the rest).
 
+## Phase 4 collections
+
+| Collection                | Purpose and key fields                                                                                                                                                                                                               | Indexes                                                                 |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------- |
+| `bookingnotes`            | Append-only internal reservation notes (bookingId, authorId, body)                                                                                                                                                                   | `booking_created`                                                       |
+| `commissionrules`         | scope (GLOBAL · PARTNER · HOTEL), rateBasisPoints, fixedMinor, base, includeFees, promotional, exempt, effectiveFrom/To, active                                                                                                      | `active_scope_from`                                                     |
+| `ledgerentries`           | **Append-only** (update/delete hooks throw). entryKey, account (CASH · PARTNER_PAYABLE · PLATFORM_REVENUE · PROMOTION_EXPENSE · UNALLOCATED), event, amountMinor, currency, bookingId, refundId, partnerId, settlementId, occurredAt | **`uniq_entry_key`**, `partner_account_time`, `account_time`, `booking` |
+| `settlements`             | reference, partnerId, status (PENDING · ELIGIBLE · PROCESSING · PAID · FAILED · ON_HOLD), gross, adjustments, net, statusHistory, evidence {method, providerReference, paidAt, documentKey}                                          | `uniq_reference`, `partner_created`, `status_created`                   |
+| `settlementallocations`   | Ledger entry → settlement. `liveKey` = entry id while live (becomes `released.<id>` when a settlement fails)                                                                                                                         | **`uniq_live`**, `settlement`, `entry`                                  |
+| `coupons`                 | code, kind, discountType, value, limits, eligibility, usedCount, reservedCount                                                                                                                                                       | **`uniq_code`**, `active_kind`                                          |
+| `couponusages`            | Per-user use counter (couponId, userId, count)                                                                                                                                                                                       | **`uniq_coupon_user`**                                                  |
+| `couponredemptions`       | holdId, bookingId, discountMinor, status (RESERVED · REDEEMED · RELEASED)                                                                                                                                                            | **`uniq_hold`**, `coupon_status`, `user_reserved`                       |
+| `hoteldailystats`         | Anonymous daily detail-page views (hotelId, property-local date, views)                                                                                                                                                              | **`uniq_hotel_date`**                                                   |
+| `propertycategories`      | Browse categories over property types and amenity codes                                                                                                                                                                              | **`uniq_code`**, `active_sort`                                          |
+| `bookingescalations`      | bookingId, reason, priority, status, resolution; `openKey` set only while open                                                                                                                                                       | **`uniq_open`** (partial), `status_priority`, `booking`                 |
+| `contententries`          | type, locale, slug, draft, published snapshot (+version), version, publishAt, unpublishAt, archivedAt, previewTokenHash/ExpiresAt                                                                                                    | **`uniq_type_locale_slug`**, `public_listing`, `preview_token`          |
+| `contentrevisions`        | Append-only revision history (entryId, version, action, body, actorId)                                                                                                                                                               | `entry_created`                                                         |
+| `inventoryblocks`         | Maintenance/renovation/owner-use blocks (roomTypeId, from, to, rooms, reason, status, releasedFrom)                                                                                                                                  | `hotel_status_from`                                                     |
+| `trustscoresnapshots`     | Cached TrustScore per property (24 h)                                                                                                                                                                                                | **`uniq_hotel`**                                                        |
+| `priceobservations`       | Lowest nightly price per (hotel, stay date, observed day); TTL 400 days                                                                                                                                                              | **`uniq_observation`**, `hotel_observed`                                |
+| `pricealerts`             | userId, hotelId, stay, target, baseline, last seen and last notified totals                                                                                                                                                          | **`uniq_alert`**, `active_checked`                                      |
+| `loyaltyaccounts`         | Balance and lifetime points per user (balance ≥ 0 enforced by conditional updates)                                                                                                                                                   | **`uniq_user`**                                                         |
+| `loyaltyentries`          | **Append-only** points ledger with a unique entryKey (`earn:<booking>`, `reverse:<refund>`, `redeem:<coupon>`, `release:<coupon>`, `referral:<id>:…`)                                                                                | **`uniq_entry`**, `user_created`                                        |
+| `referralcodes`           | One code per user                                                                                                                                                                                                                    | **`uniq_user`**, **`uniq_code`**                                        |
+| `referrals`               | referrerId, refereeId, status (PENDING · REWARDED · REJECTED), qualifyingBookingId                                                                                                                                                   | **`uniq_referee`**, `referrer_status`, `status_created`                 |
+| `trips`                   | ownerId, collaborators, hashed invitations, items, shareTokenHash                                                                                                                                                                    | `owner`, `collaborator`, `invite_token`, `uniq_share` (partial)         |
+| `organizations`           | name, billingEmail, GSTIN, status, policy                                                                                                                                                                                            | `status_created`                                                        |
+| `orgmembers`              | orgId, userId, role, department                                                                                                                                                                                                      | **`uniq_user`** (one organisation per person), `org_role`               |
+| `orginvitations`          | Hashed single-use invitation tokens                                                                                                                                                                                                  | **`uniq_token`**                                                        |
+| `travelrequests`          | Policy-checked trip requests with live quote, violations, decision and linked booking                                                                                                                                                | `org_status`, `employee`, **`uniq_booking`** (partial)                  |
+| `assistantusages`         | Per-user-day and per-minute counters (hashed keys), monthly platform cost; no message content; TTL                                                                                                                                   | **`uniq_key`**, `ttl`                                                   |
+| `channelconnections`      | hotelId, provider, encrypted webhook secret, room mappings, sync status                                                                                                                                                              | **`uniq_hotel_provider`**, `sync_due`                                   |
+| `channelevents`           | Inbound events with status (PROCESSED · FAILED · CONFLICT · IGNORED), attempts, backoff, conflict dates                                                                                                                              | **`uniq_event`** (idempotency), `retry_due`, `connection_log`           |
+| `channelreservations`     | Rooms held for external reservations                                                                                                                                                                                                 | **`uniq_ref`**                                                          |
+| `channelsimulatorinboxes` | **Development/test only**: availability pushed by the local simulator; TTL 7 days                                                                                                                                                    | `ttl`                                                                   |
+| `exchangeratesnapshots`   | ECB reference rates per published day                                                                                                                                                                                                | **`uniq_source_day`**                                                   |
+
+Changes to earlier collections:
+
+- `bookings` gains:
+  - `roomAssignments`;
+  - `checkedInBy` and `checkedOutBy`;
+  - `commissionSnapshot` (fixed at payment confirmation).
+- `dailyinventories` gains:
+  - `maintenanceRooms` (the part of `blockedRooms` held by blocks);
+  - `stopSell`.
+- `hotels` gains `accessibilityFeatures` with provenance and an `accessibility` index.
+- `supporttickets` gains:
+  - priority and assignee;
+  - hotelId, partnerId and partnerVisible;
+  - escalation fields;
+  - firstResponseAt, resolvedAt and resolution;
+  - new indexes `assignee_status`, `hotel_shared` and `created`.
+- `ticketmessages` gains `channel` (CUSTOMER · PARTNER · INTERNAL). Rows without it are treated as
+  CUSTOMER.
+- `auditlogs` gains `partnerId` and `hotelId`, plus the `partner_actor_timestamp` index.
+- `partnerstaffs.permissions` accepts the new fine-grained codes; legacy codes are mapped at read
+  time.
+- `pricingrules.conditions` gains `minOccupancyBp`, `maxOccupancyBp`, `bookFrom` and `bookTo`.
+- `users.preferences` gains `personalization {recommendations, consentedAt}`.
+
+Run `npm run db:indexes` after deploying.
+
 ## Development seed data
 
 `npm run seed` (requires `SEED_USER_PASSWORD`; refuses production and non-local databases) creates
