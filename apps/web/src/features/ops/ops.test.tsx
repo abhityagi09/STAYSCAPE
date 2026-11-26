@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
   AgentTicketDto,
+  HoldDto,
   HotelDetailDto,
   LoyaltySummaryDto,
   StaffDto,
@@ -557,5 +558,154 @@ describe('preferences form (regression)', () => {
       ),
     );
     expect(calls.find((c) => c.method === 'patch')?.body).not.toHaveProperty('personalization');
+  });
+});
+
+describe('audit additions', () => {
+  it('applies a coupon to the active hold and shows the server-confirmed saving', async () => {
+    const { CouponField } = await import('@/features/bookings/pages/CheckoutPages');
+    const hold = {
+      reference: 'HLD-ABCDEFGHIJ',
+      status: 'ACTIVE',
+      price: { currency: 'INR', coupon: null, totals: { totalMinor: 1_050_000 } },
+    } as unknown as HoldDto;
+    const onChange = vi.fn();
+    on('put', /\/bookings\/holds\/HLD-ABCDEFGHIJ\/coupon/, () => ({
+      ...hold,
+      price: { ...hold.price, coupon: { code: 'TENOFF', discountMinor: 100_000 } },
+    }));
+    renderWithProviders(<CouponField hold={hold} onChange={onChange} />, { user: makeUser() });
+    await userEvent.type(await screen.findByLabelText('Coupon code'), 'tenoff');
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await waitFor(() => expect(onChange).toHaveBeenCalled());
+    expect(calls.find((c) => c.method === 'put')?.body).toEqual({ code: 'TENOFF' });
+  });
+
+  it('shows an invalid coupon message from the server', async () => {
+    const { CouponField } = await import('@/features/bookings/pages/CheckoutPages');
+    const hold = {
+      reference: 'HLD-ABCDEFGHIJ',
+      status: 'ACTIVE',
+      price: { currency: 'INR', coupon: null, totals: { totalMinor: 1_050_000 } },
+    } as unknown as HoldDto;
+    on('put', /coupon/, () =>
+      Object.assign(new Error('x'), {
+        isAxiosError: true,
+        response: {
+          status: 422,
+          data: {
+            success: false,
+            error: { code: 'NOT_ELIGIBLE', message: 'This coupon has expired.' },
+          },
+        },
+      }),
+    );
+    renderWithProviders(<CouponField hold={hold} onChange={vi.fn()} />, { user: makeUser() });
+    await userEvent.type(await screen.findByLabelText('Coupon code'), 'OLD10');
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    expect(await screen.findByText('This coupon has expired.')).toBeInTheDocument();
+  });
+
+  it('declares accessibility features with notes and shows verification status', async () => {
+    const { PartnerAccessibilityPage } = await import('./AccessibilityPages');
+    on('get', /\/partner\/hotels\/[a-f0-9]+\/accessibility/, () => [
+      {
+        code: 'ELEVATOR',
+        label: 'Elevator to all guest floors',
+        note: '',
+        source: 'ADMIN_VERIFIED',
+        verifiedAt: '2026-11-20T00:00:00.000Z',
+      },
+    ]);
+    on('put', /\/accessibility/, () => []);
+    renderWithProviders(<PartnerAccessibilityPage />, { user: owner });
+    expect(await screen.findByText(/Verified/)).toBeInTheDocument();
+    await userEvent.click(screen.getByLabelText('Step-free entrance'));
+    await userEvent.type(
+      screen.getByLabelText('Details for Step-free entrance (optional)'),
+      'Ramp at the side door',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Save accessibility' }));
+    await waitFor(() =>
+      expect(calls.find((c) => c.method === 'put')?.body).toEqual({
+        features: [
+          { code: 'ELEVATOR', note: '' },
+          { code: 'STEP_FREE_ENTRANCE', note: 'Ramp at the side door' },
+        ],
+      }),
+    );
+  });
+
+  it('shows reservation detail and adds an internal note', async () => {
+    const { PartnerReservationDetailPage } =
+      await import('@/features/partner/pages/ReservationsPages');
+    const detail = {
+      reference: 'SS-AAAA1111',
+      status: 'CONFIRMED',
+      paymentStatus: 'SUCCESS',
+      guestName: 'Meera Iyer',
+      guestEmail: 'm@example.com',
+      guestPhone: '+919811111111',
+      checkIn: '2026-12-12',
+      checkOut: '2026-12-14',
+      nights: 2,
+      rooms: 1,
+      guests: 2,
+      roomSummary: '1 × Deluxe',
+      totalMinor: 1_050_000,
+      currency: 'INR',
+      specialRequests: '',
+      estimatedArrivalTime: null,
+      actions: { canCheckIn: false, canCheckOut: false, canMarkNoShow: false },
+      items: [{ roomTypeId: 'rt1', roomTypeName: 'Deluxe', rooms: 1 }],
+      guestDetails: {
+        primaryGuest: {
+          firstName: 'Meera',
+          lastName: 'Iyer',
+          email: 'm@example.com',
+          phone: '+919811111111',
+        },
+        additionalGuests: [],
+        specialRequests: 'Late arrival',
+        estimatedArrivalTime: '22:00',
+      },
+      price: { currency: 'INR', coupon: null, totals: { totalMinor: 1_050_000 } },
+      payments: [
+        {
+          status: 'SUCCESS',
+          amountMinor: 1_050_000,
+          refundedMinor: 0,
+          currency: 'INR',
+          createdAt: '2026-11-26T00:00:00Z',
+        },
+      ],
+      refunds: [],
+      cancellation: null,
+      roomAssignments: [],
+      notes: [],
+      checkedInAt: null,
+      checkedInBy: null,
+      checkedOutAt: null,
+      checkedOutBy: null,
+      timeline: [{ at: '2026-11-26T00:00:00Z', label: 'Booking confirmed' }],
+    };
+    on('get', /\/partner\/hotels\/h1\/bookings\/SS-AAAA1111$/, () => detail);
+    on('post', /\/notes$/, () => ({}));
+    renderWithProviders(
+      [
+        {
+          path: '/partner/bookings/:hotelId/:reference',
+          element: <PartnerReservationDetailPage />,
+        },
+      ],
+      { route: '/partner/bookings/h1/SS-AAAA1111', user: owner },
+    );
+    expect(await screen.findByText('Requests: Late arrival')).toBeInTheDocument();
+    expect(screen.getByText(/No notes yet/)).toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText('Add a note'), 'VIP guest');
+    await userEvent.click(screen.getByRole('button', { name: 'Add note' }));
+    await waitFor(() =>
+      expect(calls.find((c) => c.method === 'post')?.body).toEqual({ body: 'VIP guest' }),
+    );
   });
 });

@@ -129,7 +129,7 @@ function ExpiredHold({
 }
 
 /** Coupon code on the active hold: the server reprices the hold and reserves the coupon. */
-function CouponField({ hold, onChange }: { hold: HoldDto; onChange: (h: HoldDto) => void }) {
+export function CouponField({ hold, onChange }: { hold: HoldDto; onChange: (h: HoldDto) => void }) {
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
