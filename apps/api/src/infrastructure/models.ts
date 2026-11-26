@@ -29,6 +29,7 @@ import { ReviewModel, ReviewReportModel } from '@/modules/reviews/review.models'
 import { SupportTicketModel, TicketMessageModel } from '@/modules/support/support.models';
 import { WishlistModel } from '@/modules/wishlists/wishlist.model';
 import { CouponModel, CouponRedemptionModel, CouponUsageModel } from '@/modules/coupons/coupons.models';
+import { HotelDailyStatModel } from '@/modules/analytics/hotel-stats.model';
 import { CommissionRuleModel, LedgerEntryModel, SettlementAllocationModel, SettlementModel } from '@/modules/finance/finance.models';
 import { MediaAssetModel } from '@/modules/media/media-asset.model';
 import { PartnerModel, PartnerStaffModel } from '@/modules/partners/partner.model';
@@ -73,6 +74,7 @@ export const ALL_MODELS = [
   CouponModel,
   CouponUsageModel,
   CouponRedemptionModel,
+  HotelDailyStatModel,
   ReviewModel,
   ReviewReportModel,
   SupportTicketModel,

@@ -1,5 +1,7 @@
 import { z } from 'zod';
+import { CURRENCIES } from '../constants/account';
 import { objectIdSchema } from './common';
+import { localDateSchema } from './marketplace';
 
 /** Phase 4 administration and finance request schemas (strict: unknown keys are rejected). */
 
@@ -100,3 +102,20 @@ export const couponCheckSchema = z.strictObject({
   code: z.string().trim().toUpperCase().regex(/^[A-Z0-9-]{3,32}$/, 'Invalid coupon code'),
   holdReference: z.string().regex(/^HLD-[A-Z0-9]{10}$/),
 });
+
+/** Analytics period: property-local calendar dates, end exclusive. `hotelIds` is a comma-separated list. */
+export const analyticsQuerySchema = z
+  .object({
+    from: localDateSchema.optional(),
+    to: localDateSchema.optional(),
+    hotelIds: z
+      .string()
+      .optional()
+      .transform((v) => (v ? v.split(',').map((s) => s.trim()).filter(Boolean) : undefined))
+      .pipe(z.array(objectIdSchema).max(50).optional()),
+    currency: z.enum(CURRENCIES).optional(),
+    compare: z.enum(['true', 'false']).optional().transform((v) => v !== 'false'),
+    format: z.enum(['json', 'csv']).default('json'),
+  })
+  .refine((v) => !v.from || !v.to || v.to > v.from, { message: 'End must be after start', path: ['to'] });
+export type AnalyticsQueryDto = z.output<typeof analyticsQuerySchema>;

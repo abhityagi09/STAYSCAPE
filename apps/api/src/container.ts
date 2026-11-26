@@ -35,6 +35,7 @@ import { CancellationsService } from '@/modules/bookings/cancellations.service';
 import { PartnerReservationsService } from '@/modules/bookings/partner-reservations.service';
 import { CouponsService } from '@/modules/coupons/coupons.service';
 import { FinanceService } from '@/modules/finance/finance.service';
+import { AnalyticsService } from '@/modules/analytics/analytics.service';
 import { LifecycleService } from '@/modules/bookings/lifecycle.service';
 import { DocumentsService } from '@/modules/documents/documents.service';
 import { BookingNotificationsService } from '@/modules/notifications/booking-notifications.service';
@@ -160,6 +161,7 @@ export function buildContainer(core: CoreDependencies) {
   const paymentProvider = core.paymentProvider ?? createPaymentProvider(config, logger);
   const finance = new FinanceService({ config, audit, logger });
   const coupons = new CouponsService({ audit });
+  const analytics = new AnalyticsService({ access: partnerAccess, finance, coupons });
   const bookings = new BookingsService({ config, quotes, inventory, outbox,
     coupons, media, audit, logger });
   const refunds = new RefundsService({ provider: paymentProvider, finance, outbox, audit, logger });
@@ -252,6 +254,7 @@ export function buildContainer(core: CoreDependencies) {
       partnerReservations,
       finance,
       coupons,
+      analytics,
     },
     authenticate,
   };

@@ -1,3 +1,4 @@
+import { HotelDailyStatModel } from '@/modules/analytics/hotel-stats.model';
 import { Types, type PipelineStage } from 'mongoose';
 import {
   FILTER_AMENITIES,
@@ -470,6 +471,9 @@ export class SearchService {
     const hotel = await this.findPublished(idOrSlug);
     // Anonymous popularity signal (a view counter) — no personal data involved.
     void HotelModel.updateOne({ _id: hotel._id }, { $inc: { popularityScore: 1 } })
+      .exec()
+      .catch(() => undefined);
+    void HotelDailyStatModel.updateOne({ hotelId: hotel._id, date: todayInTimeZone(hotel.timeZone ?? 'Asia/Kolkata') }, { $inc: { views: 1 } }, { upsert: true })
       .exec()
       .catch(() => undefined);
     const [roomTypes, ratePlans, amenityRecords] = await Promise.all([
