@@ -57,6 +57,8 @@ import { TrustService } from '@/modules/trust/trust.service';
 import { IntelligenceService } from '@/modules/intelligence/intelligence.service';
 import { RewardsService } from '@/modules/rewards/rewards.service';
 import { AssistantService } from '@/modules/assistant/assistant.service';
+import { ChannelsService } from '@/modules/channels/channels.service';
+import { LocalSimulatorAdapter } from '@/modules/channels/channel.adapter';
 import { TripsService } from '@/modules/trips/trips.service';
 import { CorporateService } from '@/modules/corporate/corporate.service';
 import { AdminManagementService } from '@/modules/admin/admin-management.service';
@@ -167,6 +169,7 @@ export function buildContainer(core: CoreDependencies) {
   const trust = new TrustService({ access: partnerAccess, audit, cache });
   const search = new SearchService(quotes, media, cache, logger, trust);
   const assistant = new AssistantService({ config, search, quotes, logger });
+  const channels = new ChannelsService({ config, access: partnerAccess, inventory, encryptor, audit, logger }, [new LocalSimulatorAdapter()]);
   const intelligence = new IntelligenceService({ quotes, search, notifications, logger });
 
   // ---- Phase 3: reservations, payments, refunds, customer experience
@@ -276,6 +279,7 @@ export function buildContainer(core: CoreDependencies) {
       rewards,
       trips,
       assistant,
+      channels,
       corporate,
       inventoryBlocks,
       content,

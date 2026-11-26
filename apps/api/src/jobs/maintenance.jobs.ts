@@ -1,6 +1,7 @@
 import type { FinanceService } from '@/modules/finance/finance.service';
 import type { IntelligenceService } from '@/modules/intelligence/intelligence.service';
 import type { RewardsService } from '@/modules/rewards/rewards.service';
+import type { ChannelsService } from '@/modules/channels/channels.service';
 import { Queue, type ConnectionOptions } from 'bullmq';
 import type { Redis } from 'ioredis';
 import type { Types } from 'mongoose';
@@ -30,6 +31,7 @@ export type MaintenanceJobs = {
   'prices.observe': Record<string, never>;
   'prices.alerts': Record<string, never>;
   'rewards.accrue': Record<string, never>;
+  'channels.sync': Record<string, never>;
 };
 
 /** Every place a media asset can be referenced from. */
@@ -75,6 +77,7 @@ export interface MaintenanceDeps {
   finance: FinanceService;
   intelligence: IntelligenceService;
   rewards: RewardsService;
+  channels: ChannelsService;
   orphanTtlHours: number;
   logger: Logger;
 }
@@ -108,6 +111,7 @@ export function createMaintenanceHandlers(deps: MaintenanceDeps): {
     'finance.backfill': async () => log(await deps.finance.backfillConfirmedBookings(), 'Ledger postings backfilled'),
     'prices.observe': async () => log(await deps.intelligence.observePrices(), 'Price observations recorded'),
     'prices.alerts': async () => log(await deps.intelligence.checkAlerts(), 'Price alerts checked'),
+    'channels.sync': async () => log(await deps.channels.runScheduled(), 'Channel retries and availability sync'),
     'rewards.accrue': async () => {
       log(await deps.rewards.accrue(), 'Loyalty points posted');
       log(await deps.rewards.releaseExpiredRedemptions(), 'Expired points coupons released');
@@ -157,6 +161,7 @@ export async function scheduleMaintenance(connection: Redis): Promise<Queue> {
   // Once a day is enough: observations are keyed per property-local day (repeat runs are no-ops).
   await queue.upsertJobScheduler('prices-observe', { every: 6 * 60 * 60_000 }, { name: 'prices.observe', data: {} });
   await queue.upsertJobScheduler('prices-alerts', { every: 60 * 60_000 }, { name: 'prices.alerts', data: {} });
+  await queue.upsertJobScheduler('channels-sync', { every: 5 * 60_000 }, { name: 'channels.sync', data: {} });
   await queue.upsertJobScheduler('rewards-accrue', { every: 60 * 60_000 }, { name: 'rewards.accrue', data: {} });
   // Remove the Phase 2 scheduler that this one replaces.
   await queue.removeJobScheduler('inventory-expire-holds').catch(() => undefined);

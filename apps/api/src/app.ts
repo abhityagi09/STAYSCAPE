@@ -7,6 +7,7 @@ import { createAdminContentRouter, createPublicContentRouter } from '@/modules/c
 import { createIntelligenceRouters } from '@/modules/intelligence/intelligence.routes';
 import { createRewardsRouter } from '@/modules/rewards/rewards.routes';
 import { createAssistantRouter } from '@/modules/assistant/assistant.routes';
+import { createChannelWebhookHandler, createPartnerChannelsRouter } from '@/modules/channels/channels.routes';
 import { createTripsRouter } from '@/modules/trips/trips.routes';
 import { createAdminCorporateRouter, createCorporateRouter } from '@/modules/corporate/corporate.routes';
 import { scopeMiddleware } from '@/lib/scope';
@@ -115,6 +116,7 @@ export function createApp(container: Container, options: AppOptions = {}): Expre
   // Payment webhooks need the exact raw bytes for signature verification: registered before the
   // JSON parser and outside the rate limiter (authenticated by HMAC signature instead).
   app.post(`${API_PREFIX}/payments/webhooks/razorpay`, ...createPaymentWebhookHandler(container));
+  app.post(`${API_PREFIX}/channels/webhooks/:connectionId`, ...createChannelWebhookHandler(container));
 
   app.use(express.json({ limit: config.REQUEST_BODY_LIMIT }));
   app.use(express.urlencoded({ extended: false, limit: config.REQUEST_BODY_LIMIT }));
@@ -169,6 +171,7 @@ export function createApp(container: Container, options: AppOptions = {}): Expre
   api.use('/rewards', createRewardsRouter(container));
   api.use('/trips', createTripsRouter(container));
   api.use('/assistant', createAssistantRouter(container));
+  api.use('/partner/hotels', createPartnerChannelsRouter(container));
   api.use('/corporate', createCorporateRouter(container));
   api.use('/admin/organizations', createAdminCorporateRouter(container));
   api.use('/admin', createAdminAnalyticsRouter(container));
