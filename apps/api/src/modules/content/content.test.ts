@@ -26,7 +26,9 @@ describe('content management', () => {
         .expect(201)
     ).body.data;
     expect(created).toMatchObject({ state: 'DRAFT', version: 1, hasUnpublishedChanges: true });
-    await request(app).get('/api/v1/content/guide/monsoon-in-goa').expect(404);
+    const missing = await request(app).get('/api/v1/content/guide/monsoon-in-goa').expect(404);
+    // A "not found" must not be cached, or the page would stay missing after publishing.
+    expect(missing.headers['cache-control'] ?? '').not.toMatch(/public|max-age=[1-9]/);
     expect(
       (await request(app).get('/api/v1/content?type=GUIDE').expect(200)).body.data,
     ).toHaveLength(0);

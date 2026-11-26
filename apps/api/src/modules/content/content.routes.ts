@@ -106,8 +106,10 @@ export function createPublicContentRouter(container: Container): Router {
   const router = Router();
   const { content } = container.services;
   router.get('/', validate({ query: contentPublicQuerySchema }), async (req, res) => {
+    const data = await content.publicList(validatedQuery(req));
+    // Only successful responses may be cached (an error must never stick in a browser cache).
     res.setHeader('Cache-Control', 'public, max-age=60');
-    sendSuccess(res, await content.publicList(validatedQuery(req)));
+    sendSuccess(res, data);
   });
   router.get(
     '/preview/:token',
@@ -132,15 +134,13 @@ export function createPublicContentRouter(container: Container): Router {
     }),
     async (req, res) => {
       const p = validatedParams<{ type: ContentType; slug: string }>(req);
-      res.setHeader('Cache-Control', 'public, max-age=60');
-      sendSuccess(
-        res,
-        await content.publicEntry(
-          p.type,
-          p.slug,
-          validatedQuery<{ locale: ContentLocale }>(req).locale,
-        ),
+      const data = await content.publicEntry(
+        p.type,
+        p.slug,
+        validatedQuery<{ locale: ContentLocale }>(req).locale,
       );
+      res.setHeader('Cache-Control', 'public, max-age=60');
+      sendSuccess(res, data);
     },
   );
   return router;

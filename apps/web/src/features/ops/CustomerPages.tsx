@@ -1464,7 +1464,10 @@ export function AssistantPage() {
         .map(({ role, content }) => ({ role, content: content.slice(0, 2000) })),
     }),
   );
-  useEffect(() => endRef.current?.scrollIntoView?.({ block: 'end' }), [turns]);
+  // Block body on purpose: scrollIntoView returns a Promise in current Chromium, and an effect must not return one.
+  useEffect(() => {
+    endRef.current?.scrollIntoView?.({ block: 'end' });
+  }, [turns]);
   const submit = (text: string) => {
     const trimmed = text.trim();
     if (!trimmed) return;
