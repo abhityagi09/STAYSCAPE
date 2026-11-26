@@ -1,4 +1,5 @@
 import type { FinanceService } from '@/modules/finance/finance.service';
+import type { IntelligenceService } from '@/modules/intelligence/intelligence.service';
 import { Queue, type ConnectionOptions } from 'bullmq';
 import type { Redis } from 'ioredis';
 import type { Types } from 'mongoose';
@@ -25,6 +26,8 @@ export type MaintenanceJobs = {
   'bookings.complete-stays': Record<string, never>;
   'bookings.checkin-reminders': Record<string, never>;
   'finance.backfill': Record<string, never>;
+  'prices.observe': Record<string, never>;
+  'prices.alerts': Record<string, never>;
 };
 
 /** Every place a media asset can be referenced from. */
@@ -68,6 +71,7 @@ export interface MaintenanceDeps {
   payments: PaymentsService;
   lifecycle: LifecycleService;
   finance: FinanceService;
+  intelligence: IntelligenceService;
   orphanTtlHours: number;
   logger: Logger;
 }
@@ -99,6 +103,8 @@ export function createMaintenanceHandlers(deps: MaintenanceDeps): {
     'bookings.checkin-reminders': async () =>
       log(await deps.lifecycle.remindCheckins(), 'Check-in reminders queued'),
     'finance.backfill': async () => log(await deps.finance.backfillConfirmedBookings(), 'Ledger postings backfilled'),
+    'prices.observe': async () => log(await deps.intelligence.observePrices(), 'Price observations recorded'),
+    'prices.alerts': async () => log(await deps.intelligence.checkAlerts(), 'Price alerts checked'),
   };
 }
 
@@ -140,6 +146,9 @@ export async function scheduleMaintenance(connection: Redis): Promise<Queue> {
     { name: 'bookings.checkin-reminders', data: {} },
   );
   await queue.upsertJobScheduler('finance-backfill', { every: 60 * 60_000 }, { name: 'finance.backfill', data: {} });
+  // Once a day is enough: observations are keyed per property-local day (repeat runs are no-ops).
+  await queue.upsertJobScheduler('prices-observe', { every: 6 * 60 * 60_000 }, { name: 'prices.observe', data: {} });
+  await queue.upsertJobScheduler('prices-alerts', { every: 60 * 60_000 }, { name: 'prices.alerts', data: {} });
   // Remove the Phase 2 scheduler that this one replaces.
   await queue.removeJobScheduler('inventory-expire-holds').catch(() => undefined);
   return queue;

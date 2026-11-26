@@ -14,6 +14,7 @@ export interface UserPreferencesDto {
   language: Language;
   currency: CurrencyCode;
   notifications: NotificationPreferences;
+  personalization: { recommendations: boolean; consentedAt: string | null };
 }
 
 export interface UserDto {

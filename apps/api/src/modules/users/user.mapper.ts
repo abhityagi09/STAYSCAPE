@@ -28,6 +28,10 @@ export function toUserDto(user: UserRecord): UserDto {
         smsBookingUpdates: user.preferences?.notifications?.smsBookingUpdates ?? false,
         pushEnabled: user.preferences?.notifications?.pushEnabled ?? false,
       },
+      personalization: {
+        recommendations: user.preferences?.personalization?.recommendations ?? false,
+        consentedAt: iso(user.preferences?.personalization?.consentedAt ?? null),
+      },
     },
     lastLoginAt: iso(user.lastLoginAt),
     createdAt: new Date(user.createdAt).toISOString(),

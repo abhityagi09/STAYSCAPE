@@ -32,6 +32,8 @@ export const updatePreferencesSchema = z
     language: z.enum(LANGUAGES).optional(),
     currency: z.enum(CURRENCIES).optional(),
     notifications: notificationPreferencesSchema.partial().optional(),
+    /** Opt-in consent for recommendations from the user's own bookings and saved stays. */
+    personalization: z.strictObject({ recommendations: z.boolean() }).optional(),
   })
   .refine((data) => Object.values(data).some((value) => value !== undefined), {
     message: 'Provide at least one preference to update',

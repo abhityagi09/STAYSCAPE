@@ -16,3 +16,4 @@ export * from './schemas/booking';
 export * from './contracts/booking-dto';
 export * from './schemas/admin';
 export * from './schemas/content';
+export * from './schemas/intelligence';
