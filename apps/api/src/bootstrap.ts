@@ -98,6 +98,7 @@ export async function bootstrap(options: { startWorkers?: boolean } = {}): Promi
       documents,
       finance,
       intelligence,
+      rewards,
     } = container.services;
     workers.push(
       startBullWorker<DomainEventJobs>(
@@ -119,6 +120,7 @@ export async function bootstrap(options: { startWorkers?: boolean } = {}): Promi
           lifecycle,
           finance,
           intelligence,
+          rewards,
           orphanTtlHours: config.MEDIA_ORPHAN_TTL_HOURS,
           logger,
         }),

@@ -5,6 +5,7 @@ import { createAdminSupportRouter, createPartnerSupportRouter } from '@/modules/
 import { createAdminManagementRouter, createCategoriesRouter } from '@/modules/admin/admin-management.routes';
 import { createAdminContentRouter, createPublicContentRouter } from '@/modules/content/content.routes';
 import { createIntelligenceRouters } from '@/modules/intelligence/intelligence.routes';
+import { createRewardsRouter } from '@/modules/rewards/rewards.routes';
 import { scopeMiddleware } from '@/lib/scope';
 import express, { type Express } from 'express';
 import cookieParser from 'cookie-parser';
@@ -162,6 +163,7 @@ export function createApp(container: Container, options: AppOptions = {}): Expre
   api.use('/price-intelligence', intelligenceRouters.prices);
   api.use('/price-alerts', intelligenceRouters.alerts);
   api.use('/deals', intelligenceRouters.deals);
+  api.use('/rewards', createRewardsRouter(container));
   api.use('/admin', createAdminAnalyticsRouter(container));
   api.use('/partner/hotels', createPartnerHotelsRouter(container));
   api.use('/partner', createPartnerApplicationRouter(container, limiters));

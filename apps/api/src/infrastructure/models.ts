@@ -35,6 +35,7 @@ import { ContentEntryModel, ContentRevisionModel } from '@/modules/content/conte
 import { InventoryBlockModel } from '@/modules/inventory/inventory.models';
 import { TrustSnapshotModel } from '@/modules/trust/trust.service';
 import { PriceAlertModel, PriceObservationModel } from '@/modules/intelligence/intelligence.service';
+import { LoyaltyAccountModel, LoyaltyEntryModel, ReferralCodeModel, ReferralModel } from '@/modules/rewards/rewards.service';
 import { CommissionRuleModel, LedgerEntryModel, SettlementAllocationModel, SettlementModel } from '@/modules/finance/finance.models';
 import { MediaAssetModel } from '@/modules/media/media-asset.model';
 import { PartnerModel, PartnerStaffModel } from '@/modules/partners/partner.model';
@@ -88,6 +89,10 @@ export const ALL_MODELS = [
   TrustSnapshotModel,
   PriceObservationModel,
   PriceAlertModel,
+  LoyaltyAccountModel,
+  LoyaltyEntryModel,
+  ReferralCodeModel,
+  ReferralModel,
   ReviewModel,
   ReviewReportModel,
   SupportTicketModel,

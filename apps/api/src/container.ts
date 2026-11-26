@@ -55,6 +55,7 @@ import { SupportService } from '@/modules/support/support.service';
 import { SupportConsoleService } from '@/modules/support/support-console.service';
 import { TrustService } from '@/modules/trust/trust.service';
 import { IntelligenceService } from '@/modules/intelligence/intelligence.service';
+import { RewardsService } from '@/modules/rewards/rewards.service';
 import { AdminManagementService } from '@/modules/admin/admin-management.service';
 import { InventoryBlocksService } from '@/modules/inventory/blocks.service';
 import { ContentService } from '@/modules/content/content.service';
@@ -170,6 +171,7 @@ export function buildContainer(core: CoreDependencies) {
   const paymentProvider = core.paymentProvider ?? createPaymentProvider(config, logger);
   const finance = new FinanceService({ config, audit, logger });
   const coupons = new CouponsService({ audit });
+  const rewards = new RewardsService({ coupons, notifications, audit });
   const analytics = new AnalyticsService({ access: partnerAccess, finance, coupons });
   const bookings = new BookingsService({ config, quotes, inventory, outbox,
     coupons, media, audit, logger });
@@ -265,6 +267,7 @@ export function buildContainer(core: CoreDependencies) {
       adminManagement,
       trust,
       intelligence,
+      rewards,
       inventoryBlocks,
       content,
       lifecycle,

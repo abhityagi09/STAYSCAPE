@@ -86,3 +86,54 @@ export interface LastMinuteDealDto {
   currency: string;
   observations: number;
 }
+
+// ---------------------------------------------------------------- loyalty & referrals
+/** 1 point per ₹100 of room charges on completed stays; 1 point = ₹0.10 when redeemed. */
+export const LOYALTY_RULES = {
+  earnPerMinor: 10_000,
+  redeemValueMinorPerPoint: 10,
+  minRedeemPoints: 500,
+  maxRedeemPoints: 50_000,
+  redeemCouponValidDays: 90,
+  tiers: [
+    { tier: 'MEMBER', minPoints: 0 },
+    { tier: 'SILVER', minPoints: 2_000 },
+    { tier: 'GOLD', minPoints: 6_000 },
+    { tier: 'PLATINUM', minPoints: 15_000 },
+  ],
+} as const;
+export const REFERRAL_RULES = {
+  referrerPoints: 500,
+  refereePoints: 250,
+  minQualifyingSubtotalMinor: 200_000,
+  claimWindowDays: 7,
+  maxRewardedPerYear: 10,
+} as const;
+export type LoyaltyTier = (typeof LOYALTY_RULES.tiers)[number]['tier'];
+export const redeemPointsSchema = z.strictObject({ points: z.number().int().min(LOYALTY_RULES.minRedeemPoints).max(LOYALTY_RULES.maxRedeemPoints) });
+export const claimReferralSchema = z.strictObject({ code: z.string().trim().toUpperCase().regex(/^[A-Z0-9]{6,12}$/) });
+
+export interface LoyaltyEntryDto {
+  id: string;
+  type: 'EARN' | 'REVERSE' | 'REDEEM' | 'REDEEM_RELEASE' | 'REFERRAL_BONUS' | 'ADJUST';
+  points: number;
+  description: string;
+  bookingReference: string | null;
+  createdAt: string;
+}
+export interface LoyaltySummaryDto {
+  balance: number;
+  lifetimeEarned: number;
+  last12MonthsEarned: number;
+  tier: LoyaltyTier;
+  nextTier: { tier: LoyaltyTier; pointsNeeded: number } | null;
+  pointValueMinor: number;
+  entries: LoyaltyEntryDto[];
+}
+export interface ReferralSummaryDto {
+  code: string;
+  rewardedThisYear: number;
+  limitPerYear: number;
+  referrals: Array<{ status: 'PENDING' | 'REWARDED' | 'REJECTED'; joinedAt: string; rewardedAt: string | null; refereeInitials: string; reason: string | null }>;
+  referredBy: { status: 'PENDING' | 'REWARDED' | 'REJECTED' } | null;
+}
