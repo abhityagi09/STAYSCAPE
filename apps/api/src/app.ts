@@ -1,3 +1,6 @@
+import { createAdminCouponsRouter, createCouponsRouter } from '@/modules/coupons/coupons.routes';
+import { createAdminFinanceRouter, createPartnerFinanceRouter } from '@/modules/finance/finance.routes';
+import { scopeMiddleware } from '@/lib/scope';
 import express, { type Express } from 'express';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
@@ -54,6 +57,7 @@ export function createApp(container: Container, options: AppOptions = {}): Expre
   app.set('query parser', 'simple');
 
   app.use(requestId);
+  app.use(scopeMiddleware);
   app.use(
     pinoHttp({
       logger,
@@ -137,6 +141,10 @@ export function createApp(container: Container, options: AppOptions = {}): Expre
   api.use('/support', createSupportRouter(container));
   api.use('/partner/hotels', createPartnerBookingsRouter(container));
   api.use('/admin', createAdminOperationsRouter(container));
+  api.use('/admin', createAdminFinanceRouter(container));
+  api.use('/admin', createAdminCouponsRouter(container));
+  api.use('/coupons', createCouponsRouter(container));
+  api.use('/partner/finance', createPartnerFinanceRouter(container));
   api.use('/partner/hotels', createPartnerHotelsRouter(container));
   api.use('/partner', createPartnerApplicationRouter(container, limiters));
   api.use('/admin/partners', createAdminPartnersRouter(container));

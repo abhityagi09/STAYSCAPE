@@ -1,3 +1,4 @@
+import type { FinanceService } from '@/modules/finance/finance.service';
 import { Queue, type ConnectionOptions } from 'bullmq';
 import type { Redis } from 'ioredis';
 import type { Types } from 'mongoose';
@@ -23,6 +24,7 @@ export type MaintenanceJobs = {
   'payments.reconcile': Record<string, never>;
   'bookings.complete-stays': Record<string, never>;
   'bookings.checkin-reminders': Record<string, never>;
+  'finance.backfill': Record<string, never>;
 };
 
 /** Every place a media asset can be referenced from. */
@@ -65,6 +67,7 @@ export interface MaintenanceDeps {
   outbox: OutboxService;
   payments: PaymentsService;
   lifecycle: LifecycleService;
+  finance: FinanceService;
   orphanTtlHours: number;
   logger: Logger;
 }
@@ -95,6 +98,7 @@ export function createMaintenanceHandlers(deps: MaintenanceDeps): {
       log(await deps.lifecycle.completeStays(), 'Stays completed'),
     'bookings.checkin-reminders': async () =>
       log(await deps.lifecycle.remindCheckins(), 'Check-in reminders queued'),
+    'finance.backfill': async () => log(await deps.finance.backfillConfirmedBookings(), 'Ledger postings backfilled'),
   };
 }
 
@@ -135,6 +139,7 @@ export async function scheduleMaintenance(connection: Redis): Promise<Queue> {
     { every: 60 * 60_000 },
     { name: 'bookings.checkin-reminders', data: {} },
   );
+  await queue.upsertJobScheduler('finance-backfill', { every: 60 * 60_000 }, { name: 'finance.backfill', data: {} });
   // Remove the Phase 2 scheduler that this one replaces.
   await queue.removeJobScheduler('inventory-expire-holds').catch(() => undefined);
   return queue;

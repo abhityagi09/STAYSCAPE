@@ -1,3 +1,4 @@
+import type { FinanceService } from '@/modules/finance/finance.service';
 import { Types, type ClientSession } from 'mongoose';
 import type { RefundDto } from '@stayscape/shared';
 import { AppError, Errors, isMongoDuplicateKey } from '@/lib/errors';
@@ -32,6 +33,7 @@ const STALE_PROCESSING_MS = 2 * 60_000;
 
 interface Deps {
   provider: PaymentProvider;
+  finance: FinanceService;
   outbox: OutboxService;
   audit: AuditService;
   logger: Logger;
@@ -383,6 +385,7 @@ export class RefundsService {
               : 'PARTIALLY_REFUNDED';
         await PaymentModel.updateOne({ _id: payment._id }, { $set: { status } }, { session });
       }
+      await this.deps.finance.onRefundSucceeded(refund, session);
       await syncBookingPaymentStatus(refund.bookingId, session);
       // A cancellation whose refund settled is complete.
       await CancellationModel.updateOne(

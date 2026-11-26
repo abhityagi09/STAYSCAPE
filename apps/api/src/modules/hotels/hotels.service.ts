@@ -211,7 +211,7 @@ export class HotelsService {
   }
 
   async getForPartner(auth: AuthContext, hotelId: string): Promise<PartnerHotelDto> {
-    const { hotel } = await this.deps.access.resolveHotel(auth, hotelId, 'CONTENT_EDIT');
+    const { hotel } = await this.deps.access.resolveHotel(auth, hotelId, 'property:edit');
     return this.toPartnerDto(hotel);
   }
 
@@ -226,7 +226,7 @@ export class HotelsService {
     input: Partial<HotelContentInput>,
     context: RequestContext,
   ): Promise<PartnerHotelDto> {
-    const access = await this.deps.access.resolveHotel(auth, hotelId, 'CONTENT_EDIT');
+    const access = await this.deps.access.resolveHotel(auth, hotelId, 'property:edit');
     const { hotel } = access;
     if (['SUBMITTED', 'UNDER_REVIEW'].includes(hotel.publicationStatus))
       throw new AppError(
@@ -411,7 +411,7 @@ export class HotelsService {
     purpose: 'HOTEL_IMAGE' | 'ROOM_IMAGE',
     file: Parameters<MediaService['uploadImage']>[0]['file'],
   ) {
-    const need = purpose === 'ROOM_IMAGE' ? 'ROOMS_MANAGE' : 'CONTENT_EDIT';
+    const need = purpose === 'ROOM_IMAGE' ? 'rooms:manage' : 'property:edit';
     const { hotel, partner } = await this.deps.access.resolveHotel(auth, hotelId, need);
     if (hotel.publicationStatus === 'ARCHIVED')
       throw new AppError(409, 'CONFLICT', 'Archived listings cannot be changed.');
@@ -432,7 +432,7 @@ export class HotelsService {
     mediaId: string,
     context: RequestContext,
   ): Promise<void> {
-    const { hotel, partner } = await this.deps.access.resolveHotel(auth, hotelId, 'CONTENT_EDIT');
+    const { hotel, partner } = await this.deps.access.resolveHotel(auth, hotelId, 'property:edit');
     const referenced =
       hotel.images.some((i) => i.mediaId.toString() === mediaId) ||
       (workingContent(hotel).images ?? []).some((i) => i.mediaId.toString() === mediaId) ||

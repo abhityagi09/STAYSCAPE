@@ -1,4 +1,5 @@
 import { Schema, model, type Types } from 'mongoose';
+import type { CommissionSnapshot } from '@/modules/finance/finance.service';
 import {
   BOOKING_STATUSES,
   CANCELLATION_REASONS,
@@ -126,6 +127,12 @@ export interface BookingAttrs {
   statusHistory: StatusEvent[];
   reconciliationNote: string | null;
   reviewId: Types.ObjectId | null;
+  /** Physical room numbers assigned by the property, per booked room category. */
+  roomAssignments: Array<{ roomTypeId: Types.ObjectId; roomNumbers: string[] }>;
+  /** Commission fixed when payment confirmed the booking (see finance/commission.ts). */
+  commissionSnapshot: CommissionSnapshot | null;
+  checkedInBy: Types.ObjectId | null;
+  checkedOutBy: Types.ObjectId | null;
   confirmedAt: Date | null;
   cancelledAt: Date | null;
   checkedInAt: Date | null;
@@ -174,6 +181,10 @@ const bookingSchema = new Schema<BookingAttrs>(
     },
     reconciliationNote: { type: String, default: null },
     reviewId: { type: Schema.Types.ObjectId, ref: 'Review', default: null },
+    roomAssignments: { type: Schema.Types.Mixed, default: [] },
+    commissionSnapshot: { type: Schema.Types.Mixed, default: null },
+    checkedInBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    checkedOutBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
     confirmedAt: { type: Date, default: null },
     cancelledAt: { type: Date, default: null },
     checkedInAt: { type: Date, default: null },

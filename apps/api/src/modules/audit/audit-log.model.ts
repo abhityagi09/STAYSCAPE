@@ -6,6 +6,9 @@ export interface AuditLogAttrs {
   entityType: string;
   entityId: string | null;
   metadata: Record<string, unknown>;
+  /** Partner (and property) the action belongs to, for partner-scoped activity logs. */
+  partnerId: Types.ObjectId | null;
+  hotelId: Types.ObjectId | null;
   ipAddress: string | null;
   requestId: string | null;
   timestamp: Date;
@@ -20,6 +23,8 @@ const auditLogSchema = new Schema<AuditLogAttrs>(
     entityType: { type: String, required: true, maxlength: 60 },
     entityId: { type: String, default: null, maxlength: 64 },
     metadata: { type: Schema.Types.Mixed, default: {} },
+    partnerId: { type: Schema.Types.ObjectId, ref: 'Partner', default: null },
+    hotelId: { type: Schema.Types.ObjectId, ref: 'Hotel', default: null },
     ipAddress: { type: String, default: null, maxlength: 64 },
     requestId: { type: String, default: null, maxlength: 64 },
     timestamp: { type: Date, required: true, default: () => new Date() },
@@ -31,5 +36,6 @@ auditLogSchema.index({ timestamp: -1 }, { name: 'timestamp' });
 auditLogSchema.index({ actorId: 1, timestamp: -1 }, { name: 'actor_timestamp' });
 auditLogSchema.index({ entityType: 1, entityId: 1, timestamp: -1 }, { name: 'entity_timestamp' });
 auditLogSchema.index({ action: 1, timestamp: -1 }, { name: 'action_timestamp' });
+auditLogSchema.index({ partnerId: 1, actorId: 1, timestamp: -1 }, { name: 'partner_actor_timestamp' });
 
 export const AuditLogModel = model<AuditLogAttrs>('AuditLog', auditLogSchema);

@@ -5,6 +5,7 @@ import {
   PARTNER_VERIFICATION_STATUSES,
   STAFF_INVITATION_STATUSES,
   STAFF_PERMISSIONS,
+  LEGACY_STAFF_PERMISSIONS,
   type BusinessType,
   type PartnerDocumentType,
   type PartnerVerificationStatus,
@@ -128,7 +129,7 @@ export interface PartnerStaffAttrs {
   partnerId: Types.ObjectId;
   userId: Types.ObjectId;
   assignedProperties: Types.ObjectId[];
-  permissions: StaffPermission[];
+  permissions: string[];
   invitationStatus: StaffInvitationStatus;
   invitedBy: Types.ObjectId;
   createdAt: Date;
@@ -141,7 +142,8 @@ const partnerStaffSchema = new Schema<PartnerStaffAttrs>(
     partnerId: { type: Schema.Types.ObjectId, ref: 'Partner', required: true },
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     assignedProperties: { type: [{ type: Schema.Types.ObjectId, ref: 'Hotel' }], default: [] },
-    permissions: { type: [{ type: String, enum: STAFF_PERMISSIONS }], default: [] },
+    // New codes plus legacy Phase 2–3 codes (normalised on read).
+    permissions: { type: [{ type: String, enum: [...STAFF_PERMISSIONS, ...Object.keys(LEGACY_STAFF_PERMISSIONS)] }], default: [] },
     invitationStatus: { type: String, enum: STAFF_INVITATION_STATUSES, default: 'PENDING' },
     invitedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   },

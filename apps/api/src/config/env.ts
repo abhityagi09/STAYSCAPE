@@ -94,6 +94,13 @@ const envSchema = z
     REVIEW_EDIT_WINDOW_DAYS: z.coerce.number().int().min(0).max(365).default(30),
     REVIEW_MAX_EDITS: z.coerce.number().int().min(0).max(20).default(3),
     OPS_ALERT_EMAIL: optionalString,
+    // ---- Finance (Phase 4)
+    /** Commission when no rule applies, in basis points (1500 = 15%). */
+    COMMISSION_DEFAULT_BASIS_POINTS: z.coerce.number().int().min(0).max(10_000).default(1500),
+    /** Days after check-out before a stay's payable becomes eligible for settlement. */
+    SETTLEMENT_HOLD_DAYS: z.coerce.number().int().min(0).max(90).default(1),
+    /** Automated partner payouts: disabled until a payout provider is onboarded. */
+    PAYOUT_PROVIDER: z.enum(['disabled']).default('disabled'),
 
     STORAGE_DRIVER: z.enum(['local', 's3']).default('local'),
     PRIVATE_UPLOAD_DIR: z.string().default('./var/private'),

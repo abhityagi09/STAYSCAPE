@@ -39,6 +39,7 @@ export const createHoldSchema = z
     checkOut: localDate,
     /** One room category and rate plan per booking (the model supports more; see docs). */
     items: z.array(holdItemSchema).min(1).max(1),
+    couponCode: z.string().trim().toUpperCase().regex(/^[A-Z0-9-]{3,32}$/, 'Invalid coupon code').optional(),
   })
   .superRefine((v, ctx) => {
     if (!isValidLocalDate(v.checkIn) || !isValidLocalDate(v.checkOut)) return;
@@ -141,6 +142,19 @@ export const refundDecisionSchema = z.discriminatedUnion('decision', [
   z.strictObject({ decision: z.literal('REJECT'), reason: z.string().trim().min(3).max(500) }),
 ]);
 
+export const partnerBookingsQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+  view: z.enum(['arrivals', 'departures', 'in-house', 'upcoming', 'past', 'all']).default('upcoming'),
+  status: z.enum(BOOKING_STATUSES).optional(),
+  from: localDate.optional(),
+  to: localDate.optional(),
+  q: z.string().trim().max(80).optional(),
+});
+export const bookingNoteSchema = z.strictObject({ body: z.string().trim().min(1, 'Write a note').max(2000) });
+export const roomAssignmentSchema = z.strictObject({
+  assignments: z.array(z.strictObject({ roomTypeId: objectIdSchema, roomNumbers: z.array(z.string().trim().min(1).max(20)).max(20) })).max(10),
+});
 export const partnerNoShowSchema = z.strictObject({ note: trimmed(500).default('') });
 export const partnerRejectSchema = z.strictObject({ reason: z.string().trim().min(3).max(500) });
 export const cancellationReasonSchema = z.enum(CANCELLATION_REASONS);

@@ -6,6 +6,9 @@ import {
   objectIdSchema,
   partnerNoShowSchema,
   partnerRejectSchema,
+  partnerBookingsQuerySchema,
+  bookingNoteSchema,
+  roomAssignmentSchema,
   refundDecisionSchema,
   reviewModerationSchema,
   reviewResponseSchema,
@@ -24,20 +27,16 @@ import { requirePermission } from '@/modules/permissions/permission.middleware';
 
 const hotelParam = z.object({ hotelId: objectIdSchema });
 const bookingParams = hotelParam.extend({ reference: bookingReferenceSchema });
-const listQuery = z.object({
-  page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(50).default(20),
-  view: z.enum(['arrivals', 'upcoming', 'past', 'all']).default('upcoming'),
-});
+const listQuery = partnerBookingsQuerySchema;
 
 /**
  * /api/v1/partner/hotels/:hotelId/(bookings|reviews) — property-side reservation handling.
  * Access is resource-level: the hotel must belong to the caller's partner (owner) or be assigned to
- * them with the BOOKINGS_MANAGE staff permission; other hotels' bookings read as 404.
+ * them with the specific staff permission (bookings:view, bookings:check-in, …); other hotels' bookings read as 404.
  */
 export function createPartnerBookingsRouter(container: Container): Router {
   const router = Router();
-  const { cancellations, reviews } = container.services;
+  const { cancellations, reviews, partnerReservations } = container.services;
   // Scoped to this router's own paths: the router shares the /partner/hotels prefix with others.
   router.use(
     ['/:hotelId/bookings', '/:hotelId/reviews'],
@@ -56,6 +55,15 @@ export function createPartnerBookingsRouter(container: Container): Router {
       );
     },
   );
+  router.get('/:hotelId/bookings/:reference', validate({ params: bookingParams }), async (req, res) => {
+    sendSuccess(res, await partnerReservations.detail(requireAuth(req), p(req).hotelId, p(req).reference));
+  });
+  router.post('/:hotelId/bookings/:reference/notes', validate({ params: bookingParams, body: bookingNoteSchema }), async (req, res) => {
+    sendSuccess(res, await partnerReservations.addNote(requireAuth(req), p(req).hotelId, p(req).reference, (req.body as { body: string }).body, requestContext(req)), 201);
+  });
+  router.put('/:hotelId/bookings/:reference/rooms', validate({ params: bookingParams, body: roomAssignmentSchema }), async (req, res) => {
+    sendSuccess(res, await partnerReservations.assignRooms(requireAuth(req), p(req).hotelId, p(req).reference, (req.body as { assignments: Array<{ roomTypeId: string; roomNumbers: string[] }> }).assignments, requestContext(req)));
+  });
   router.post(
     '/:hotelId/bookings/:reference/check-in',
     validate({ params: bookingParams }),

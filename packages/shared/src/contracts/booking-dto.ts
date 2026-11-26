@@ -44,6 +44,8 @@ export interface PriceSnapshotDto {
   taxes: MoneyLineDto[];
   fees: MoneyLineDto[];
   totals: PriceTotalsDto;
+  /** Platform-funded coupon applied to the payable total (Phase 4). */
+  coupon?: { code: string; discountMinor: number } | null;
 }
 
 export interface CancellationPolicySnapshotDto {
@@ -400,6 +402,22 @@ export interface PartnerBookingDto {
   currency: CurrencyCode;
   createdAt: string;
   actions: { canCheckIn: boolean; canCheckOut: boolean; canMarkNoShow: boolean };
+}
+
+export interface PartnerBookingDetailDto extends PartnerBookingDto {
+  items: BookingItemDto[];
+  guestDetails: GuestDetailsDto;
+  price: PriceSnapshotDto;
+  payments: Array<{ status: PaymentStatus; amountMinor: number; refundedMinor: number; currency: CurrencyCode; createdAt: string }>;
+  refunds: Array<{ status: RefundStatus; amountMinor: number; currency: CurrencyCode; reason: string; requestedAt: string }>;
+  cancellation: CancellationDto | null;
+  roomAssignments: Array<{ roomTypeId: string; roomNumbers: string[] }>;
+  notes: Array<{ id: string; authorName: string; body: string; createdAt: string }>;
+  checkedInAt: string | null;
+  checkedInBy: string | null;
+  checkedOutAt: string | null;
+  checkedOutBy: string | null;
+  timeline: BookingEventDto[];
 }
 
 export interface OperationsBookingDto {

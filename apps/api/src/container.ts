@@ -32,6 +32,9 @@ import { InlineJobQueue, type JobHandler, type JobQueue } from '@/infrastructure
 import { createDomainEventHandlers } from '@/jobs/domain-events.jobs';
 import { BookingsService } from '@/modules/bookings/bookings.service';
 import { CancellationsService } from '@/modules/bookings/cancellations.service';
+import { PartnerReservationsService } from '@/modules/bookings/partner-reservations.service';
+import { CouponsService } from '@/modules/coupons/coupons.service';
+import { FinanceService } from '@/modules/finance/finance.service';
 import { LifecycleService } from '@/modules/bookings/lifecycle.service';
 import { DocumentsService } from '@/modules/documents/documents.service';
 import { BookingNotificationsService } from '@/modules/notifications/booking-notifications.service';
@@ -155,14 +158,19 @@ export function buildContainer(core: CoreDependencies) {
   const lateQueue = core.domainEventQueue ? null : new LateBoundInlineQueue();
   const outbox = new OutboxService(core.domainEventQueue ?? lateQueue!, logger);
   const paymentProvider = core.paymentProvider ?? createPaymentProvider(config, logger);
-  const bookings = new BookingsService({ config, quotes, inventory, outbox, media, audit, logger });
-  const refunds = new RefundsService({ provider: paymentProvider, outbox, audit, logger });
+  const finance = new FinanceService({ config, audit, logger });
+  const coupons = new CouponsService({ audit });
+  const bookings = new BookingsService({ config, quotes, inventory, outbox,
+    coupons, media, audit, logger });
+  const refunds = new RefundsService({ provider: paymentProvider, finance, outbox, audit, logger });
   const payments = new PaymentsService({
     config,
     provider: paymentProvider,
     bookings,
     inventory,
     refunds,
+    finance,
+    coupons,
     outbox,
     audit,
     logger,
@@ -188,6 +196,7 @@ export function buildContainer(core: CoreDependencies) {
   });
   const support = new SupportService(media, audit);
   const lifecycle = new LifecycleService({ bookings, outbox, reviews, wishlists, support, logger });
+  const partnerReservations = new PartnerReservationsService({ access: partnerAccess, audit, cancellations });
   const operations = new OperationsService({
     refunds,
     notifications: bookingNotifications,
@@ -240,6 +249,9 @@ export function buildContainer(core: CoreDependencies) {
       support,
       lifecycle,
       operations,
+      partnerReservations,
+      finance,
+      coupons,
     },
     authenticate,
   };

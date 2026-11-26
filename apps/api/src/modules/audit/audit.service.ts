@@ -1,3 +1,4 @@
+import { requestScope } from '@/lib/scope';
 import { Types } from 'mongoose';
 import type { AuditLogDto, ListAuditQuery, Paginated } from '@stayscape/shared';
 import type { Logger } from '@/lib/logger';
@@ -27,12 +28,17 @@ export function sanitizeMetadata(value: unknown, depth = 0): unknown {
   return out;
 }
 
+const toId = (v: string | null | undefined) => (v && Types.ObjectId.isValid(v) ? new Types.ObjectId(v) : null);
+
 export interface AuditEntry {
   actorId: string | null;
   action: string;
   entityType: string;
   entityId?: string | null;
   metadata?: Record<string, unknown>;
+  /** Defaults to the partner resolved for the current request (see lib/scope). */
+  partnerId?: string | null;
+  hotelId?: string | null;
   context?: Pick<RequestContext, 'ipAddress' | 'requestId'>;
 }
 
@@ -71,6 +77,8 @@ export class AuditService {
         entityType: entry.entityType,
         entityId: entry.entityId ?? null,
         metadata: (sanitizeMetadata(entry.metadata ?? {}) as Record<string, unknown>) ?? {},
+        partnerId: toId(entry.partnerId ?? requestScope.getStore()?.partnerId),
+        hotelId: toId(entry.hotelId ?? requestScope.getStore()?.hotelId),
         ipAddress: entry.context?.ipAddress ?? null,
         requestId: entry.context?.requestId ?? null,
       });

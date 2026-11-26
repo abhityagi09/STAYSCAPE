@@ -7,6 +7,7 @@ import {
   type CancellationResultDto,
   type Paginated,
   type PartnerBookingDto,
+  type StaffPermission,
 } from '@stayscape/shared';
 import { AppError, Errors } from '@/lib/errors';
 import { paginated } from '@/lib/http';
@@ -44,6 +45,16 @@ interface Deps {
 }
 
 type Mode = 'CUSTOMER' | 'NO_SHOW' | 'PROPERTY_REJECT';
+
+export interface PartnerBookingsQuery {
+  page: number;
+  limit: number;
+  view: 'arrivals' | 'departures' | 'in-house' | 'upcoming' | 'past' | 'all';
+  status?: string | undefined;
+  from?: string | undefined;
+  to?: string | undefined;
+  q?: string | undefined;
+}
 
 export class CancellationsService {
   constructor(private readonly deps: Deps) {}
@@ -368,11 +379,14 @@ export class CancellationsService {
     auth: AuthContext,
     hotelId: string,
     reference: string,
+    need: StaffPermission,
   ): Promise<BookingRecord> {
-    await this.deps.access.resolveHotel(auth, hotelId, 'BOOKINGS_MANAGE');
+    await this.deps.access.resolveHotel(auth, hotelId, need);
     const booking = await BookingModel.findOne({
       bookingReference: reference,
       hotelId,
+      // Unpaid holds and expired attempts are not the property's business.
+      bookingStatus: { $nin: ['PENDING_PAYMENT', 'PAYMENT_PROCESSING', 'EXPIRED'] },
     }).lean<BookingRecord>();
     if (!booking) throw Errors.notFound('Booking');
     return booking;
@@ -410,13 +424,18 @@ export class CancellationsService {
     };
   }
 
+  /** Map reservations to the property-facing DTO (callers have already checked access). */
+  listForPartnerByIds(bookings: BookingRecord[]): PartnerBookingDto[] {
+    return bookings.map((b) => this.toPartnerDto(b));
+  }
+
   /** Reservations for one property — only confirmed-or-later stays are shown (no unpaid holds). */
   async listForPartner(
     auth: AuthContext,
     hotelId: string,
-    query: { page: number; limit: number; view: 'arrivals' | 'upcoming' | 'past' | 'all' },
+    query: PartnerBookingsQuery,
   ): Promise<Paginated<PartnerBookingDto>> {
-    const access = await this.deps.access.resolveHotel(auth, hotelId, 'BOOKINGS_MANAGE');
+    const access = await this.deps.access.resolveHotel(auth, hotelId, 'bookings:view');
     const today = todayInTimeZone(access.hotel.timeZone);
     const filter: Record<string, unknown> = {
       hotelId: access.hotel._id,
@@ -435,6 +454,16 @@ export class CancellationsService {
         bookingStatus: { $in: ['CONFIRMED', 'CHECKED_IN'] },
       });
     if (query.view === 'past') Object.assign(filter, { checkOutLocalDate: { $lt: today } });
+    if (query.view === 'in-house') Object.assign(filter, { bookingStatus: 'CHECKED_IN' });
+    if (query.view === 'departures') Object.assign(filter, { checkOutLocalDate: today, bookingStatus: { $in: ['CHECKED_IN', 'CHECKED_OUT'] } });
+    if (query.status) filter.bookingStatus = query.status;
+    if (query.from || query.to) {
+      filter.checkInLocalDate = { ...(query.from ? { $gte: query.from } : {}), ...(query.to ? { $lte: query.to } : {}) };
+    }
+    if (query.q) {
+      const pattern = new RegExp(query.q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      filter.$or = [{ bookingReference: pattern }, { 'guestDetails.primaryGuest.lastName': pattern }, { 'guestDetails.primaryGuest.firstName': pattern }];
+    }
     const [items, total] = await Promise.all([
       BookingModel.find(filter)
         .sort({ checkInLocalDate: query.view === 'past' ? -1 : 1, _id: 1 })
@@ -457,7 +486,7 @@ export class CancellationsService {
     reference: string,
     context: RequestContext,
   ): Promise<PartnerBookingDto> {
-    const booking = await this.partnerBooking(auth, hotelId, reference);
+    const booking = await this.partnerBooking(auth, hotelId, reference, 'bookings:check-in');
     if (!this.toPartnerDto(booking).actions.canCheckIn)
       throw new AppError(
         409,
@@ -467,7 +496,7 @@ export class CancellationsService {
     const updated = await BookingModel.findOneAndUpdate(
       { _id: booking._id, bookingStatus: 'CONFIRMED' },
       {
-        $set: { bookingStatus: 'CHECKED_IN', checkedInAt: new Date() },
+        $set: { bookingStatus: 'CHECKED_IN', checkedInAt: new Date(), checkedInBy: new Types.ObjectId(auth.userId) },
         $push: { statusHistory: statusEvent('CHECKED_IN', 'Guest checked in') },
       },
       { new: true },
@@ -489,11 +518,11 @@ export class CancellationsService {
     reference: string,
     context: RequestContext,
   ): Promise<PartnerBookingDto> {
-    const booking = await this.partnerBooking(auth, hotelId, reference);
+    const booking = await this.partnerBooking(auth, hotelId, reference, 'bookings:check-out');
     const updated = await BookingModel.findOneAndUpdate(
       { _id: booking._id, bookingStatus: 'CHECKED_IN' },
       {
-        $set: { bookingStatus: 'CHECKED_OUT', checkedOutAt: new Date() },
+        $set: { bookingStatus: 'CHECKED_OUT', checkedOutAt: new Date(), checkedOutBy: new Types.ObjectId(auth.userId) },
         $push: { statusHistory: statusEvent('CHECKED_OUT', 'Guest checked out') },
       },
       { new: true },
@@ -517,7 +546,7 @@ export class CancellationsService {
     note: string,
     context: RequestContext,
   ): Promise<PartnerBookingDto> {
-    const booking = await this.partnerBooking(auth, hotelId, reference);
+    const booking = await this.partnerBooking(auth, hotelId, reference, 'bookings:no-show');
     if (!this.toPartnerDto(booking).actions.canMarkNoShow)
       throw new AppError(
         409,
@@ -551,7 +580,7 @@ export class CancellationsService {
     reason: string,
     context: RequestContext,
   ): Promise<PartnerBookingDto> {
-    const booking = await this.partnerBooking(auth, hotelId, reference);
+    const booking = await this.partnerBooking(auth, hotelId, reference, 'bookings:no-show');
     const stay = {
       checkInLocalDate: booking.checkInLocalDate,
       checkInTime: booking.hotelSnapshot.checkInTime,

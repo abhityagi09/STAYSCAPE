@@ -284,7 +284,7 @@ export function createPartnerHotelsRouter(container: Container): Router {
       await container.services.partnerAccess.resolveHotel(
         requireAuth(req),
         hp(req),
-        'RATES_MANAGE',
+        'pricing:manage',
       );
       sendSuccess(
         res,

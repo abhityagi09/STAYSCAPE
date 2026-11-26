@@ -137,6 +137,11 @@ export const listPartnersQuerySchema = paginationQuerySchema.extend({
 });
 export const documentTypeSchema = z.enum(PARTNER_DOCUMENT_TYPES);
 
+export const updateStaffSchema = z.strictObject({
+  assignedProperties: z.array(objectIdSchema).max(200).default([]),
+  permissions: z.array(z.enum(STAFF_PERMISSIONS)).min(1, 'Choose at least one permission'),
+});
+
 export const inviteStaffSchema = z.strictObject({
   email: emailSchema,
   assignedProperties: z.array(objectIdSchema).max(200).default([]),

@@ -16,6 +16,7 @@ import {
   BookingModel,
   CancellationModel,
 } from '@/modules/bookings/booking.models';
+import { BookingNoteModel } from '@/modules/bookings/partner-reservations.service';
 import { InvoiceModel } from '@/modules/documents/invoice.model';
 import { NotificationDeliveryModel, OutboxEventModel } from '@/modules/outbox/outbox.models';
 import {
@@ -27,6 +28,8 @@ import {
 import { ReviewModel, ReviewReportModel } from '@/modules/reviews/review.models';
 import { SupportTicketModel, TicketMessageModel } from '@/modules/support/support.models';
 import { WishlistModel } from '@/modules/wishlists/wishlist.model';
+import { CouponModel, CouponRedemptionModel, CouponUsageModel } from '@/modules/coupons/coupons.models';
+import { CommissionRuleModel, LedgerEntryModel, SettlementAllocationModel, SettlementModel } from '@/modules/finance/finance.models';
 import { MediaAssetModel } from '@/modules/media/media-asset.model';
 import { PartnerModel, PartnerStaffModel } from '@/modules/partners/partner.model';
 import { PricingRuleModel, RatePlanModel, RoomTypeModel } from '@/modules/rooms/room.models';
@@ -54,6 +57,7 @@ export const ALL_MODELS = [
   BookingHoldModel,
   BookingModel,
   CancellationModel,
+  BookingNoteModel,
   PaymentModel,
   PaymentEventModel,
   RefundModel,
@@ -62,6 +66,13 @@ export const ALL_MODELS = [
   NotificationDeliveryModel,
   InvoiceModel,
   WishlistModel,
+  CommissionRuleModel,
+  LedgerEntryModel,
+  SettlementModel,
+  SettlementAllocationModel,
+  CouponModel,
+  CouponUsageModel,
+  CouponRedemptionModel,
   ReviewModel,
   ReviewReportModel,
   SupportTicketModel,
