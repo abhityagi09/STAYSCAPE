@@ -32,6 +32,7 @@ import { CouponModel, CouponRedemptionModel, CouponUsageModel } from '@/modules/
 import { HotelDailyStatModel } from '@/modules/analytics/hotel-stats.model';
 import { BookingEscalationModel, PropertyCategoryModel } from '@/modules/admin/admin.models';
 import { ContentEntryModel, ContentRevisionModel } from '@/modules/content/content.models';
+import { InventoryBlockModel } from '@/modules/inventory/inventory.models';
 import { CommissionRuleModel, LedgerEntryModel, SettlementAllocationModel, SettlementModel } from '@/modules/finance/finance.models';
 import { MediaAssetModel } from '@/modules/media/media-asset.model';
 import { PartnerModel, PartnerStaffModel } from '@/modules/partners/partner.model';
@@ -81,6 +82,7 @@ export const ALL_MODELS = [
   BookingEscalationModel,
   ContentEntryModel,
   ContentRevisionModel,
+  InventoryBlockModel,
   ReviewModel,
   ReviewReportModel,
   SupportTicketModel,

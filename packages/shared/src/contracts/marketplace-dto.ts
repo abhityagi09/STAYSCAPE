@@ -426,9 +426,13 @@ export interface PricingRuleDto {
 export interface InventoryDayDto {
   date: string;
   totalRooms: number;
+  /** Rooms blocked manually (excludes maintenance blocks). */
   blockedRooms: number;
+  maintenanceRooms: number;
+  stopSell: boolean;
   heldRooms: number;
   bookedRooms: number;
+  /** Sellable now: 0 while stop-sell is on. */
   available: number;
   closedToArrival: boolean;
   closedToDeparture: boolean;

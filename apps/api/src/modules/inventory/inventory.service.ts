@@ -20,6 +20,8 @@ export interface DayAvailability {
   closedToDeparture: boolean;
   minimumStay: number | null;
   maximumStay: number | null;
+  /** (held + booked) / (total - blocked) in basis points; 0 when nothing is sellable or no row exists. */
+  occupancyBp: number;
 }
 
 /** Thrown when a requested change or reservation would break the availability invariant. */
@@ -84,15 +86,19 @@ export class InventoryService {
       const row = byDate.get(date);
       const total = row?.totalRooms ?? roomType.totalInventory;
       const blocked = row?.blockedRooms ?? 0;
+      const maintenance = row?.maintenanceRooms ?? 0;
       const held = row?.heldRooms ?? 0;
       const booked = row?.bookedRooms ?? 0;
+      const stopSell = row?.stopSell ?? false;
       return {
         date,
         totalRooms: total,
-        blockedRooms: blocked,
+        blockedRooms: blocked - maintenance,
+        maintenanceRooms: maintenance,
+        stopSell,
         heldRooms: held,
         bookedRooms: booked,
-        available: total - blocked - held - booked,
+        available: stopSell ? 0 : total - blocked - held - booked,
         closedToArrival: row?.closedToArrival ?? false,
         closedToDeparture: row?.closedToDeparture ?? false,
         minimumStay: row?.minimumStay ?? null,
@@ -125,7 +131,7 @@ export class InventoryService {
       await this.ensureRows(hotel._id, roomType, dates, session);
       const update: Record<string, unknown> = {};
       for (const key of [
-        'blockedRooms',
+        'stopSell',
         'closedToArrival',
         'closedToDeparture',
         'minimumStay',
@@ -143,7 +149,7 @@ export class InventoryService {
             ...filter,
             $expr: {
               $lt: [
-                { $subtract: ['$totalRooms', { $add: ['$heldRooms', '$bookedRooms'] }] },
+                { $subtract: ['$totalRooms', { $add: ['$heldRooms', '$bookedRooms', { $ifNull: ['$maintenanceRooms', 0] }] }] },
                 set.blockedRooms,
               ],
             },
@@ -159,12 +165,15 @@ export class InventoryService {
         }
         filter.$expr = {
           $gte: [
-            { $subtract: ['$totalRooms', { $add: ['$heldRooms', '$bookedRooms'] }] },
+            { $subtract: ['$totalRooms', { $add: ['$heldRooms', '$bookedRooms', { $ifNull: ['$maintenanceRooms', 0] }] }] },
             set.blockedRooms,
           ],
         };
       }
-      const result = await DailyInventoryModel.updateMany(filter, { $set: update }, { session });
+      // Manual blocks are set on top of maintenance blocks, never replacing them (pipeline update).
+      if (set.blockedRooms !== undefined)
+        update.blockedRooms = { $add: [set.blockedRooms, { $ifNull: ['$maintenanceRooms', 0] }] };
+      const result = await DailyInventoryModel.updateMany(filter, [{ $set: update }], { session });
       if (result.matchedCount !== dates.length)
         throw new InventoryConflictError('Inventory changed while saving. Please retry.', []);
     });
@@ -242,6 +251,7 @@ export class InventoryService {
         localDate: 1,
         totalRooms: 1,
         blockedRooms: 1,
+        stopSell: 1,
         heldRooms: 1,
         bookedRooms: 1,
         closedToArrival: 1,
@@ -259,16 +269,23 @@ export class InventoryService {
           closedToDeparture: false,
           minimumStay: null,
           maximumStay: null,
+          occupancyBp: 0,
         });
       result.set(roomType._id.toString(), map);
     }
     for (const row of rows) {
       result.get(row.roomTypeId.toString())?.set(row.localDate, {
-        available: row.totalRooms - row.blockedRooms - row.heldRooms - row.bookedRooms,
+        available: row.stopSell
+          ? 0
+          : row.totalRooms - row.blockedRooms - row.heldRooms - row.bookedRooms,
         closedToArrival: row.closedToArrival,
         closedToDeparture: row.closedToDeparture,
         minimumStay: row.minimumStay,
         maximumStay: row.maximumStay,
+        occupancyBp:
+          row.totalRooms - row.blockedRooms > 0
+            ? Math.round(((row.heldRooms + row.bookedRooms) * 10_000) / (row.totalRooms - row.blockedRooms))
+            : 0,
       });
     }
     return result;
@@ -309,7 +326,7 @@ export class InventoryService {
     await this.applyToNights(
       roomType._id,
       nights,
-      { $expr: { $gte: [AVAILABLE_EXPR, quantity] } },
+      { stopSell: { $ne: true }, $expr: { $gte: [AVAILABLE_EXPR, quantity] } },
       { $inc: { heldRooms: quantity } },
       session,
       () =>
@@ -369,7 +386,7 @@ export class InventoryService {
     await this.applyToNights(
       roomType._id,
       nights,
-      { $expr: { $gte: [AVAILABLE_EXPR, quantity] } },
+      { stopSell: { $ne: true }, $expr: { $gte: [AVAILABLE_EXPR, quantity] } },
       { $inc: { bookedRooms: quantity } },
       session,
       () =>

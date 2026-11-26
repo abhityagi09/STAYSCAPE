@@ -188,8 +188,11 @@ export const ADJUSTMENT_RULE_TYPES = [
   'WEEKEND',
   'SEASONAL',
   'EVENT',
+  /** Applies on nights whose occupancy (committed / sellable rooms) is inside a range. */
+  'OCCUPANCY',
 ] as const;
-export const DISCOUNT_RULE_TYPES = ['LONG_STAY', 'EARLY_BIRD', 'LAST_MINUTE'] as const;
+/** PROMOTIONAL: a discount bookable only inside a booking window (conditions.bookFrom/bookTo). */
+export const DISCOUNT_RULE_TYPES = ['LONG_STAY', 'EARLY_BIRD', 'LAST_MINUTE', 'PROMOTIONAL'] as const;
 export const PRICING_RULE_TYPES = [...ADJUSTMENT_RULE_TYPES, ...DISCOUNT_RULE_TYPES] as const;
 export type PricingRuleType = (typeof PRICING_RULE_TYPES)[number];
 export const PRICING_ADJUSTMENT_TYPES = ['PERCENT', 'AMOUNT', 'FIXED_PRICE'] as const;

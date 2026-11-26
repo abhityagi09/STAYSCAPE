@@ -10,14 +10,16 @@
  *   1. Start from the rate plan's base nightly price.
  *   2. DATE_OVERRIDE: the highest-priority active override covering the night replaces the base
  *      price. When an override applies, step 3 is skipped for that night.
- *   3. Date adjustments (WEEKDAY, WEEKEND, SEASONAL, EVENT) matching the night:
+ *   3. Date adjustments (WEEKDAY, WEEKEND, SEASONAL, EVENT, OCCUPANCY) matching the night
+ *      (OCCUPANCY only on nights whose occupancy, given in `occupancyBp`, is inside its range):
  *        - sort by priority (desc), then rule id (asc) for determinism;
  *        - if the top rule is EXCLUSIVE, apply only it;
  *        - otherwise apply every STACKABLE rule in that order, each to the running amount.
  *      PERCENT changes by basis points, AMOUNT adds a (possibly negative) amount. Floor at 0.
  *   4. Supplements: guests beyond the rate plan's included adults/children, extra beds, and the
  *      meal-plan supplement per guest. Guests are distributed across rooms as evenly as possible.
- *   5. Discounts (LONG_STAY, EARLY_BIRD, LAST_MINUTE) eligible for the stay and covering the night,
+ *   5. Discounts (LONG_STAY, EARLY_BIRD, LAST_MINUTE, PROMOTIONAL - the last only when the booking
+ *      date is inside its booking window) eligible for the stay and covering the night,
  *      selected with the same EXCLUSIVE/STACKABLE rule as step 3 and applied to the night amount
  *      after supplements. A night never goes below 0.
  *   6. Taxes per room-night on the discounted amount, using the slab that contains that amount.
@@ -59,7 +61,15 @@ export interface EngineRule {
   adjustmentValue: number;
   priority: number;
   stackingPolicy: StackingPolicy;
-  conditions: { minNights?: number; minDaysBeforeArrival?: number; maxDaysBeforeArrival?: number };
+  conditions: {
+    minNights?: number;
+    minDaysBeforeArrival?: number;
+    maxDaysBeforeArrival?: number;
+    minOccupancyBp?: number;
+    maxOccupancyBp?: number;
+    bookFrom?: string;
+    bookTo?: string;
+  };
 }
 
 export interface EngineTaxConfig {
@@ -89,6 +99,8 @@ export interface EngineInput {
   children: number;
   extraBeds: number;
   taxConfig: EngineTaxConfig;
+  /** Per-night occupancy in basis points for OCCUPANCY rules; nights without a value never match. */
+  occupancyBp?: Record<string, number>;
 }
 
 export interface Line {
@@ -121,8 +133,15 @@ export interface EngineResult {
   };
 }
 
-const ADJUSTMENT_TYPES: PricingRuleType[] = ['WEEKDAY', 'WEEKEND', 'SEASONAL', 'EVENT'];
-const DISCOUNT_TYPES: PricingRuleType[] = ['LONG_STAY', 'EARLY_BIRD', 'LAST_MINUTE'];
+const ADJUSTMENT_TYPES: PricingRuleType[] = ['WEEKDAY', 'WEEKEND', 'SEASONAL', 'EVENT', 'OCCUPANCY'];
+const DISCOUNT_TYPES: PricingRuleType[] = ['LONG_STAY', 'EARLY_BIRD', 'LAST_MINUTE', 'PROMOTIONAL'];
+
+function occupancyMatches(rule: EngineRule, occupancy: number | undefined): boolean {
+  if (rule.ruleType !== 'OCCUPANCY') return true;
+  if (occupancy === undefined) return false;
+  const c = rule.conditions ?? {};
+  return (c.minOccupancyBp === undefined || occupancy >= c.minOccupancyBp) && (c.maxOccupancyBp === undefined || occupancy <= c.maxOccupancyBp);
+}
 
 function assertInt(value: number, label: string) {
   if (!Number.isSafeInteger(value))
@@ -175,8 +194,10 @@ function adjust(amount: number, rule: EngineRule): number {
   return 0;
 }
 
-function stayEligible(rule: EngineRule, nights: number, daysBeforeArrival: number): boolean {
+function stayEligible(rule: EngineRule, nights: number, daysBeforeArrival: number, bookingDate: string): boolean {
   const c = rule.conditions ?? {};
+  if (c.bookFrom && bookingDate < c.bookFrom) return false;
+  if (c.bookTo && bookingDate > c.bookTo) return false;
   if (c.minNights !== undefined && nights < c.minNights) return false;
   if (c.minDaysBeforeArrival !== undefined && daysBeforeArrival < c.minDaysBeforeArrival)
     return false;
@@ -213,7 +234,7 @@ export function calculatePrice(input: EngineInput): EngineResult {
   const overrides = rules.filter((r) => r.ruleType === 'DATE_OVERRIDE');
   const adjustments = rules.filter((r) => ADJUSTMENT_TYPES.includes(r.ruleType));
   const discounts = rules.filter(
-    (r) => DISCOUNT_TYPES.includes(r.ruleType) && stayEligible(r, nights.length, daysBeforeArrival),
+    (r) => DISCOUNT_TYPES.includes(r.ruleType) && stayEligible(r, nights.length, daysBeforeArrival, input.bookingDate),
   );
 
   const adultsPerRoom = distribute(input.adults, rooms);
@@ -230,7 +251,9 @@ export function calculatePrice(input: EngineInput): EngineResult {
       adjustmentLines.push({ label: override.name, amountMinor: override.adjustmentValue - base });
       base = override.adjustmentValue;
     } else {
-      for (const rule of selectRules(adjustments.filter((r) => coversDate(r, date)))) {
+      for (const rule of selectRules(
+        adjustments.filter((r) => coversDate(r, date) && occupancyMatches(r, input.occupancyBp?.[date])),
+      )) {
         const delta = Math.max(adjust(base, rule), -base);
         base += delta;
         adjustmentLines.push({ label: rule.name, amountMinor: delta });

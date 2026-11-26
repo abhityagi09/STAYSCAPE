@@ -7,6 +7,7 @@ import {
   hotelContentSchema,
   hotelDecisionSchema,
   inventoryQuerySchema,
+  inventoryBlockSchema,
   inventoryUpdateSchema,
   listAdminHotelsQuerySchema,
   objectIdSchema,
@@ -40,7 +41,7 @@ const createHotelSchema = hotelContentSchema
 /** /api/v1/partner/hotels — property, room, rate and inventory management for owners/staff. */
 export function createPartnerHotelsRouter(container: Container): Router {
   const router = Router();
-  const { hotels, rooms, quotes } = container.services;
+  const { hotels, rooms, quotes, inventoryBlocks } = container.services;
   router.use(container.authenticate, requirePermission('partner:access'));
   const hp = (req: Request) => validatedParams<{ hotelId: string }>(req).hotelId;
 
@@ -274,6 +275,18 @@ export function createPartnerHotelsRouter(container: Container): Router {
         await rooms.updateInventory(requireAuth(req), hp(req), req.body, requestContext(req)),
       );
     },
+  );
+
+  // Maintenance / renovation / owner-use blocks.
+  const blockParams = hotelParam.extend({ blockId: objectIdSchema });
+  router.get('/:hotelId/inventory/blocks', validate({ params: hotelParam, query: z.object({ status: z.enum(['ACTIVE', 'RELEASED']).default('ACTIVE') }) }), async (req, res) =>
+    sendSuccess(res, await inventoryBlocks.list(requireAuth(req), hp(req), validatedQuery<{ status: 'ACTIVE' }>(req).status)),
+  );
+  router.post('/:hotelId/inventory/blocks', validate({ params: hotelParam, body: inventoryBlockSchema }), async (req, res) =>
+    sendSuccess(res, await inventoryBlocks.create(requireAuth(req), hp(req), req.body, requestContext(req)), 201),
+  );
+  router.post('/:hotelId/inventory/blocks/:blockId/release', validate({ params: blockParams }), async (req, res) =>
+    sendSuccess(res, await inventoryBlocks.release(requireAuth(req), hp(req), validatedParams<{ blockId: string }>(req).blockId, requestContext(req))),
   );
 
   /** Price preview for the partner's own (possibly unpublished) listing. */

@@ -153,7 +153,15 @@ export interface PricingRuleAttrs {
   adjustmentValue: number;
   priority: number;
   stackingPolicy: StackingPolicy;
-  conditions: { minNights?: number; minDaysBeforeArrival?: number; maxDaysBeforeArrival?: number };
+  conditions: {
+    minNights?: number;
+    minDaysBeforeArrival?: number;
+    maxDaysBeforeArrival?: number;
+    minOccupancyBp?: number;
+    maxOccupancyBp?: number;
+    bookFrom?: string;
+    bookTo?: string;
+  };
   active: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -178,7 +186,15 @@ const pricingRuleSchema = new Schema<PricingRuleAttrs>(
     },
     priority: { type: Number, default: 100 },
     stackingPolicy: { type: String, enum: STACKING_POLICIES, default: 'STACKABLE' },
-    conditions: { minNights: Number, minDaysBeforeArrival: Number, maxDaysBeforeArrival: Number },
+    conditions: {
+      minNights: Number,
+      minDaysBeforeArrival: Number,
+      maxDaysBeforeArrival: Number,
+      minOccupancyBp: Number,
+      maxOccupancyBp: Number,
+      bookFrom: String,
+      bookTo: String,
+    },
     active: { type: Boolean, default: true },
   },
   { timestamps: true, versionKey: false },

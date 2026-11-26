@@ -54,6 +54,7 @@ import { ReviewsService } from '@/modules/reviews/reviews.service';
 import { SupportService } from '@/modules/support/support.service';
 import { SupportConsoleService } from '@/modules/support/support-console.service';
 import { AdminManagementService } from '@/modules/admin/admin-management.service';
+import { InventoryBlocksService } from '@/modules/inventory/blocks.service';
 import { ContentService } from '@/modules/content/content.service';
 import { WishlistsService } from '@/modules/wishlists/wishlists.service';
 
@@ -155,6 +156,7 @@ export function buildContainer(core: CoreDependencies) {
     cache,
   });
   const rooms = new RoomsService({ access: partnerAccess, inventory, media, audit, cache });
+  const inventoryBlocks = new InventoryBlocksService({ access: partnerAccess, inventory, audit });
   const quotes = new QuoteService(inventory, config);
   const search = new SearchService(quotes, media, cache, logger);
 
@@ -257,6 +259,7 @@ export function buildContainer(core: CoreDependencies) {
       support,
       supportConsole,
       adminManagement,
+      inventoryBlocks,
       content,
       lifecycle,
       operations,
