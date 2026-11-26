@@ -101,6 +101,24 @@ const envSchema = z
     SETTLEMENT_HOLD_DAYS: z.coerce.number().int().min(0).max(90).default(1),
     /** Automated partner payouts: disabled until a payout provider is onboarded. */
     PAYOUT_PROVIDER: z.enum(['disabled']).default('disabled'),
+    // ---- AI travel assistant (Phase 4). Backend only: the key is never sent to the browser.
+    /** anthropic: Claude via the official SDK. rules: deterministic, no-AI dev/test assistant. */
+    AI_PROVIDER: z.enum(['anthropic', 'rules']).default('rules'),
+    ANTHROPIC_API_KEY: optionalString,
+    AI_MODEL: z.string().default('claude-opus-5-5'),
+    AI_EFFORT: z.enum(['low', 'medium', 'high']).default('low'),
+    AI_REQUEST_TIMEOUT_MS: z.coerce.number().int().min(1000).max(120_000).default(30_000),
+    AI_TURN_DEADLINE_MS: z.coerce.number().int().min(1000).max(180_000).default(60_000),
+    AI_MAX_TOOL_ITERATIONS: z.coerce.number().int().min(1).max(8).default(4),
+    AI_MAX_OUTPUT_TOKENS: z.coerce.number().int().min(256).max(16_000).default(4_000),
+    AI_DAILY_REQUESTS_PER_USER: z.coerce.number().int().min(1).max(1000).default(50),
+    AI_REQUESTS_PER_MINUTE_PER_USER: z.coerce.number().int().min(1).max(60).default(6),
+    /** Monthly platform spend cap in micro-USD (0 = no cap). Requests beyond it use the fallback. */
+    AI_MONTHLY_BUDGET_MICRO_USD: z.coerce.number().int().min(0).default(0),
+    /** Published per-million-token prices (USD) used for cost tracking; defaults are claude-opus-5-5. */
+    AI_PRICE_INPUT_PER_MTOK: z.coerce.number().min(0).default(4),
+    AI_PRICE_OUTPUT_PER_MTOK: z.coerce.number().min(0).default(20),
+    AI_PRICE_CACHE_READ_PER_MTOK: z.coerce.number().min(0).default(0.2),
 
     STORAGE_DRIVER: z.enum(['local', 's3']).default('local'),
     PRIVATE_UPLOAD_DIR: z.string().default('./var/private'),
@@ -146,6 +164,8 @@ const envSchema = z
           });
       }
     }
+    if (env.AI_PROVIDER === 'anthropic' && !env.ANTHROPIC_API_KEY)
+      ctx.addIssue({ code: 'custom', path: ['ANTHROPIC_API_KEY'], message: 'ANTHROPIC_API_KEY is required when AI_PROVIDER=anthropic' });
     if (env.NODE_ENV !== 'production') return;
     const fail = (path: string, message: string) =>
       ctx.addIssue({ code: 'custom', path: [path], message });

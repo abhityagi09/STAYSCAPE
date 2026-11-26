@@ -89,6 +89,11 @@ export class SearchService {
     private readonly trust?: TrustService,
   ) {}
 
+  /** Cities that currently have published stays (used by the deterministic assistant). */
+  async destinationsForAssistant(): Promise<string[]> {
+    return this.cache.getOrSet('assistant:cities', async () => (await HotelModel.distinct('city', { publicationStatus: 'PUBLISHED' })).sort());
+  }
+
   /** Build public hotel cards (shared with wishlists). */
   async cards(
     hotels: HotelRecord[],

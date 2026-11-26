@@ -6,6 +6,7 @@ import { createAdminManagementRouter, createCategoriesRouter } from '@/modules/a
 import { createAdminContentRouter, createPublicContentRouter } from '@/modules/content/content.routes';
 import { createIntelligenceRouters } from '@/modules/intelligence/intelligence.routes';
 import { createRewardsRouter } from '@/modules/rewards/rewards.routes';
+import { createAssistantRouter } from '@/modules/assistant/assistant.routes';
 import { createTripsRouter } from '@/modules/trips/trips.routes';
 import { createAdminCorporateRouter, createCorporateRouter } from '@/modules/corporate/corporate.routes';
 import { scopeMiddleware } from '@/lib/scope';
@@ -167,6 +168,7 @@ export function createApp(container: Container, options: AppOptions = {}): Expre
   api.use('/deals', intelligenceRouters.deals);
   api.use('/rewards', createRewardsRouter(container));
   api.use('/trips', createTripsRouter(container));
+  api.use('/assistant', createAssistantRouter(container));
   api.use('/corporate', createCorporateRouter(container));
   api.use('/admin/organizations', createAdminCorporateRouter(container));
   api.use('/admin', createAdminAnalyticsRouter(container));

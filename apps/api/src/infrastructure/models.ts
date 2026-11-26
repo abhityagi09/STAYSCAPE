@@ -37,6 +37,7 @@ import { TrustSnapshotModel } from '@/modules/trust/trust.service';
 import { PriceAlertModel, PriceObservationModel } from '@/modules/intelligence/intelligence.service';
 import { LoyaltyAccountModel, LoyaltyEntryModel, ReferralCodeModel, ReferralModel } from '@/modules/rewards/rewards.service';
 import { TripModel } from '@/modules/trips/trips.service';
+import { AssistantUsageModel } from '@/modules/assistant/assistant.service';
 import { OrgInvitationModel, OrgMemberModel, OrganizationModel, TravelRequestModel } from '@/modules/corporate/corporate.service';
 import { CommissionRuleModel, LedgerEntryModel, SettlementAllocationModel, SettlementModel } from '@/modules/finance/finance.models';
 import { MediaAssetModel } from '@/modules/media/media-asset.model';
@@ -96,6 +97,7 @@ export const ALL_MODELS = [
   ReferralCodeModel,
   ReferralModel,
   TripModel,
+  AssistantUsageModel,
   OrganizationModel,
   OrgMemberModel,
   OrgInvitationModel,

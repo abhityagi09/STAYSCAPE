@@ -56,6 +56,7 @@ import { SupportConsoleService } from '@/modules/support/support-console.service
 import { TrustService } from '@/modules/trust/trust.service';
 import { IntelligenceService } from '@/modules/intelligence/intelligence.service';
 import { RewardsService } from '@/modules/rewards/rewards.service';
+import { AssistantService } from '@/modules/assistant/assistant.service';
 import { TripsService } from '@/modules/trips/trips.service';
 import { CorporateService } from '@/modules/corporate/corporate.service';
 import { AdminManagementService } from '@/modules/admin/admin-management.service';
@@ -165,6 +166,7 @@ export function buildContainer(core: CoreDependencies) {
   const quotes = new QuoteService(inventory, config);
   const trust = new TrustService({ access: partnerAccess, audit, cache });
   const search = new SearchService(quotes, media, cache, logger, trust);
+  const assistant = new AssistantService({ config, search, quotes, logger });
   const intelligence = new IntelligenceService({ quotes, search, notifications, logger });
 
   // ---- Phase 3: reservations, payments, refunds, customer experience
@@ -273,6 +275,7 @@ export function buildContainer(core: CoreDependencies) {
       intelligence,
       rewards,
       trips,
+      assistant,
       corporate,
       inventoryBlocks,
       content,

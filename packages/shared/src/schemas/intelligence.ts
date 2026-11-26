@@ -137,3 +137,32 @@ export interface ReferralSummaryDto {
   referrals: Array<{ status: 'PENDING' | 'REWARDED' | 'REJECTED'; joinedAt: string; rewardedAt: string | null; refereeInitials: string; reason: string | null }>;
   referredBy: { status: 'PENDING' | 'REWARDED' | 'REJECTED' } | null;
 }
+
+// ---------------------------------------------------------------- AI travel assistant
+export const assistantRequestSchema = z.strictObject({
+  message: z.string().trim().min(1).max(1_000),
+  /** Prior turns kept by the client (the server stores no conversation). */
+  history: z.array(z.strictObject({ role: z.enum(['user', 'assistant']), content: z.string().max(2_000) })).max(10).default([]),
+});
+export interface AssistantQuoteDto {
+  hotelId: string;
+  hotelName: string;
+  roomTypeName: string;
+  ratePlanName: string;
+  checkIn: string;
+  checkOut: string;
+  totalMinor: number;
+  currency: string;
+}
+export interface AssistantReplyDto {
+  answer: string;
+  /** Only properties returned by Stayscape search during this turn — never generated. */
+  hotels: HotelCardDto[];
+  /** Only prices produced by the Stayscape quote engine during this turn. */
+  quotes: AssistantQuoteDto[];
+  followUpQuestions: string[];
+  provider: 'anthropic' | 'rules';
+  /** True when the AI provider was unavailable and the deterministic assistant answered. */
+  degraded: boolean;
+  usage: { remainingToday: number };
+}
