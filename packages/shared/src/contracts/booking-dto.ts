@@ -9,6 +9,8 @@ import type {
   ReviewReportReason,
   ReviewStatus,
   TicketCategory,
+  TicketChannel,
+  TicketPriority,
   TicketStatus,
 } from '../constants/booking';
 import type { CurrencyCode } from '../constants/account';
@@ -363,7 +365,7 @@ export interface AdminReviewDto extends PartnerReviewDto {
 // ---------------------------------------------------------------- support
 export interface TicketMessageDto {
   id: string;
-  author: 'CUSTOMER' | 'AGENT' | 'SYSTEM';
+  author: 'CUSTOMER' | 'AGENT' | 'PARTNER' | 'SYSTEM';
   authorName: string;
   body: string;
   attachments: Array<{ id: string; fileName: string; contentType: string; size: number }>;
@@ -379,6 +381,39 @@ export interface TicketDto {
   bookingReference: string | null;
   lastMessageAt: string;
   createdAt: string;
+  messages?: TicketMessageDto[];
+}
+
+export interface AgentTicketMessageDto extends TicketMessageDto {
+  channel: TicketChannel;
+}
+
+/** Agent console view. Customer contact details are included only for support agents. */
+export interface AgentTicketDto extends Omit<TicketDto, 'messages'> {
+  priority: TicketPriority;
+  assignee: { id: string; name: string } | null;
+  customer: { id: string; name: string; email: string };
+  hotel: { id: string; name: string } | null;
+  partnerVisible: boolean;
+  escalated: boolean;
+  escalationReason: string | null;
+  firstResponseAt: string | null;
+  resolvedAt: string | null;
+  resolution: string | null;
+  statusHistory: Array<{ status: TicketStatus; at: string; by: string | null }>;
+  messages?: AgentTicketMessageDto[];
+}
+
+/** What a property sees of a ticket shared with it: no customer contact details, no internal notes. */
+export interface PartnerTicketDto {
+  id: string;
+  ticketNumber: string;
+  subject: string;
+  category: TicketCategory;
+  status: TicketStatus;
+  bookingReference: string | null;
+  hotel: { id: string; name: string };
+  lastMessageAt: string;
   messages?: TicketMessageDto[];
 }
 

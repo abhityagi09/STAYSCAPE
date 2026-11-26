@@ -173,6 +173,11 @@ export const TICKET_CATEGORIES = [
   'OTHER',
 ] as const;
 export type TicketCategory = (typeof TICKET_CATEGORIES)[number];
+export const TICKET_PRIORITIES = ['LOW', 'NORMAL', 'HIGH', 'URGENT'] as const;
+export type TicketPriority = (typeof TICKET_PRIORITIES)[number];
+/** CUSTOMER: visible to the customer. PARTNER: agent <-> property conversation. INTERNAL: agents only. */
+export const TICKET_CHANNELS = ['CUSTOMER', 'PARTNER', 'INTERNAL'] as const;
+export type TicketChannel = (typeof TICKET_CHANNELS)[number];
 export const TICKET_ATTACHMENT_MAX_BYTES = 5 * 1024 * 1024;
 
 export const MAX_WISHLISTS = 20;

@@ -119,3 +119,32 @@ export const analyticsQuerySchema = z
   })
   .refine((v) => !v.from || !v.to || v.to > v.from, { message: 'End must be after start', path: ['to'] });
 export type AnalyticsQueryDto = z.output<typeof analyticsQuerySchema>;
+
+// ---------------------------------------------------------------- support console
+const TICKET_STATUS_VALUES = ['OPEN', 'IN_PROGRESS', 'WAITING_FOR_CUSTOMER', 'ESCALATED', 'RESOLVED', 'CLOSED'] as const;
+const TICKET_PRIORITY_VALUES = ['LOW', 'NORMAL', 'HIGH', 'URGENT'] as const;
+export const supportQueueQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(25),
+  status: z.enum([...TICKET_STATUS_VALUES, 'ACTIVE']).default('ACTIVE'),
+  priority: z.enum(TICKET_PRIORITY_VALUES).optional(),
+  assignee: z.union([z.enum(['me', 'unassigned']), objectIdSchema]).optional(),
+  category: z.string().max(40).optional(),
+  q: z.string().trim().max(60).optional(),
+  sort: z.enum(['priority', 'oldest', 'newest', 'last_message']).default('priority'),
+});
+export const ticketAssignSchema = z.strictObject({ assigneeId: objectIdSchema.nullable() });
+export const ticketUpdateSchema = z
+  .strictObject({
+    priority: z.enum(TICKET_PRIORITY_VALUES).optional(),
+    status: z.enum(['OPEN', 'IN_PROGRESS', 'WAITING_FOR_CUSTOMER']).optional(),
+    partnerVisible: z.boolean().optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, 'Nothing to change');
+export const agentMessageSchema = z.object({
+  channel: z.enum(['CUSTOMER', 'PARTNER', 'INTERNAL']),
+  body: z.string().trim().min(1).max(5000),
+});
+export const ticketEscalateSchema = z.strictObject({ reason: z.string().trim().min(3).max(500) });
+export const ticketResolveSchema = z.strictObject({ resolution: z.string().trim().min(3).max(1000) });
+export const partnerTicketMessageSchema = z.object({ body: z.string().trim().min(1).max(5000) });
