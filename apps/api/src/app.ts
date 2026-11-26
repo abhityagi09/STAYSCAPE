@@ -2,6 +2,7 @@ import { createAdminCouponsRouter, createCouponsRouter } from '@/modules/coupons
 import { createAdminFinanceRouter, createPartnerFinanceRouter } from '@/modules/finance/finance.routes';
 import { createAdminAnalyticsRouter, createPartnerAnalyticsRouter } from '@/modules/analytics/analytics.routes';
 import { createAdminSupportRouter, createPartnerSupportRouter } from '@/modules/support/support-console.routes';
+import { createAdminManagementRouter, createCategoriesRouter } from '@/modules/admin/admin-management.routes';
 import { scopeMiddleware } from '@/lib/scope';
 import express, { type Express } from 'express';
 import cookieParser from 'cookie-parser';
@@ -150,6 +151,8 @@ export function createApp(container: Container, options: AppOptions = {}): Expre
   api.use('/partner/analytics', createPartnerAnalyticsRouter(container));
   api.use('/partner/support', createPartnerSupportRouter(container));
   api.use('/admin/support', createAdminSupportRouter(container));
+  api.use('/admin', createAdminManagementRouter(container));
+  api.use('/categories', createCategoriesRouter(container));
   api.use('/admin', createAdminAnalyticsRouter(container));
   api.use('/partner/hotels', createPartnerHotelsRouter(container));
   api.use('/partner', createPartnerApplicationRouter(container, limiters));

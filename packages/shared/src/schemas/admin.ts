@@ -1,5 +1,7 @@
 import { z } from 'zod';
 import { CURRENCIES } from '../constants/account';
+import { BOOKING_STATUSES, PAYMENT_STATUSES, REFUND_STATUSES } from '../constants/booking';
+import { AMENITY_CATEGORIES, PROPERTY_TYPES } from '../constants/marketplace';
 import { objectIdSchema } from './common';
 import { localDateSchema } from './marketplace';
 
@@ -148,3 +150,62 @@ export const agentMessageSchema = z.object({
 export const ticketEscalateSchema = z.strictObject({ reason: z.string().trim().min(3).max(500) });
 export const ticketResolveSchema = z.strictObject({ resolution: z.string().trim().min(3).max(1000) });
 export const partnerTicketMessageSchema = z.object({ body: z.string().trim().min(1).max(5000) });
+
+// ---------------------------------------------------------------- catalogue
+const code = z.string().trim().toLowerCase().regex(/^[a-z0-9-]{2,40}$/, 'Use 2–40 lowercase letters, digits or dashes');
+export const amenityUpsertSchema = z.strictObject({
+  code,
+  name: z.string().trim().min(2).max(60),
+  category: z.enum(AMENITY_CATEGORIES),
+  icon: z.string().trim().max(40).default('sparkles'),
+  description: z.string().trim().max(300).nullable().default(null),
+  active: z.boolean().default(true),
+});
+export const destinationUpsertSchema = z.strictObject({
+  name: z.string().trim().min(2).max(80),
+  slug: z.string().trim().toLowerCase().regex(/^[a-z0-9-]{2,80}$/),
+  city: z.string().trim().min(2).max(80),
+  region: z.string().trim().min(2).max(80),
+  country: z.string().trim().toUpperCase().length(2),
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+  description: z.string().trim().min(10).max(600),
+  images: z.array(z.strictObject({ url: z.string().url().max(500), alt: z.string().trim().min(2).max(160) })).max(8).default([]),
+  active: z.boolean().default(true),
+});
+export const propertyCategoryUpsertSchema = z.strictObject({
+  code,
+  name: z.string().trim().min(2).max(60),
+  description: z.string().trim().max(300).default(''),
+  icon: z.string().trim().max(40).default('building'),
+  propertyTypes: z.array(z.enum(PROPERTY_TYPES)).max(PROPERTY_TYPES.length).default([]),
+  amenityCodes: z.array(code).max(10).default([]),
+  sortOrder: z.number().int().min(0).max(1000).default(100),
+  active: z.boolean().default(true),
+}).refine((v) => v.propertyTypes.length + v.amenityCodes.length > 0, { message: 'A category needs at least one property type or amenity', path: ['propertyTypes'] });
+export const catalogListQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  q: z.string().trim().max(60).optional(),
+  active: z.enum(['true', 'false']).optional().transform((v) => (v === undefined ? undefined : v === 'true')),
+});
+
+// ---------------------------------------------------------------- admin records
+const listBase = {
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(25),
+  q: z.string().trim().max(80).optional(),
+  from: localDateSchema.optional(),
+  to: localDateSchema.optional(),
+  sort: z.enum(['newest', 'oldest', 'amount_desc', 'amount_asc']).default('newest'),
+};
+export const adminBookingsQuerySchema = z.object({ ...listBase, status: z.enum(BOOKING_STATUSES).optional(), paymentStatus: z.enum(PAYMENT_STATUSES).optional(), hotelId: objectIdSchema.optional(), escalated: z.enum(['true']).optional() });
+export const adminPaymentsQuerySchema = z.object({ ...listBase, status: z.enum(PAYMENT_STATUSES).optional(), exceptions: z.enum(['true']).optional() });
+export const adminRefundsQuerySchema = z.object({ ...listBase, status: z.enum(REFUND_STATUSES).optional() });
+export const adminUsersQuerySchema = z.object({ ...listBase, role: z.string().max(30).optional(), status: z.enum(['ACTIVE', 'SUSPENDED', 'DEACTIVATED']).optional() });
+export const bookingEscalationSchema = z.strictObject({
+  reason: z.string().trim().min(5).max(1000),
+  priority: z.enum(['NORMAL', 'HIGH', 'URGENT']).default('HIGH'),
+});
+export const escalationResolveSchema = z.strictObject({ resolution: z.string().trim().min(3).max(1000) });
+export const escalationsQuerySchema = z.object({ page: z.coerce.number().int().min(1).default(1), limit: z.coerce.number().int().min(1).max(100).default(25), status: z.enum(['OPEN', 'RESOLVED']).default('OPEN') });

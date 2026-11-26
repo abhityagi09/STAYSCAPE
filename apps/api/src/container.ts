@@ -53,6 +53,7 @@ import { RefundsService } from '@/modules/payments/refunds.service';
 import { ReviewsService } from '@/modules/reviews/reviews.service';
 import { SupportService } from '@/modules/support/support.service';
 import { SupportConsoleService } from '@/modules/support/support-console.service';
+import { AdminManagementService } from '@/modules/admin/admin-management.service';
 import { WishlistsService } from '@/modules/wishlists/wishlists.service';
 
 export interface CoreDependencies {
@@ -199,6 +200,7 @@ export function buildContainer(core: CoreDependencies) {
   });
   const support = new SupportService(media, audit);
   const supportConsole = new SupportConsoleService({ media, audit, access: partnerAccess });
+  const adminManagement = new AdminManagementService({ audit, cache });
   const lifecycle = new LifecycleService({ bookings, outbox, reviews, wishlists, support, logger });
   const partnerReservations = new PartnerReservationsService({ access: partnerAccess, audit, cancellations });
   const operations = new OperationsService({
@@ -252,6 +254,7 @@ export function buildContainer(core: CoreDependencies) {
       reviews,
       support,
       supportConsole,
+      adminManagement,
       lifecycle,
       operations,
       partnerReservations,
