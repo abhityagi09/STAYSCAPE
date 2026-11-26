@@ -58,10 +58,10 @@ export class MediaService {
    * The original binary is not retained and nothing binary is stored in MongoDB.
    */
   async uploadImage(params: {
-    partnerId: string;
+    partnerId: string | null;
     hotelId: string | null;
     uploadedBy: string;
-    purpose: Extract<MediaPurpose, 'HOTEL_IMAGE' | 'ROOM_IMAGE'>;
+    purpose: Extract<MediaPurpose, 'HOTEL_IMAGE' | 'ROOM_IMAGE' | 'REVIEW_IMAGE'>;
     file: UploadedFile | undefined;
   }): Promise<MediaAssetRecord> {
     const { file } = params;
@@ -86,7 +86,10 @@ export class MediaService {
     const { r, g, b } = stats.dominant;
     const dominantColor = `#${[r, g, b].map((c) => c.toString(16).padStart(2, '0')).join('')}`;
 
-    const folder = `${params.purpose === 'HOTEL_IMAGE' ? 'hotels' : 'rooms'}/${params.partnerId}/${randomUUID()}`;
+    const folder =
+      params.purpose === 'REVIEW_IMAGE'
+        ? `reviews/${params.uploadedBy}/${randomUUID()}`
+        : `${params.purpose === 'HOTEL_IMAGE' ? 'hotels' : 'rooms'}/${params.partnerId}/${randomUUID()}`;
     const variants: MediaVariant[] = [];
     let width = metadata.width;
     let height = metadata.height;
@@ -133,7 +136,7 @@ export class MediaService {
     }
 
     const doc = await MediaAssetModel.create({
-      partnerId: new Types.ObjectId(params.partnerId),
+      partnerId: params.partnerId ? new Types.ObjectId(params.partnerId) : null,
       hotelId: params.hotelId ? new Types.ObjectId(params.hotelId) : null,
       uploadedBy: new Types.ObjectId(params.uploadedBy),
       purpose: params.purpose,
@@ -190,6 +193,59 @@ export class MediaService {
     }).lean<MediaAssetRecord>();
     if (!asset?.privateKey) throw Errors.notFound('Document');
     return { body: await this.privateStorage.get(asset.privateKey), asset };
+  }
+
+  /** Private customer upload (support attachments): PDF/JPEG/PNG, content-checked, never public. */
+  async uploadPrivateFile(params: {
+    uploadedBy: string;
+    purpose: 'SUPPORT_ATTACHMENT';
+    file: UploadedFile | undefined;
+  }): Promise<MediaAssetRecord> {
+    const { file } = params;
+    if (!file) throw Errors.badRequest('Attach a file in the "file" field.');
+    if (file.size > DOCUMENT_MAX_BYTES)
+      throw Errors.tooLarge('Attachments must be 5 MB or smaller.');
+    const type = detectFileType(file.buffer, DOCUMENT_MIME_TYPES);
+    if (!type) throw Errors.unsupportedMedia('Attachments must be PDF, JPEG or PNG.');
+    const key = `support/${params.uploadedBy}/${randomUUID()}.${type.ext}`;
+    await this.privateStorage.put(key, file.buffer, type.mime);
+    const doc = await MediaAssetModel.create({
+      uploadedBy: new Types.ObjectId(params.uploadedBy),
+      purpose: params.purpose,
+      visibility: 'PRIVATE',
+      status: 'PENDING',
+      originalFileName: safeFileName(file.originalname),
+      contentType: type.mime,
+      size: file.size,
+      privateKey: key,
+    });
+    return doc.toObject() as MediaAssetRecord;
+  }
+
+  async readPrivateFile(
+    mediaId: string,
+    purpose: MediaPurpose,
+  ): Promise<{ body: Buffer; asset: MediaAssetRecord }> {
+    if (!Types.ObjectId.isValid(mediaId)) throw Errors.notFound('File');
+    const asset = await MediaAssetModel.findOne({
+      _id: mediaId,
+      purpose,
+      status: { $ne: 'DELETED' },
+    }).lean<MediaAssetRecord>();
+    if (!asset?.privateKey) throw Errors.notFound('File');
+    return { body: await this.privateStorage.get(asset.privateKey), asset };
+  }
+
+  /** Customer uploads may only be attached by the customer who uploaded them. */
+  async assertUploadedBy(userId: string, ids: string[], purpose: MediaPurpose): Promise<void> {
+    if (ids.length === 0) return;
+    const count = await MediaAssetModel.countDocuments({
+      _id: { $in: ids },
+      uploadedBy: userId,
+      purpose,
+      status: { $ne: 'DELETED' },
+    });
+    if (count !== new Set(ids).size) throw Errors.badRequest('One or more files were not found.');
   }
 
   findImages(ids: Array<string | Types.ObjectId>): Promise<MediaAssetRecord[]> {

@@ -42,6 +42,7 @@ import { useHotelDetail, useRoomOffers, useSimilar, type StayParams } from '../a
 import { PhotoGrid, Lightbox } from '../components/Gallery';
 import { HotelCard, RatingBadge, ResponsiveImage } from '../components/HotelCard';
 import { PriceBreakdown } from '../components/PriceBreakdown';
+import { HotelReviews } from '@/features/bookings/HotelReviews';
 import { parseSearch, toSearchParams } from '../search-state';
 
 export const SELECTION_STORAGE_KEY = 'stayscape.selection';
@@ -413,6 +414,7 @@ function Overview({ hotel }: { hotel: HotelDetailDto }) {
                 : 'Ratings come from verified guests after completed stays.'}
           </p>
         </div>
+        <HotelReviews slug={hotel.slug} />
       </section>
     </div>
   );

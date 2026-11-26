@@ -19,6 +19,8 @@ import {
 } from '@/jobs/maintenance.jobs';
 import { ensureInventoryValidator } from '@/modules/inventory/inventory.models';
 import { createEmailHandlers, EMAIL_QUEUE_NAME, type EmailJobs } from '@/jobs/email.jobs';
+import { createDomainEventHandlers } from '@/jobs/domain-events.jobs';
+import { DOMAIN_EVENTS_QUEUE_NAME, type DomainEventJobs } from '@/modules/outbox/outbox.service';
 import { createLogger, type Logger } from '@/lib/logger';
 
 export interface Runtime {
@@ -60,6 +62,7 @@ export async function bootstrap(options: { startWorkers?: boolean } = {}): Promi
 
   const mailer = createMailProvider(config, logger);
   const emailQueue = new BullJobQueue<EmailJobs>(EMAIL_QUEUE_NAME, redis);
+  const domainEventQueue = new BullJobQueue<DomainEventJobs>(DOMAIN_EVENTS_QUEUE_NAME, redis);
   const storage = createStorageProvider(config);
   const privateStorage = createPrivateStorageProvider(config);
   const container = buildContainer({
@@ -70,6 +73,7 @@ export async function bootstrap(options: { startWorkers?: boolean } = {}): Promi
     emailQueue,
     storage,
     privateStorage,
+    domainEventQueue,
   });
   // Database-level availability invariant (idempotent).
   await ensureInventoryValidator().catch((error: unknown) =>
@@ -83,14 +87,34 @@ export async function bootstrap(options: { startWorkers?: boolean } = {}): Promi
       startBullWorker<EmailJobs>(EMAIL_QUEUE_NAME, redis, createEmailHandlers(mailer), logger),
     );
     logger.info({ queue: EMAIL_QUEUE_NAME, mail: mailer.name }, 'Email worker started');
-    const { media, inventory } = container.services;
+    const {
+      media,
+      bookings,
+      outbox,
+      payments,
+      lifecycle,
+      bookingNotifications,
+      refunds,
+      documents,
+    } = container.services;
+    workers.push(
+      startBullWorker<DomainEventJobs>(
+        DOMAIN_EVENTS_QUEUE_NAME,
+        redis,
+        createDomainEventHandlers({ notifications: bookingNotifications, refunds, documents }),
+        logger,
+      ),
+    );
     workers.push(
       startBullWorker<MaintenanceJobs>(
         MAINTENANCE_QUEUE_NAME,
         redis,
         createMaintenanceHandlers({
           media,
-          inventory,
+          bookings,
+          outbox,
+          payments,
+          lifecycle,
           orphanTtlHours: config.MEDIA_ORPHAN_TTL_HOURS,
           logger,
         }),
@@ -104,6 +128,7 @@ export async function bootstrap(options: { startWorkers?: boolean } = {}): Promi
   const shutdown = async () => {
     await Promise.allSettled(workers.map((worker) => worker.close()));
     await emailQueue.close().catch(() => undefined);
+    await domainEventQueue.close().catch(() => undefined);
     await maintenanceQueue?.close().catch(() => undefined);
     await redis.quit().catch(() => undefined);
     await disconnectMongo().catch(() => undefined);

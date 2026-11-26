@@ -12,7 +12,8 @@ export interface MediaVariant {
 }
 
 export interface MediaAssetAttrs {
-  partnerId: Types.ObjectId;
+  /** Owning partner for listing media; null for customer uploads (reviews, support). */
+  partnerId: Types.ObjectId | null;
   hotelId: Types.ObjectId | null;
   uploadedBy: Types.ObjectId;
   purpose: MediaPurpose;
@@ -48,7 +49,7 @@ const variantSchema = new Schema<MediaVariant>(
 
 const mediaAssetSchema = new Schema<MediaAssetAttrs>(
   {
-    partnerId: { type: Schema.Types.ObjectId, ref: 'Partner', required: true },
+    partnerId: { type: Schema.Types.ObjectId, ref: 'Partner', default: null },
     hotelId: { type: Schema.Types.ObjectId, ref: 'Hotel', default: null },
     uploadedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     purpose: { type: String, enum: MEDIA_PURPOSES, required: true },
@@ -68,5 +69,6 @@ const mediaAssetSchema = new Schema<MediaAssetAttrs>(
 
 mediaAssetSchema.index({ partnerId: 1, hotelId: 1, purpose: 1 }, { name: 'partner_hotel_purpose' });
 mediaAssetSchema.index({ status: 1, createdAt: 1 }, { name: 'status_created' });
+mediaAssetSchema.index({ uploadedBy: 1, purpose: 1, createdAt: -1 }, { name: 'uploader_purpose' });
 
 export const MediaAssetModel = model<MediaAssetAttrs>('MediaAsset', mediaAssetSchema);

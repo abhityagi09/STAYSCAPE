@@ -64,6 +64,8 @@ export const STAFF_PERMISSIONS = [
   'ROOMS_MANAGE',
   'INVENTORY_MANAGE',
   'RATES_MANAGE',
+  /** View reservations and record check-in, check-out and no-shows; respond to reviews. */
+  'BOOKINGS_MANAGE',
 ] as const;
 export type StaffPermission = (typeof STAFF_PERMISSIONS)[number];
 export const STAFF_INVITATION_STATUSES = ['PENDING', 'ACCEPTED', 'REVOKED'] as const;
@@ -203,5 +205,12 @@ export const CHILD_AGE_ADULT_THRESHOLD = 13;
 export const MAX_STAY_NIGHTS = 30;
 export const MAX_ROOMS_PER_SEARCH = 8;
 export const MAX_COMPARE_HOTELS = 4;
-export const MEDIA_PURPOSES = ['HOTEL_IMAGE', 'ROOM_IMAGE', 'PARTNER_DOCUMENT'] as const;
+export const MEDIA_PURPOSES = [
+  'HOTEL_IMAGE',
+  'ROOM_IMAGE',
+  'PARTNER_DOCUMENT',
+  'REVIEW_IMAGE',
+  'SUPPORT_ATTACHMENT',
+  'BOOKING_DOCUMENT',
+] as const;
 export type MediaPurpose = (typeof MEDIA_PURPOSES)[number];

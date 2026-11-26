@@ -13,14 +13,14 @@ export type EmailTemplate =
     }
   | { template: 'password-changed'; to: string; data: { firstName: string; supportUrl: string } };
 
-const escapeHtml = (value: string) =>
+export const escapeHtml = (value: string) =>
   value.replace(
     /[&<>"']/g,
     (char) =>
       ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char] ?? char,
   );
 
-function layout(title: string, body: string): string {
+export function layout(title: string, body: string): string {
   return `<!doctype html><html><body style="margin:0;background:#F8F6F1;font-family:Inter,Segoe UI,Arial,sans-serif;color:#222725">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:32px 16px">
 <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;background:#fff;border-radius:16px;border:1px solid #E8DFD1">
@@ -30,7 +30,7 @@ function layout(title: string, body: string): string {
 </table></td></tr></table></body></html>`;
 }
 
-const button = (href: string, label: string) =>
+export const button = (href: string, label: string) =>
   `<p style="margin:24px 0"><a href="${escapeHtml(href)}" style="background:#173D35;color:#fff;padding:12px 22px;border-radius:999px;text-decoration:none;font-weight:600">${escapeHtml(label)}</a></p>
 <p style="font-size:13px;color:#6b706d">If the button does not work, paste this link into your browser:<br><span style="word-break:break-all">${escapeHtml(href)}</span></p>`;
 

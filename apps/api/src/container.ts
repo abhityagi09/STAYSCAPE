@@ -28,6 +28,27 @@ import { PartnersService } from '@/modules/partners/partners.service';
 import { QuoteService } from '@/modules/pricing/quote.service';
 import { RoomsService } from '@/modules/rooms/rooms.service';
 import { SearchService } from '@/modules/search/search.service';
+import { InlineJobQueue, type JobHandler, type JobQueue } from '@/infrastructure/queue/job-queue';
+import { createDomainEventHandlers } from '@/jobs/domain-events.jobs';
+import { BookingsService } from '@/modules/bookings/bookings.service';
+import { CancellationsService } from '@/modules/bookings/cancellations.service';
+import { LifecycleService } from '@/modules/bookings/lifecycle.service';
+import { DocumentsService } from '@/modules/documents/documents.service';
+import { BookingNotificationsService } from '@/modules/notifications/booking-notifications.service';
+import {
+  OutboxService,
+  type DomainEvent,
+  type DomainEventJobs,
+} from '@/modules/outbox/outbox.service';
+import { OperationsService } from '@/modules/payments/operations.service';
+import { PaymentsService } from '@/modules/payments/payments.service';
+import type { PaymentProvider } from '@/modules/payments/providers/payment-provider';
+import { RazorpayProvider } from '@/modules/payments/providers/razorpay.provider';
+import { SandboxPaymentProvider } from '@/modules/payments/providers/sandbox.provider';
+import { RefundsService } from '@/modules/payments/refunds.service';
+import { ReviewsService } from '@/modules/reviews/reviews.service';
+import { SupportService } from '@/modules/support/support.service';
+import { WishlistsService } from '@/modules/wishlists/wishlists.service';
 
 export interface CoreDependencies {
   config: Config;
@@ -38,6 +59,42 @@ export interface CoreDependencies {
   storage: StorageProvider;
   /** Never publicly served; used for verification documents. */
   privateStorage: StorageProvider;
+  /** BullMQ queue for outbox events. Omitted in tests: events then run in-process. */
+  domainEventQueue?: JobQueue<DomainEventJobs>;
+  /** Override the payment gateway (tests). Defaults to PAYMENT_PROVIDER from config. */
+  paymentProvider?: PaymentProvider;
+}
+
+/** In-process queue whose handlers are bound once the services that implement them exist. */
+class LateBoundInlineQueue implements JobQueue<DomainEventJobs> {
+  private inner: InlineJobQueue<DomainEventJobs> | null = null;
+  bind(handlers: { [K in keyof DomainEventJobs]: JobHandler<DomainEvent> }) {
+    this.inner = new InlineJobQueue<DomainEventJobs>(handlers);
+  }
+  async enqueue<K extends keyof DomainEventJobs & string>(
+    name: K,
+    data: DomainEventJobs[K],
+    options?: { jobId?: string },
+  ) {
+    if (!this.inner) throw new Error('Domain event handlers are not bound yet');
+    await this.inner.enqueue(name, data, options);
+  }
+  async close() {}
+}
+
+export function createPaymentProvider(config: Config, logger: Logger): PaymentProvider {
+  if (config.PAYMENT_PROVIDER === 'razorpay') {
+    return new RazorpayProvider(
+      {
+        keyId: config.RAZORPAY_KEY_ID!,
+        keySecret: config.RAZORPAY_KEY_SECRET!,
+        webhookSecret: config.RAZORPAY_WEBHOOK_SECRET!,
+        apiBase: config.RAZORPAY_API_BASE,
+      },
+      logger,
+    );
+  }
+  return new SandboxPaymentProvider(config.SANDBOX_PAYMENT_SECRET);
 }
 
 /** Composition root: wires repositories → services → middleware once per process. */
@@ -94,6 +151,54 @@ export function buildContainer(core: CoreDependencies) {
   const quotes = new QuoteService(inventory, config);
   const search = new SearchService(quotes, media, cache, logger);
 
+  // ---- Phase 3: reservations, payments, refunds, customer experience
+  const lateQueue = core.domainEventQueue ? null : new LateBoundInlineQueue();
+  const outbox = new OutboxService(core.domainEventQueue ?? lateQueue!, logger);
+  const paymentProvider = core.paymentProvider ?? createPaymentProvider(config, logger);
+  const bookings = new BookingsService({ config, quotes, inventory, outbox, media, audit, logger });
+  const refunds = new RefundsService({ provider: paymentProvider, outbox, audit, logger });
+  const payments = new PaymentsService({
+    config,
+    provider: paymentProvider,
+    bookings,
+    inventory,
+    refunds,
+    outbox,
+    audit,
+    logger,
+  });
+  const cancellations = new CancellationsService({
+    bookings,
+    inventory,
+    refunds,
+    outbox,
+    audit,
+    access: partnerAccess,
+  });
+  const bookingNotifications = new BookingNotificationsService(core.mailer, config, logger);
+  const documents = new DocumentsService(core.privateStorage, config, logger);
+  const wishlists = new WishlistsService({ config, search, quotes, encryptor });
+  const reviews = new ReviewsService({
+    config,
+    media,
+    access: partnerAccess,
+    outbox,
+    audit,
+    cache,
+  });
+  const support = new SupportService(media, audit);
+  const lifecycle = new LifecycleService({ bookings, outbox, reviews, wishlists, support, logger });
+  const operations = new OperationsService({
+    refunds,
+    notifications: bookingNotifications,
+    reviews,
+    outbox,
+    audit,
+  });
+  lateQueue?.bind(
+    createDomainEventHandlers({ notifications: bookingNotifications, refunds, documents }),
+  );
+
   const authenticate = createAuthenticate({ tokens, users: userRepository, sessions });
 
   return {
@@ -122,6 +227,19 @@ export function buildContainer(core: CoreDependencies) {
       rooms,
       quotes,
       search,
+      outbox,
+      paymentProvider,
+      bookings,
+      refunds,
+      payments,
+      cancellations,
+      bookingNotifications,
+      documents,
+      wishlists,
+      reviews,
+      support,
+      lifecycle,
+      operations,
     },
     authenticate,
   };

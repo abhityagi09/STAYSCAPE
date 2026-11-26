@@ -16,6 +16,7 @@ import {
   testImage,
 } from '@/test/marketplace-fixtures';
 import { RoomTypeModel } from '@/modules/rooms/room.models';
+import { withTransaction } from '@/lib/transaction';
 
 const searchUrl = (params: Record<string, string | number>) =>
   `/api/v1/hotels?${new URLSearchParams(Object.entries(params).map(([k, v]): [string, string] => [k, String(v)])).toString()}`;
@@ -309,23 +310,14 @@ describe('rooms and inventory', () => {
       .expect(200);
     expect(blocked.body.data.map((d: { available: number }) => d.available)).toEqual([3, 3, 3]);
 
-    // Phase 3 reservation API: hold 3 rooms on the middle night only.
+    // Hold 3 rooms on the middle night with the reservation primitives (as checkout does).
     const roomType = (await RoomTypeModel.findById(hotel.roomTypeId).lean())!;
-    const holdArgs = {
-      holdKey: 'booking-1',
-      hotelId: new Types.ObjectId(hotel.hotelId),
-      roomType,
-      checkIn: daysFromToday(11),
-      checkOut: daysFromToday(12),
-      quantity: 3,
-      ttlMinutes: 15,
-    };
-    const hold = await container.services.inventory.hold(holdArgs);
-    const again = await container.services.inventory.hold(holdArgs);
-    expect(again._id.toString()).toBe(hold._id.toString()); // idempotent
+    const middle = [daysFromToday(11)];
+    const inv = container.services.inventory;
+    await withTransaction((s) => inv.reserveHeld(roomType, middle, 3, s));
     await expect(
-      container.services.inventory.hold({ ...holdArgs, holdKey: 'booking-2', quantity: 1 }),
-    ).rejects.toMatchObject({ statusCode: 409 });
+      withTransaction((s) => inv.reserveHeld(roomType, middle, 1, s)),
+    ).rejects.toMatchObject({ statusCode: 409, code: 'INVENTORY_UNAVAILABLE' });
 
     // Blocking 3 on a night where 3 are held would overcommit: rejected with the conflicting date.
     const conflict = await request(app)
@@ -349,9 +341,11 @@ describe('rooms and inventory', () => {
       .send(roomTypeInput({ totalInventory: 4 }))
       .expect(409);
 
-    // Confirm converts held → booked; releasing a confirmed hold is a no-op.
-    expect(await container.services.inventory.confirm('booking-1')).toBe(true);
-    expect(await container.services.inventory.release('booking-1')).toBe(false);
+    // Held → booked; counters can never go negative (a second commit of the same rooms is rejected).
+    await withTransaction((s) => inv.commitHeld(roomType._id, middle, 3, s));
+    await expect(
+      withTransaction((s) => inv.commitHeld(roomType._id, middle, 3, s)),
+    ).rejects.toMatchObject({ statusCode: 409 });
     const day = await DailyInventoryModel.findOne({
       roomTypeId: hotel.roomTypeId,
       localDate: daysFromToday(11),
@@ -376,17 +370,12 @@ describe('rooms and inventory', () => {
     const roomType = (await RoomTypeModel.findById(hotel.roomTypeId).lean())!;
     const checkIn = daysFromToday(20);
     const checkOut = daysFromToday(23);
+    const nightsToHold = [daysFromToday(20), daysFromToday(21), daysFromToday(22)];
     const attempts = await Promise.allSettled(
-      Array.from({ length: 12 }, (_, i) =>
-        container.services.inventory.hold({
-          holdKey: `race-${i}`,
-          hotelId: new Types.ObjectId(hotel.hotelId),
-          roomType,
-          checkIn,
-          checkOut,
-          quantity: 1,
-          ttlMinutes: 15,
-        }),
+      Array.from({ length: 12 }, () =>
+        withTransaction((s) =>
+          container.services.inventory.reserveHeld(roomType, nightsToHold, 1, s),
+        ),
       ),
     );
     expect(attempts.filter((a) => a.status === 'fulfilled')).toHaveLength(5);

@@ -3,22 +3,31 @@ import type { Redis } from 'ioredis';
 import type { Types } from 'mongoose';
 import type { JobHandler } from '@/infrastructure/queue/job-queue';
 import type { Logger } from '@/lib/logger';
+import type { BookingsService } from '@/modules/bookings/bookings.service';
+import type { LifecycleService } from '@/modules/bookings/lifecycle.service';
 import { HotelModel } from '@/modules/hotels/hotel.model';
-import type { InventoryService } from '@/modules/inventory/inventory.service';
 import type { MediaService } from '@/modules/media/media.service';
+import type { OutboxService } from '@/modules/outbox/outbox.service';
 import { PartnerModel } from '@/modules/partners/partner.model';
+import type { PaymentsService } from '@/modules/payments/payments.service';
+import { ReviewModel } from '@/modules/reviews/review.models';
 import { RoomTypeModel } from '@/modules/rooms/room.models';
+import { TicketMessageModel } from '@/modules/support/support.models';
 
 export const MAINTENANCE_QUEUE_NAME = 'stayscape-maintenance';
 
 export type MaintenanceJobs = {
   'media.cleanup': Record<string, never>;
-  'inventory.expire-holds': Record<string, never>;
+  'bookings.expire-holds': Record<string, never>;
+  'outbox.dispatch': Record<string, never>;
+  'payments.reconcile': Record<string, never>;
+  'bookings.complete-stays': Record<string, never>;
+  'bookings.checkin-reminders': Record<string, never>;
 };
 
 /** Every place a media asset can be referenced from. */
 export async function referencedMediaIds(ids: Types.ObjectId[]): Promise<Set<string>> {
-  const [hotels, revisions, rooms, partners] = await Promise.all([
+  const [hotels, revisions, rooms, partners, reviews, messages] = await Promise.all([
     HotelModel.find({ 'images.mediaId': { $in: ids } }, { images: 1 }).lean<
       Array<{ images: Array<{ mediaId: Types.ObjectId }> }>
     >(),
@@ -32,6 +41,12 @@ export async function referencedMediaIds(ids: Types.ObjectId[]): Promise<Set<str
       { 'verificationDocuments.mediaId': { $in: ids } },
       { verificationDocuments: 1 },
     ).lean<Array<{ verificationDocuments: Array<{ mediaId: Types.ObjectId }> }>>(),
+    ReviewModel.find({ photoIds: { $in: ids } }, { photoIds: 1 }).lean<
+      Array<{ photoIds: Types.ObjectId[] }>
+    >(),
+    TicketMessageModel.find({ attachmentIds: { $in: ids } }, { attachmentIds: 1 }).lean<
+      Array<{ attachmentIds: Types.ObjectId[] }>
+    >(),
   ]);
   const set = new Set<string>();
   for (const h of hotels) h.images.forEach((i) => set.add(i.mediaId.toString()));
@@ -39,27 +54,47 @@ export async function referencedMediaIds(ids: Types.ObjectId[]): Promise<Set<str
     (h.revision.data.images ?? []).forEach((i) => set.add(i.mediaId.toString()));
   for (const r of rooms) r.images.forEach((i) => set.add(i.mediaId.toString()));
   for (const p of partners) p.verificationDocuments.forEach((d) => set.add(d.mediaId.toString()));
+  for (const r of reviews) r.photoIds.forEach((id) => set.add(id.toString()));
+  for (const m of messages) m.attachmentIds.forEach((id) => set.add(id.toString()));
   return set;
 }
 
-export function createMaintenanceHandlers(deps: {
+export interface MaintenanceDeps {
   media: MediaService;
-  inventory: InventoryService;
+  bookings: BookingsService;
+  outbox: OutboxService;
+  payments: PaymentsService;
+  lifecycle: LifecycleService;
   orphanTtlHours: number;
   logger: Logger;
-}): { [K in keyof MaintenanceJobs]: JobHandler<MaintenanceJobs[K]> } {
+}
+
+export function createMaintenanceHandlers(deps: MaintenanceDeps): {
+  [K in keyof MaintenanceJobs]: JobHandler<MaintenanceJobs[K]>;
+} {
+  const log = (n: number | object, msg: string) => {
+    if (typeof n === 'number' ? n > 0 : Object.values(n).some((v) => v > 0))
+      deps.logger.info({ result: n }, msg);
+  };
   return {
-    'media.cleanup': async () => {
-      const removed = await deps.media.cleanupOrphans(
-        new Date(Date.now() - deps.orphanTtlHours * 3600_000),
-        referencedMediaIds,
-      );
-      if (removed) deps.logger.info({ removed }, 'Removed orphaned media');
-    },
-    'inventory.expire-holds': async () => {
-      const expired = await deps.inventory.expireHolds();
-      if (expired) deps.logger.info({ expired }, 'Released expired inventory holds');
-    },
+    'media.cleanup': async () =>
+      log(
+        await deps.media.cleanupOrphans(
+          new Date(Date.now() - deps.orphanTtlHours * 3600_000),
+          referencedMediaIds,
+        ),
+        'Removed orphaned media',
+      ),
+    'bookings.expire-holds': async () =>
+      log(await deps.bookings.expireHolds(), 'Expired inventory holds released'),
+    'outbox.dispatch': async () =>
+      log(await deps.outbox.dispatchPending(), 'Outbox events dispatched'),
+    'payments.reconcile': async () =>
+      log(await deps.payments.reconcile(), 'Payment reconciliation'),
+    'bookings.complete-stays': async () =>
+      log(await deps.lifecycle.completeStays(), 'Stays completed'),
+    'bookings.checkin-reminders': async () =>
+      log(await deps.lifecycle.remindCheckins(), 'Check-in reminders queued'),
   };
 }
 
@@ -71,13 +106,36 @@ export async function scheduleMaintenance(connection: Redis): Promise<Queue> {
   });
   await queue.upsertJobScheduler(
     'media-cleanup',
-    { every: 60 * 60 * 1000 },
+    { every: 60 * 60_000 },
     { name: 'media.cleanup', data: {} },
   );
+  // Hold expiry must not depend on MongoDB TTL (it would not release counters): explicit sweep.
   await queue.upsertJobScheduler(
-    'inventory-expire-holds',
-    { every: 60 * 1000 },
-    { name: 'inventory.expire-holds', data: {} },
+    'bookings-expire-holds',
+    { every: 30_000 },
+    { name: 'bookings.expire-holds', data: {} },
   );
+  await queue.upsertJobScheduler(
+    'outbox-dispatch',
+    { every: 10_000 },
+    { name: 'outbox.dispatch', data: {} },
+  );
+  await queue.upsertJobScheduler(
+    'payments-reconcile',
+    { every: 2 * 60_000 },
+    { name: 'payments.reconcile', data: {} },
+  );
+  await queue.upsertJobScheduler(
+    'bookings-complete-stays',
+    { every: 60 * 60_000 },
+    { name: 'bookings.complete-stays', data: {} },
+  );
+  await queue.upsertJobScheduler(
+    'bookings-checkin-reminders',
+    { every: 60 * 60_000 },
+    { name: 'bookings.checkin-reminders', data: {} },
+  );
+  // Remove the Phase 2 scheduler that this one replaces.
+  await queue.removeJobScheduler('inventory-expire-holds').catch(() => undefined);
   return queue;
 }

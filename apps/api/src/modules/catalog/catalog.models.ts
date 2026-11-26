@@ -104,19 +104,3 @@ searchEventSchema.index(
 );
 searchEventSchema.index({ destination: 1, createdAt: -1 }, { name: 'destination_created' });
 export const SearchEventModel = model<SearchEventAttrs>('SearchEvent', searchEventSchema);
-
-export interface WishlistItemAttrs {
-  userId: Types.ObjectId;
-  hotelId: Types.ObjectId;
-  createdAt: Date;
-}
-const wishlistSchema = new Schema<WishlistItemAttrs>(
-  {
-    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    hotelId: { type: Schema.Types.ObjectId, ref: 'Hotel', required: true },
-  },
-  { timestamps: { createdAt: true, updatedAt: false }, versionKey: false },
-);
-wishlistSchema.index({ userId: 1, hotelId: 1 }, { unique: true, name: 'uniq_user_hotel' });
-wishlistSchema.index({ userId: 1, createdAt: -1 }, { name: 'user_created' });
-export const WishlistItemModel = model<WishlistItemAttrs>('WishlistItem', wishlistSchema);

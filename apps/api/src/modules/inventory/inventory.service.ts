@@ -4,7 +4,6 @@ import {
   addDays,
   dateRange,
   dayOfWeek,
-  stayNights,
   todayInTimeZone,
   type InventoryDayDto,
   type InventoryUpdateInput,
@@ -13,13 +12,7 @@ import { AppError, Errors } from '@/lib/errors';
 import { withTransaction } from '@/lib/transaction';
 import type { HotelRecord } from '@/modules/hotels/hotel.model';
 import type { RoomTypeRecord } from '@/modules/rooms/room.models';
-import {
-  AVAILABLE_EXPR,
-  DailyInventoryModel,
-  InventoryHoldModel,
-  type DailyInventoryRecord,
-  type InventoryHoldRecord,
-} from './inventory.models';
+import { AVAILABLE_EXPR, DailyInventoryModel, type DailyInventoryRecord } from './inventory.models';
 
 export interface DayAvailability {
   available: number;
@@ -34,8 +27,9 @@ export class InventoryConflictError extends AppError {
   constructor(
     message: string,
     public readonly dates: string[],
+    code: 'CONFLICT' | 'INVENTORY_UNAVAILABLE' = 'CONFLICT',
   ) {
-    super(409, 'CONFLICT', message, { dates });
+    super(409, code, message, { dates });
   }
 }
 
@@ -280,120 +274,130 @@ export class InventoryService {
     return result;
   }
 
-  // ------------------------------------------------------------------ reservation API (Phase 3)
+  // ------------------------------------------------------------------ reservation primitives
+  //
+  // Used by the booking services inside THEIR transaction (pass the session). Each primitive is a
+  // single conditional updateMany over every night of the stay: if any night fails its condition
+  // the count differs and the primitive throws, aborting the caller's whole transaction — all
+  // nights or none. Counters are additionally protected by the collection validator.
 
-  /**
-   * Atomically hold `quantity` rooms for every night of a stay. All nights or none: a single
-   * conditional update per stay inside a transaction, rejected if any night lacks availability.
-   * Idempotent by `holdKey` — repeating a request returns the existing hold.
-   */
-  async hold(params: {
-    holdKey: string;
-    hotelId: Types.ObjectId;
-    roomType: Pick<RoomTypeRecord, '_id' | 'totalInventory'>;
-    checkIn: string;
-    checkOut: string;
-    quantity: number;
-    ttlMinutes: number;
-  }): Promise<InventoryHoldRecord> {
-    const existing = await InventoryHoldModel.findOne({
-      holdKey: params.holdKey,
-    }).lean<InventoryHoldRecord>();
-    if (existing) return existing;
-    const dates = stayNights(params.checkIn, params.checkOut);
-    if (dates.length === 0 || params.quantity < 1) throw Errors.badRequest('Invalid hold request.');
+  private async applyToNights(
+    roomTypeId: Types.ObjectId,
+    nights: string[],
+    condition: Record<string, unknown>,
+    update: Record<string, unknown>,
+    session: ClientSession,
+    onShortfall: () => Error,
+  ): Promise<void> {
+    if (nights.length === 0) throw Errors.badRequest('A stay needs at least one night.');
+    const result = await DailyInventoryModel.updateMany(
+      { roomTypeId, localDate: { $in: nights }, ...condition },
+      update,
+      { session },
+    );
+    if (result.modifiedCount !== nights.length) throw onShortfall();
+  }
 
-    return withTransaction(async (session) => {
-      await this.ensureRows(params.hotelId, params.roomType, dates, session);
-      const result = await DailyInventoryModel.updateMany(
-        {
-          roomTypeId: params.roomType._id,
-          localDate: { $in: dates },
-          $expr: { $gte: [AVAILABLE_EXPR, params.quantity] },
-        },
-        { $inc: { heldRooms: params.quantity } },
-        { session },
-      );
-      if (result.modifiedCount !== dates.length) {
-        throw new InventoryConflictError(
+  /** Hold `quantity` rooms on every night (available ≥ quantity required on each). */
+  async reserveHeld(
+    roomType: Pick<RoomTypeRecord, '_id' | 'hotelId' | 'totalInventory'>,
+    nights: string[],
+    quantity: number,
+    session: ClientSession,
+  ): Promise<void> {
+    await this.ensureRows(roomType.hotelId, roomType, nights, session);
+    await this.applyToNights(
+      roomType._id,
+      nights,
+      { $expr: { $gte: [AVAILABLE_EXPR, quantity] } },
+      { $inc: { heldRooms: quantity } },
+      session,
+      () =>
+        new InventoryConflictError(
           'Not enough rooms are available for every night of this stay.',
           [],
-        );
-      }
-      const [hold] = await InventoryHoldModel.create(
-        [
-          {
-            holdKey: params.holdKey,
-            hotelId: params.hotelId,
-            roomTypeId: params.roomType._id,
-            dates,
-            quantity: params.quantity,
-            status: 'HELD',
-            expiresAt: new Date(Date.now() + params.ttlMinutes * 60_000),
-          },
-        ],
-        { session },
-      );
-      return hold!.toObject() as InventoryHoldRecord;
-    });
+          'INVENTORY_UNAVAILABLE',
+        ),
+    );
   }
 
-  private async transition(
-    holdKey: string,
-    from: 'HELD',
-    to: 'RELEASED' | 'CONFIRMED' | 'EXPIRED',
-  ): Promise<InventoryHoldRecord | null> {
-    return withTransaction(async (session) => {
-      const hold = await InventoryHoldModel.findOneAndUpdate(
-        { holdKey, status: from },
-        { $set: { status: to } },
-        { session, new: true },
-      ).lean<InventoryHoldRecord>();
-      if (!hold) return null; // already transitioned: idempotent no-op
-      const update =
-        to === 'CONFIRMED'
-          ? { $inc: { heldRooms: -hold.quantity, bookedRooms: hold.quantity } }
-          : { $inc: { heldRooms: -hold.quantity } };
-      const result = await DailyInventoryModel.updateMany(
-        {
-          roomTypeId: hold.roomTypeId,
-          localDate: { $in: hold.dates },
-          heldRooms: { $gte: hold.quantity },
-        },
-        update,
-        { session },
-      );
-      if (result.modifiedCount !== hold.dates.length)
-        throw new InventoryConflictError('Inventory hold is inconsistent.', hold.dates);
-      return hold;
-    });
+  /** Return held rooms to availability (hold released or expired). */
+  async releaseHeld(
+    roomTypeId: Types.ObjectId,
+    nights: string[],
+    quantity: number,
+    session: ClientSession,
+  ): Promise<void> {
+    await this.applyToNights(
+      roomTypeId,
+      nights,
+      { heldRooms: { $gte: quantity } },
+      { $inc: { heldRooms: -quantity } },
+      session,
+      () => new InventoryConflictError('Inventory hold is inconsistent.', nights),
+    );
   }
 
-  /** Release a hold (customer abandoned or payment failed). Idempotent. */
-  async release(holdKey: string): Promise<boolean> {
-    return Boolean(await this.transition(holdKey, 'HELD', 'RELEASED'));
+  /** Convert held rooms into booked rooms (payment confirmed). */
+  async commitHeld(
+    roomTypeId: Types.ObjectId,
+    nights: string[],
+    quantity: number,
+    session: ClientSession,
+  ): Promise<void> {
+    await this.applyToNights(
+      roomTypeId,
+      nights,
+      { heldRooms: { $gte: quantity } },
+      { $inc: { heldRooms: -quantity, bookedRooms: quantity } },
+      session,
+      () => new InventoryConflictError('Inventory hold is inconsistent.', nights),
+    );
   }
 
-  /** Convert held rooms into booked rooms (payment confirmed). Idempotent. */
-  async confirm(holdKey: string): Promise<boolean> {
-    return Boolean(await this.transition(holdKey, 'HELD', 'CONFIRMED'));
+  /**
+   * Book directly without a hold — only used to re-allocate a booking whose hold expired while a
+   * verified payment was in flight. Same availability condition as a new hold.
+   */
+  async bookDirect(
+    roomType: Pick<RoomTypeRecord, '_id' | 'hotelId' | 'totalInventory'>,
+    nights: string[],
+    quantity: number,
+    session: ClientSession,
+  ): Promise<void> {
+    await this.ensureRows(roomType.hotelId, roomType, nights, session);
+    await this.applyToNights(
+      roomType._id,
+      nights,
+      { $expr: { $gte: [AVAILABLE_EXPR, quantity] } },
+      { $inc: { bookedRooms: quantity } },
+      session,
+      () =>
+        new InventoryConflictError(
+          'The rooms are no longer available for every night.',
+          [],
+          'INVENTORY_UNAVAILABLE',
+        ),
+    );
   }
 
-  /** Job: release expired holds. Safe to run concurrently and repeatedly. */
-  async expireHolds(now = new Date()): Promise<number> {
-    const expired = await InventoryHoldModel.find(
-      { status: 'HELD', expiresAt: { $lt: now } },
-      { holdKey: 1 },
-    )
-      .limit(500)
-      .lean<Array<{ holdKey: string }>>();
-    let count = 0;
-    for (const { holdKey } of expired)
-      if (await this.transition(holdKey, 'HELD', 'EXPIRED')) count += 1;
-    return count;
+  /** Release booked rooms (cancellation / no-show). */
+  async releaseBooked(
+    roomTypeId: Types.ObjectId,
+    nights: string[],
+    quantity: number,
+    session: ClientSession,
+  ): Promise<void> {
+    await this.applyToNights(
+      roomTypeId,
+      nights,
+      { bookedRooms: { $gte: quantity } },
+      { $inc: { bookedRooms: -quantity } },
+      session,
+      () => new InventoryConflictError('Booked inventory is inconsistent.', nights),
+    );
   }
 
-  /** Remove all inventory for a room type that has never had commitments. */
   async purgeRoomType(roomTypeId: Types.ObjectId, session?: ClientSession) {
     await DailyInventoryModel.deleteMany({ roomTypeId }, sessionOpt(session));
   }

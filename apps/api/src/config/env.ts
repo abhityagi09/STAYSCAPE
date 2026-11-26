@@ -68,6 +68,33 @@ const envSchema = z
     SEARCH_CACHE_TTL_SECONDS: z.coerce.number().int().min(0).max(3600).default(60),
     MEDIA_ORPHAN_TTL_HOURS: z.coerce.number().int().min(1).max(720).default(24),
 
+    // ---- Reservations & payments (Phase 3)
+    BOOKING_HOLD_TTL_MINUTES: z.coerce.number().int().min(2).max(60).default(10),
+    /** 'sandbox' is a labelled local/test gateway; production requires 'razorpay'. */
+    PAYMENT_PROVIDER: z.enum(['razorpay', 'sandbox']).default('sandbox'),
+    RAZORPAY_KEY_ID: optionalString,
+    RAZORPAY_KEY_SECRET: optionalString,
+    RAZORPAY_WEBHOOK_SECRET: optionalString,
+    RAZORPAY_API_BASE: z.url().default('https://api.razorpay.com/v1'),
+    SANDBOX_PAYMENT_SECRET: z
+      .string()
+      .min(32)
+      .default('dev-only-sandbox-gateway-secret-0123456789abcdef'),
+    PAYMENT_MERCHANT_NAME: z.string().default('STAYSCAPE'),
+    /** Who issues guest invoices: the platform (merchant of record) or the property. */
+    INVOICE_ISSUER_MODE: z.enum(['PLATFORM', 'PROPERTY']).default('PLATFORM'),
+    INVOICE_ISSUER_NAME: z.string().default('STAYSCAPE Travel (development)'),
+    INVOICE_ISSUER_ADDRESS: z.string().default('Not configured — set INVOICE_ISSUER_ADDRESS'),
+    INVOICE_ISSUER_TAX_ID: optionalString,
+    INVOICE_ISSUER_EMAIL: z.string().default('billing@stayscape.local'),
+    INVOICE_NUMBER_PREFIX: z
+      .string()
+      .regex(/^[A-Z0-9-]{1,12}$/)
+      .default('SSI'),
+    REVIEW_EDIT_WINDOW_DAYS: z.coerce.number().int().min(0).max(365).default(30),
+    REVIEW_MAX_EDITS: z.coerce.number().int().min(0).max(20).default(3),
+    OPS_ALERT_EMAIL: optionalString,
+
     STORAGE_DRIVER: z.enum(['local', 's3']).default('local'),
     PRIVATE_UPLOAD_DIR: z.string().default('./var/private'),
     S3_PRIVATE_BUCKET: optionalString,
@@ -98,12 +125,40 @@ const envSchema = z
     API_DOCS_ENABLED: bool(true),
   })
   .superRefine((env, ctx) => {
+    if (env.PAYMENT_PROVIDER === 'razorpay') {
+      for (const key of [
+        'RAZORPAY_KEY_ID',
+        'RAZORPAY_KEY_SECRET',
+        'RAZORPAY_WEBHOOK_SECRET',
+      ] as const) {
+        if (!env[key])
+          ctx.addIssue({
+            code: 'custom',
+            path: [key],
+            message: `${key} is required when PAYMENT_PROVIDER=razorpay`,
+          });
+      }
+    }
     if (env.NODE_ENV !== 'production') return;
     const fail = (path: string, message: string) =>
       ctx.addIssue({ code: 'custom', path: [path], message });
     if (env.JWT_ACCESS_SECRET.includes(DEV_SECRET_MARKER)) {
       fail('JWT_ACCESS_SECRET', 'Development secrets must not be used in production');
     }
+    if (env.PAYMENT_PROVIDER !== 'razorpay')
+      fail('PAYMENT_PROVIDER', 'The sandbox payment provider is not allowed in production');
+    for (const key of [
+      'RAZORPAY_KEY_ID',
+      'RAZORPAY_KEY_SECRET',
+      'RAZORPAY_WEBHOOK_SECRET',
+    ] as const) {
+      if (!env[key]) fail(key, `${key} is required in production`);
+    }
+    if (
+      env.INVOICE_ISSUER_MODE === 'PLATFORM' &&
+      env.INVOICE_ISSUER_ADDRESS.startsWith('Not configured')
+    )
+      fail('INVOICE_ISSUER_ADDRESS', 'Configure the invoice issuer address');
     for (const key of ['DATA_ENCRYPTION_KEY', 'QUOTE_SIGNING_SECRET'] as const) {
       if (env[key].includes(DEV_SECRET_MARKER))
         fail(key, 'Development secrets must not be used in production');

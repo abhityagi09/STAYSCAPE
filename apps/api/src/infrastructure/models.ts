@@ -4,18 +4,29 @@ import { NewsletterSubscriptionModel } from '@/modules/newsletter/newsletter-sub
 import { NotificationModel } from '@/modules/notifications/notification.model';
 import { RefreshSessionModel } from '@/modules/sessions/refresh-session.model';
 import { UserModel } from '@/modules/users/user.model';
-import {
-  AmenityModel,
-  DestinationModel,
-  SearchEventModel,
-  WishlistItemModel,
-} from '@/modules/catalog/catalog.models';
+import { AmenityModel, DestinationModel, SearchEventModel } from '@/modules/catalog/catalog.models';
 import { HotelModel } from '@/modules/hotels/hotel.model';
 import {
   DailyInventoryModel,
-  InventoryHoldModel,
   ensureInventoryValidator,
 } from '@/modules/inventory/inventory.models';
+import { CounterModel } from '@/lib/references';
+import {
+  BookingHoldModel,
+  BookingModel,
+  CancellationModel,
+} from '@/modules/bookings/booking.models';
+import { InvoiceModel } from '@/modules/documents/invoice.model';
+import { NotificationDeliveryModel, OutboxEventModel } from '@/modules/outbox/outbox.models';
+import {
+  PaymentEventModel,
+  PaymentModel,
+  RefundModel,
+  SandboxRecordModel,
+} from '@/modules/payments/payment.models';
+import { ReviewModel, ReviewReportModel } from '@/modules/reviews/review.models';
+import { SupportTicketModel, TicketMessageModel } from '@/modules/support/support.models';
+import { WishlistModel } from '@/modules/wishlists/wishlist.model';
 import { MediaAssetModel } from '@/modules/media/media-asset.model';
 import { PartnerModel, PartnerStaffModel } from '@/modules/partners/partner.model';
 import { PricingRuleModel, RatePlanModel, RoomTypeModel } from '@/modules/rooms/room.models';
@@ -34,13 +45,27 @@ export const ALL_MODELS = [
   AmenityModel,
   DestinationModel,
   SearchEventModel,
-  WishlistItemModel,
   HotelModel,
   RoomTypeModel,
   RatePlanModel,
   PricingRuleModel,
   DailyInventoryModel,
-  InventoryHoldModel,
+  CounterModel,
+  BookingHoldModel,
+  BookingModel,
+  CancellationModel,
+  PaymentModel,
+  PaymentEventModel,
+  RefundModel,
+  SandboxRecordModel,
+  OutboxEventModel,
+  NotificationDeliveryModel,
+  InvoiceModel,
+  WishlistModel,
+  ReviewModel,
+  ReviewReportModel,
+  SupportTicketModel,
+  TicketMessageModel,
 ] as const;
 
 export async function syncAllIndexes(): Promise<Record<string, string[]>> {

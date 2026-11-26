@@ -1,25 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
-import { CalendarClock, Check, GitCompareArrows, Heart, Minus, X } from 'lucide-react';
-import {
-  PROPERTY_TYPE_LABELS,
-  formatMinorUnits,
-  type QuoteDto,
-  type QuoteRevalidationDto,
-} from '@stayscape/shared';
+import { Check, GitCompareArrows, Heart, Minus, X } from 'lucide-react';
+import { PROPERTY_TYPE_LABELS, formatMinorUnits } from '@stayscape/shared';
 import { useAppDispatch, useAppSelector } from '@/app/store';
 import {
-  Alert,
   Button,
   ButtonLink,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
   EmptyState,
   ErrorState,
   PageHeader,
-  PageSpinner,
   SkeletonText,
 } from '@/components/ui';
 import { errorMessage } from '@/lib/api/errors';
@@ -31,9 +19,7 @@ import {
   RatingBadge,
   ResponsiveImage,
 } from '../components/HotelCard';
-import { PriceBreakdown } from '../components/PriceBreakdown';
 import { parseSearch } from '../search-state';
-import { SELECTION_STORAGE_KEY } from './HotelDetailPage';
 import { useQuery } from '@tanstack/react-query';
 
 const yes = (v: boolean | null | undefined) =>
@@ -200,94 +186,6 @@ export function ComparePage() {
           Some saved comparisons are no longer available and were skipped.
         </p>
       )}
-    </div>
-  );
-}
-
-/** The booking workflow arrives in Phase 3. This page preserves the selection and re-validates the quote — it never takes payment. */
-export function CheckoutPreviewPage() {
-  const [params] = useSearchParams();
-  const token = params.get('quote');
-  const stored = useMemo(() => {
-    try {
-      return JSON.parse(sessionStorage.getItem(SELECTION_STORAGE_KEY) ?? 'null') as {
-        quote: QuoteDto;
-        hotel: { slug: string; name: string };
-      } | null;
-    } catch {
-      return null;
-    }
-  }, []);
-  const [result, setResult] = useState<QuoteRevalidationDto | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  useEffect(() => {
-    if (!token) return;
-    marketplaceApi
-      .revalidate(token)
-      .then(setResult)
-      .catch((e: unknown) => setError(errorMessage(e)));
-  }, [token]);
-
-  if (!token)
-    return (
-      <div className="container-page py-16">
-        <EmptyState
-          title="No stay selected"
-          description="Choose a room and rate on a property page first."
-          action={<ButtonLink to="/hotels">Find a stay</ButtonLink>}
-        />
-      </div>
-    );
-  if (!result && !error) return <PageSpinner label="Checking the latest price" />;
-  const quote = result?.quote ?? stored?.quote ?? null;
-  return (
-    <div className="container-page max-w-3xl py-12">
-      <PageHeader eyebrow="Booking" title="Review your stay" />
-      <div className="flex flex-col gap-6">
-        {error && <Alert tone="danger">{error}</Alert>}
-        {result && !result.valid && (
-          <Alert
-            tone="warning"
-            title={result.priceChanged ? 'The price has changed' : 'This selection needs updating'}
-          >
-            {result.reason} {result.priceChanged && 'The updated price is shown below.'}
-          </Alert>
-        )}
-        {result?.valid && <Alert tone="success">Price and availability confirmed just now.</Alert>}
-        <Alert tone="info" title="Online booking opens soon">
-          Secure checkout and payment arrive with the next release. Your selection is saved in this
-          browser session — nothing has been booked or charged.
-        </Alert>
-        {quote && (
-          <Card>
-            <CardHeader>
-              <CardTitle as="h2">{quote.hotel.name}</CardTitle>
-              <p className="text-sm text-fg-muted">
-                {quote.roomType.name} · {quote.ratePlan.name}
-              </p>
-              <p className="flex items-center gap-1.5 text-sm text-fg-subtle">
-                <CalendarClock className="size-4" aria-hidden="true" />
-                {quote.checkIn} → {quote.checkOut} · {quote.nights} night
-                {quote.nights === 1 ? '' : 's'} · {quote.rooms} room{quote.rooms === 1 ? '' : 's'}
-              </p>
-            </CardHeader>
-            <CardContent>
-              <PriceBreakdown quote={quote} />
-            </CardContent>
-          </Card>
-        )}
-        <div className="flex gap-3">
-          <ButtonLink
-            to={`/hotels/${quote?.hotel.slug ?? stored?.hotel.slug ?? ''}`}
-            variant="outline"
-          >
-            Back to property
-          </ButtonLink>
-          <Button disabled aria-disabled="true">
-            Booking available soon
-          </Button>
-        </div>
-      </div>
     </div>
   );
 }
