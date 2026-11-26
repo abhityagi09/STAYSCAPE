@@ -200,6 +200,29 @@ export function createAdminOperationsRouter(container: Container): Router {
   router.get('/operations', requirePermission('payments:read'), async (_req, res) =>
     sendSuccess(res, await operations.overview()),
   );
+  // Background jobs: queue depth, dead letters (failed after all retries) and manual retry.
+  router.get('/operations/jobs', requirePermission('payments:read'), async (_req, res) =>
+    sendSuccess(res, await container.services.jobs.overview()),
+  );
+  router.post(
+    '/operations/jobs/:queue/:jobId/retry',
+    requirePermission('system:configure'),
+    validate({
+      params: z.object({ queue: z.string().max(60), jobId: z.string().min(1).max(200) }),
+    }),
+    async (req, res) => {
+      const p = validatedParams<{ queue: string; jobId: string }>(req);
+      const result = await container.services.jobs.retry(p.queue, p.jobId);
+      await container.services.audit.record({
+        actorId: requireAuth(req).userId,
+        action: 'operations.job_retried',
+        entityType: 'job',
+        entityId: `${p.queue}:${p.jobId}`,
+        context: requestContext(req),
+      });
+      sendSuccess(res, result);
+    },
+  );
   router.post(
     '/refunds/:id/retry',
     requirePermission('refunds:manage'),

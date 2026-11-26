@@ -24,6 +24,7 @@ import { NotificationList } from '../components/Notifications';
 import { PreferencesForm } from '../components/PreferencesForm';
 import { AvatarCard, ProfileForm } from '../components/ProfileForm';
 import { ChangePasswordCard, SessionsCard } from '../components/SecuritySettings';
+import { PrivacyCard } from '../components/PrivacyCard';
 import { tr, trf } from '@/lib/tr';
 
 function useUser(): UserDto | null {
@@ -191,6 +192,7 @@ export function SecurityPage() {
       />
       <ChangePasswordCard />
       <SessionsCard />
+      <PrivacyCard />
     </div>
   );
 }

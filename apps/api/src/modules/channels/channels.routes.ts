@@ -2,6 +2,7 @@ import express, { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
 import { objectIdSchema } from '@stayscape/shared';
 import type { Container } from '@/container';
+import { requirePermission } from '@/modules/permissions/permission.middleware';
 import { sendSuccess } from '@/lib/http';
 import {
   requestContext,
@@ -21,7 +22,7 @@ const p = (req: Request) => validatedParams<P>(req);
 export function createPartnerChannelsRouter(container: Container): Router {
   const router = Router({ mergeParams: true });
   const { channels } = container.services;
-  router.use(container.authenticate);
+  router.use(container.authenticate, requirePermission('partner:access'));
   router.get('/:hotelId/channels', validate({ params: hotelParam }), async (req, res) =>
     sendSuccess(res, await channels.list(requireAuth(req), p(req).hotelId)),
   );

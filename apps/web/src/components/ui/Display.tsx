@@ -1,4 +1,5 @@
 import { useState, type ComponentProps, type ReactNode } from 'react';
+import { useDocumentTitle } from '@/lib/use-document-title';
 import { Link } from 'react-router';
 import { ChevronRight, CircleAlert, CircleCheck, Info, Star, TriangleAlert, X } from 'lucide-react';
 import { formatMinorUnits, type CurrencyCode } from '@stayscape/shared';
@@ -204,6 +205,7 @@ export function PageHeader({
   breadcrumb?: BreadcrumbItem[];
   className?: string;
 }) {
+  useDocumentTitle(typeof title === 'string' ? title : null);
   return (
     <header
       className={cn(

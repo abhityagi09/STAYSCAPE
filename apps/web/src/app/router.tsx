@@ -33,9 +33,23 @@ function SearchRedirect() {
   return <Navigate to={`/hotels${location.search}`} replace />;
 }
 
+/** Shown while the first lazily loaded route module downloads. */
+function InitialLoading() {
+  return (
+    <div role="status" aria-live="polite" className="flex min-h-[50vh] items-center justify-center">
+      <span className="sr-only">Loading…</span>
+      <span
+        aria-hidden="true"
+        className="size-8 animate-spin rounded-full border-2 border-border border-t-brand"
+      />
+    </div>
+  );
+}
+
 export const routes: RouteObject[] = [
   {
     errorElement: <RouteErrorPage />,
+    hydrateFallbackElement: <InitialLoading />,
     children: [
       {
         element: <PublicLayout />,

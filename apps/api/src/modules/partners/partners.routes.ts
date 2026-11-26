@@ -119,6 +119,8 @@ export function createPartnerApplicationRouter(
   });
 
   // Team (owners only)
+  // Team management is for partner accounts only (invitations below are for invitees).
+  router.use('/staff', requirePermission('partner:access'));
   router.get('/staff', async (req: Request, res: Response) => {
     sendSuccess(
       res,

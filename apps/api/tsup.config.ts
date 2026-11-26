@@ -7,6 +7,8 @@ export default defineConfig({
     'scripts/bootstrap-admin': 'src/scripts/bootstrap-admin.ts',
     'scripts/sync-indexes': 'src/scripts/sync-indexes.ts',
     'scripts/seed': 'src/scripts/seed.ts',
+    'scripts/migrate': 'src/scripts/migrate.ts',
+    'scripts/bootstrap-first-admin': 'src/scripts/bootstrap-first-admin.ts',
   },
   format: ['esm'],
   platform: 'node',

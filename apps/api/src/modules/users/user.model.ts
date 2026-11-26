@@ -41,6 +41,8 @@ export interface UserAttrs {
   preferences: UserPreferences;
   lastLoginAt: Date | null;
   passwordChangedAt: Date | null;
+  /** Set when the person deleted their account; personal fields are anonymised. */
+  deletedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -96,6 +98,7 @@ const userSchema = new Schema<UserAttrs>(
       },
     },
     accountStatus: { type: String, enum: ACCOUNT_STATUSES, default: 'ACTIVE' },
+    deletedAt: { type: Date, default: null },
     emailVerifiedAt: { type: Date, default: null },
     phoneVerifiedAt: { type: Date, default: null },
     preferences: { type: preferencesSchema, default: () => ({}) },

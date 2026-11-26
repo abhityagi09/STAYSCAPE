@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useDocumentTitle } from '@/lib/use-document-title';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import {
   ArrowLeft,
@@ -437,6 +438,7 @@ export default function HotelDetailPage() {
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
   const detail = useHotelDetail(slug);
+  useDocumentTitle(detail.data ? `${detail.data.name}, ${detail.data.city}` : null);
   const similar = useSimilar(slug);
   const search = useMemo(() => parseSearch(params), [params]);
   const stay = useMemo<StayParams | null>(

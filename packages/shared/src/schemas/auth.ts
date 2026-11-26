@@ -112,3 +112,10 @@ export const changePasswordFormSchema = z
     path: ['newPassword'],
   });
 export type ChangePasswordFormValues = z.input<typeof changePasswordFormSchema>;
+
+/** Self-service account deletion: re-authenticate and type DELETE to confirm. */
+export const deleteAccountSchema = z.strictObject({
+  password: z.string().min(1, 'Password is required').max(PASSWORD_MAX_LENGTH),
+  confirm: z.literal('DELETE', { error: 'Type DELETE to confirm' }),
+});
+export type DeleteAccountInput = z.infer<typeof deleteAccountSchema>;

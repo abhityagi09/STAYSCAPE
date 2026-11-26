@@ -35,7 +35,8 @@
     "db:indexes": "npm run db:indexes -w @stayscape/api",
     "check:env": "node scripts/check-env.mjs",
     "i18n:check": "npm run build:shared && node scripts/i18n-keys.mjs",
-    "seed": "npm run seed -w @stayscape/api"
+    "seed": "npm run seed -w @stayscape/api",
+    "db:migrate": "npm run db:migrate -w @stayscape/api --"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
@@ -51,6 +52,9 @@
     "tsup": "^8.5.1",
     "typescript": "~5.9",
     "typescript-eslint": "^8.73.0",
-    "vitest": "^3.2.7"
+    "vitest": "^5.1.2"
+  },
+  "overrides": {
+    "esbuild": "^0.28.2"
   }
 }

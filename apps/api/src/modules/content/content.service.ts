@@ -37,7 +37,7 @@ export function contentState(
 }
 
 /** Mongo filter equivalent of `contentState(e) === state`. */
-function stateFilter(state: ContentState, now: Date): Record<string, unknown> {
+export function stateFilter(state: ContentState, now: Date): Record<string, unknown> {
   switch (state) {
     case 'ARCHIVED':
       return { archivedAt: { $ne: null } };

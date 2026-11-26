@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useDocumentTitle } from '@/lib/use-document-title';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
 import {
   GitCompareArrows,
@@ -246,6 +247,7 @@ export default function SearchResultsPage() {
   const [highlighted, setHighlighted] = useState<string | null>(null);
   const [searchOnMove, setSearchOnMove] = useState(true);
   const query = useHotelSearch(state);
+  useDocumentTitle(state.destination ? `Stays in ${state.destination}` : 'Hotels and stays');
   const results = query.data;
   const filterCount = activeFilterCount(state);
   const detailSuffix = useMemo(() => {

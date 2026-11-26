@@ -1,0 +1,215 @@
+# STAYSCAPE production / staging stack (docs/deployment.md).
+#
+#   Production (managed MongoDB Atlas + managed Redis, TLS at the load balancer):
+#     docker compose -f docker-compose.prod.yml --env-file .env.production up -d --wait
+#   Self-contained staging (adds private MongoDB replica set, Redis and Mailpit):
+#     docker compose -f docker-compose.prod.yml --env-file .env.staging --profile self-hosted up -d --build --wait
+#   Release step (run once per deploy, before switching traffic):
+#     docker compose -f docker-compose.prod.yml --env-file <file> run --rm release
+#
+# Security posture: non-root images, read-only root filesystems, all Linux capabilities dropped,
+# no-new-privileges, databases on an internal network with NO published ports, only the web
+# container is exposed (bind it to the load balancer's private interface).
+name: stayscape-${STACK_NAME:-prod}
+
+x-hardening: &hardening
+  init: true
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: ['no-new-privileges:true']
+  restart: unless-stopped
+  stop_grace_period: 30s
+  logging:
+    # Containers log JSON to stdout; the host's log agent (CloudWatch/Datadog/Loki/…) forwards it.
+    driver: json-file
+    options: { max-size: '20m', max-file: '5', tag: '{{.Name}}' }
+
+x-api-env: &api-env
+  NODE_ENV: production
+  DEPLOYMENT_ENV: ${DEPLOYMENT_ENV:-production}
+  PORT: '4000'
+  TRUST_PROXY: '1'
+  API_PUBLIC_URL: ${PUBLIC_URL:?PUBLIC_URL is required}
+  WEB_APP_URL: ${PUBLIC_URL}
+  CORS_ORIGINS: ${PUBLIC_URL}
+  MONGO_URI: ${MONGO_URI:?MONGO_URI is required}
+  REDIS_URL: ${REDIS_URL:?REDIS_URL is required}
+  JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?}
+  DATA_ENCRYPTION_KEY: ${DATA_ENCRYPTION_KEY:?}
+  QUOTE_SIGNING_SECRET: ${QUOTE_SIGNING_SECRET:?}
+  COOKIE_SECURE: ${COOKIE_SECURE:-true}
+  COOKIE_SAMESITE: strict
+  PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-razorpay}
+  RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:-}
+  RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:-}
+  RAZORPAY_WEBHOOK_SECRET: ${RAZORPAY_WEBHOOK_SECRET:-}
+  SANDBOX_PAYMENT_SECRET: ${SANDBOX_PAYMENT_SECRET:-}
+  MAIL_PROVIDER: smtp
+  MAIL_FROM: ${MAIL_FROM:-STAYSCAPE <no-reply@example.com>}
+  SMTP_HOST: ${SMTP_HOST:?}
+  SMTP_PORT: ${SMTP_PORT:-587}
+  SMTP_SECURE: ${SMTP_SECURE:-false}
+  SMTP_USER: ${SMTP_USER:-}
+  SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+  STORAGE_DRIVER: ${STORAGE_DRIVER:-s3}
+  S3_BUCKET: ${S3_BUCKET:-}
+  S3_PRIVATE_BUCKET: ${S3_PRIVATE_BUCKET:-}
+  S3_REGION: ${S3_REGION:-}
+  S3_ENDPOINT: ${S3_ENDPOINT:-}
+  MEDIA_PUBLIC_BASE_URL: ${MEDIA_PUBLIC_BASE_URL:-/api/v1/media}
+  UPLOAD_DIR: /app/apps/api/var/uploads
+  PRIVATE_UPLOAD_DIR: /app/apps/api/var/private
+  INVOICE_ISSUER_MODE: ${INVOICE_ISSUER_MODE:-PROPERTY}
+  AI_PROVIDER: ${AI_PROVIDER:-rules}
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+  METRICS_TOKEN: ${METRICS_TOKEN:-}
+  # Production defaults apply unless overridden (staging raises them for automated test traffic).
+  RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-300}
+  AUTH_RATE_LIMIT_MAX: ${AUTH_RATE_LIMIT_MAX:-30}
+  LOGIN_RATE_LIMIT_MAX: ${LOGIN_RATE_LIMIT_MAX:-10}
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+  API_DOCS_ENABLED: ${API_DOCS_ENABLED:-false}
+
+services:
+  api:
+    <<: *hardening
+    image: ${REGISTRY:-stayscape}/api:${IMAGE_TAG:-local}
+    build: { context: ., dockerfile: infrastructure/docker/api.Dockerfile }
+    environment:
+      <<: *api-env
+      # HTTP only; background jobs run in the dedicated worker so both scale independently.
+      RUN_WORKERS: 'false'
+    tmpfs: ['/tmp']
+    volumes:
+      - api-uploads:/app/apps/api/var/uploads
+      - api-private:/app/apps/api/var/private
+    networks: [backend, egress]
+    depends_on:
+      # Only present in the self-hosted (staging) profile; production uses managed services.
+      mongo: { condition: service_healthy, required: false }
+      redis: { condition: service_healthy, required: false }
+    deploy:
+      resources:
+        limits: { cpus: '1.0', memory: 768M }
+        reservations: { memory: 256M }
+
+  worker:
+    <<: *hardening
+    image: ${REGISTRY:-stayscape}/api:${IMAGE_TAG:-local}
+    command: ['node', '--enable-source-maps', 'dist/worker.js']
+    environment:
+      <<: *api-env
+      RUN_WORKERS: 'true'
+    # The worker has no HTTP server: liveness is "the process is running" (restart policy).
+    healthcheck: { disable: true }
+    tmpfs: ['/tmp']
+    volumes:
+      - api-uploads:/app/apps/api/var/uploads
+      - api-private:/app/apps/api/var/private
+    networks: [backend, egress]
+    depends_on:
+      api: { condition: service_healthy }
+    deploy:
+      resources:
+        limits: { cpus: '1.0', memory: 768M }
+
+  web:
+    <<: *hardening
+    image: ${REGISTRY:-stayscape}/web:${IMAGE_TAG:-local}
+    build:
+      context: .
+      dockerfile: infrastructure/docker/web.Dockerfile
+      args: { VITE_API_BASE_URL: /api/v1 }
+    tmpfs: ['/tmp']
+    ports:
+      # Bind to the private interface the TLS load balancer forwards to.
+      - '${WEB_BIND:-127.0.0.1:8080}:8080'
+    networks: [edge, backend]
+    depends_on:
+      api: { condition: service_healthy }
+    deploy:
+      resources:
+        limits: { cpus: '0.5', memory: 256M }
+
+  # One-shot release task: versioned data migrations, then index synchronisation.
+  release:
+    image: ${REGISTRY:-stayscape}/api:${IMAGE_TAG:-local}
+    profiles: [release]
+    command: ['sh', '-c', 'node dist/scripts/migrate.js && node dist/scripts/sync-indexes.js']
+    environment:
+      <<: *api-env
+      RUN_WORKERS: 'false'
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    networks: [backend, egress]
+
+  # ---------------------------------------------------------------- self-hosted (staging only)
+  mongo:
+    image: mongo:8.0
+    profiles: [self-hosted]
+    command: ['--replSet', 'rs0', '--bind_ip_all', '--port', '27017']
+    volumes:
+      - mongo-data:/data/db
+      - mongo-config:/data/configdb
+      - ./infrastructure/mongo/init-replica-set.js:/scripts/init-replica-set.js:ro
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--file', '/scripts/init-replica-set.js']
+      interval: 5s
+      timeout: 10s
+      retries: 30
+      start_period: 10s
+    networks: [backend]
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { cpus: '1.0', memory: 1G }
+
+  redis:
+    image: redis:7.4-alpine
+    profiles: [self-hosted]
+    command:
+      [
+        'redis-server',
+        '--appendonly',
+        'yes',
+        '--save',
+        '60',
+        '1',
+        '--maxmemory-policy',
+        'noeviction',
+      ]
+    volumes: [redis-data:/data]
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [backend]
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { cpus: '0.5', memory: 256M }
+
+  mailpit:
+    image: axllent/mailpit:v1.27
+    profiles: [self-hosted]
+    environment: { MP_SMTP_AUTH_ACCEPT_ANY: '1', MP_SMTP_AUTH_ALLOW_INSECURE: '1' }
+    ports: ['127.0.0.1:${MAILPIT_UI_PORT:-8026}:8025']
+    # The inbox UI is published for testers, which needs a non-internal network.
+    networks: [backend, edge]
+    restart: unless-stopped
+
+networks:
+  # Databases live here only: internal = no route to or from the outside world.
+  backend: { internal: true }
+  # Outbound access for the API/worker (SMTP, Razorpay, ECB rates, Claude API).
+  egress: {}
+  edge: {}
+
+volumes:
+  api-uploads:
+  api-private:
+  mongo-data:
+  mongo-config:
+  redis-data:

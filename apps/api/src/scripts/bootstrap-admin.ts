@@ -20,9 +20,11 @@ const LOCAL_HOSTS = ['localhost', '127.0.0.1', 'mongo', '::1'];
 
 export function assertBootstrapAllowed(env: {
   NODE_ENV?: string | undefined;
+  DEPLOYMENT_ENV?: string | undefined;
   MONGO_URI?: string | undefined;
 }): void {
-  if (env.NODE_ENV === 'production') {
+  // A self-contained staging stack (its own local database) may be seeded; production never.
+  if (env.NODE_ENV === 'production' && env.DEPLOYMENT_ENV !== 'staging') {
     throw new Error('Refusing to bootstrap an administrator: NODE_ENV is production.');
   }
   const host = /^mongodb(?:\+srv)?:\/\/(?:[^@/]+@)?([^/:,?]+)/.exec(env.MONGO_URI ?? '')?.[1];

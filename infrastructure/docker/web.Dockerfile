@@ -17,10 +17,12 @@ ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
 RUN npm run build -w @stayscape/shared && npm run build -w @stayscape/web
 
 # ---------------------------------------------------------------- runtime
-FROM nginx:1.27-alpine AS runtime
+# Unprivileged nginx (uid 101, port 8080): no root process; works with a read-only root
+# filesystem when /tmp is a tmpfs (see docker-compose.prod.yml).
+FROM nginxinc/nginx-unprivileged:1.27-alpine AS runtime
 COPY infrastructure/nginx/default.conf /etc/nginx/conf.d/default.conf
 COPY infrastructure/nginx/security-headers.conf /etc/nginx/snippets/security-headers.conf
 COPY --from=build /app/apps/web/dist /usr/share/nginx/html
-EXPOSE 80
+EXPOSE 8080
 HEALTHCHECK --interval=10s --timeout=3s --start-period=5s --retries=5 \
-  CMD wget -qO- http://127.0.0.1/ >/dev/null || exit 1
+  CMD wget -qO- http://127.0.0.1:8080/ >/dev/null || exit 1

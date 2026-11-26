@@ -16,6 +16,10 @@ import { NotificationRepository } from '@/modules/notifications/notification.rep
 import { NotificationService } from '@/modules/notifications/notification.service';
 import { SessionRepository } from '@/modules/sessions/session.repository';
 import { SessionService } from '@/modules/sessions/session.service';
+import { PrivacyService } from '@/modules/privacy/privacy.service';
+import { ReconciliationService } from '@/modules/finance/reconciliation.service';
+import { JobInspector } from '@/lib/job-inspector';
+import { SeoService } from '@/modules/seo/seo.service';
 import { UserRepository } from '@/modules/users/user.repository';
 import { UsersService } from '@/modules/users/users.service';
 import { FieldEncryptor } from '@/lib/field-encryption';
@@ -188,6 +192,7 @@ export function buildContainer(core: CoreDependencies) {
   const coupons = new CouponsService({ audit });
   const rewards = new RewardsService({ coupons, notifications, audit, logger });
   const analytics = new AnalyticsService({ access: partnerAccess, finance, coupons });
+  const privacy = new PrivacyService({ audit, hasher, sessions, storage, logger });
   const bookings = new BookingsService({
     config,
     quotes,
@@ -310,6 +315,10 @@ export function buildContainer(core: CoreDependencies) {
       finance,
       coupons,
       analytics,
+      privacy,
+      reconciliation: new ReconciliationService(),
+      jobs: new JobInspector(core.redis),
+      seo: new SeoService({ search, content, webAppUrl: config.WEB_APP_URL }),
     },
     authenticate,
   };

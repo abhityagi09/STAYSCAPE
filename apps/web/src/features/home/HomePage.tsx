@@ -1,4 +1,5 @@
 import { CmsBanners } from '@/features/ops/ContentPages';
+import { DEFAULT_TITLE, useDocumentTitle } from '@/lib/use-document-title';
 import type { ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router';
 import {
@@ -178,6 +179,7 @@ function HotelRail({
 }
 
 export default function HomePage() {
+  useDocumentTitle(DEFAULT_TITLE);
   const navigate = useNavigate();
   const weekend = nextWeekend(todayIsoDate());
   const weekendQs = toSearchParams({ ...weekend }).toString();

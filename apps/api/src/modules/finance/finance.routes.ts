@@ -17,6 +17,7 @@ import {
   type CommissionRuleInputDto,
 } from '@stayscape/shared';
 import type { Container } from '@/container';
+import { toCsv } from '@/modules/analytics/analytics.service';
 import { Errors } from '@/lib/errors';
 import { sendSuccess } from '@/lib/http';
 import {
@@ -180,6 +181,38 @@ export function createAdminFinanceRouter(container: Container): Router {
         to: to.toISOString(),
         ...(await finance.accountTotals(from, to)),
       });
+    },
+  );
+
+  // Read-only cross-source reconciliation (bookings, provider payments, refunds, ledger).
+  router.get(
+    '/finance/reconciliation',
+    requirePermission('payments:read'),
+    validate({ query: periodQuerySchema }),
+    async (req, res) => {
+      const { from, to } = periodFrom(validatedQuery(req));
+      const report = await container.services.reconciliation.report(from, to);
+      if (req.query.format === 'csv') {
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader(
+          'Content-Disposition',
+          'attachment; filename="reconciliation-exceptions.csv"',
+        );
+        res.send(
+          toCsv(
+            report.exceptions.map((e) => ({
+              check: e.check,
+              severity: e.severity,
+              reference: e.reference,
+              expected_minor: e.expectedMinor,
+              actual_minor: e.actualMinor,
+              detail: e.detail,
+            })),
+          ),
+        );
+        return;
+      }
+      sendSuccess(res, report);
     },
   );
 

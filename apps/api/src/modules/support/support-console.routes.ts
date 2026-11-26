@@ -145,7 +145,7 @@ export function createAdminSupportRouter(container: Container): Router {
 export function createPartnerSupportRouter(container: Container): Router {
   const router = Router();
   const { supportConsole } = container.services;
-  router.use(container.authenticate);
+  router.use(container.authenticate, requirePermission('partner:access'));
   router.get('/tickets', async (req, res) =>
     sendSuccess(res, await supportConsole.partnerList(requireAuth(req))),
   );

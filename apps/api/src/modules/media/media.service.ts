@@ -70,7 +70,7 @@ export class MediaService {
     const type = detectFileType(file.buffer, IMAGE_MIME_TYPES);
     if (!type) throw Errors.unsupportedMedia('Images must be JPEG, PNG, WebP or AVIF.');
 
-    let metadata: sharp.Metadata;
+    let metadata: Awaited<ReturnType<ReturnType<typeof sharp>['metadata']>>;
     try {
       metadata = await sharp(file.buffer, { limitInputPixels: MAX_PIXELS }).metadata();
     } catch {

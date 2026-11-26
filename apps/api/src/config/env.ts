@@ -26,6 +26,12 @@ const DEV_SECRET_MARKER = 'dev-only';
 const envSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+    /**
+     * Where this build runs. 'staging' keeps every production safeguard (NODE_ENV=production)
+     * except that the labelled sandbox payment gateway is allowed and the fictional seed may run
+     * against the stack's own local database. Real production must use 'production'.
+     */
+    DEPLOYMENT_ENV: z.enum(['local', 'staging', 'production']).default('local'),
     APP_NAME: z.string().default('STAYSCAPE'),
     APP_VERSION: z.string().default('0.1.0'),
     PORT: z.coerce.number().int().min(1).max(65535).default(4000),
@@ -150,6 +156,8 @@ const envSchema = z
       .default('info'),
     LOG_PRETTY: bool(false),
     API_DOCS_ENABLED: bool(true),
+    /** Bearer token for GET /metrics (Prometheus). Unset = endpoint disabled. */
+    METRICS_TOKEN: z.string().min(24, 'METRICS_TOKEN must be at least 24 characters').optional(),
   })
   .superRefine((env, ctx) => {
     if (env.PAYMENT_PROVIDER === 'razorpay') {
@@ -172,21 +180,30 @@ const envSchema = z
         path: ['ANTHROPIC_API_KEY'],
         message: 'ANTHROPIC_API_KEY is required when AI_PROVIDER=anthropic',
       });
-    if (env.NODE_ENV !== 'production') return;
     const fail = (path: string, message: string) =>
       ctx.addIssue({ code: 'custom', path: [path], message });
+    if (env.DEPLOYMENT_ENV === 'production' && env.NODE_ENV !== 'production')
+      fail('NODE_ENV', 'DEPLOYMENT_ENV=production requires NODE_ENV=production');
+    if (env.NODE_ENV !== 'production') return;
+    const staging = env.DEPLOYMENT_ENV === 'staging';
     if (env.JWT_ACCESS_SECRET.includes(DEV_SECRET_MARKER)) {
       fail('JWT_ACCESS_SECRET', 'Development secrets must not be used in production');
     }
-    if (env.PAYMENT_PROVIDER !== 'razorpay')
+    if (env.PAYMENT_PROVIDER !== 'razorpay' && !staging)
       fail('PAYMENT_PROVIDER', 'The sandbox payment provider is not allowed in production');
-    for (const key of [
-      'RAZORPAY_KEY_ID',
-      'RAZORPAY_KEY_SECRET',
-      'RAZORPAY_WEBHOOK_SECRET',
-    ] as const) {
-      if (!env[key]) fail(key, `${key} is required in production`);
-    }
+    if (env.PAYMENT_PROVIDER === 'razorpay')
+      for (const key of [
+        'RAZORPAY_KEY_ID',
+        'RAZORPAY_KEY_SECRET',
+        'RAZORPAY_WEBHOOK_SECRET',
+      ] as const) {
+        if (!env[key]) fail(key, `${key} is required in production`);
+      }
+    if (
+      env.PAYMENT_PROVIDER === 'sandbox' &&
+      env.SANDBOX_PAYMENT_SECRET.includes(DEV_SECRET_MARKER)
+    )
+      fail('SANDBOX_PAYMENT_SECRET', 'Development secrets must not be used in production');
     if (
       env.INVOICE_ISSUER_MODE === 'PLATFORM' &&
       env.INVOICE_ISSUER_ADDRESS.startsWith('Not configured')

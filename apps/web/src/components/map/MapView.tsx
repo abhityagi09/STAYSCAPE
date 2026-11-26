@@ -111,7 +111,12 @@ export function MapView({
     let map: MapLibreMap | null = null;
     (async () => {
       try {
-        const maplibre = await import('maplibre-gl');
+        const [maplibre, worker] = await Promise.all([
+          import('maplibre-gl'),
+          // MapLibre 6 loads its worker as a separate module; let Vite emit it as a hashed asset.
+          import('maplibre-gl/dist/maplibre-gl-worker.mjs?url'),
+        ]);
+        maplibre.setWorkerUrl(worker.default);
         await import('maplibre-gl/dist/maplibre-gl.css');
         if (cancelled || !container.current) return;
         popupCtor.current = maplibre.Popup;

@@ -3,18 +3,28 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#173D35" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!--
+      Per-page title, description, canonical URL, Open Graph and JSON-LD are injected by nginx
+      (server-side include of /api/v1/seo/head, see infrastructure/nginx/default.conf).
+      The block below is the fallback for the Vite dev server or when the API is unavailable.
+    -->
+    <!--# block name="seo_head_fallback" -->
     <meta
       name="description"
       content="STAYSCAPE — discover and book verified hotels, resorts and boutique stays."
     />
-    <meta name="theme-color" content="#173D35" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>STAYSCAPE — Stays worth the journey</title>
+    <!--# endblock -->
+    <!--# include virtual="/__seo/head$request_uri" stub="seo_head_fallback" -->
     <script src="/theme-init.js"></script>
   </head>
   <body>
     <noscript>STAYSCAPE requires JavaScript to run.</noscript>
-    <div id="root"></div>
+    <div id="root">
+      <!--# block name="seo_body_fallback" --><!--# endblock --><!--# include virtual="/__seo/body$request_uri" stub="seo_body_fallback" -->
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

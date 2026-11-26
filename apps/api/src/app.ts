@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'node:crypto';
 import { createAdminCouponsRouter, createCouponsRouter } from '@/modules/coupons/coupons.routes';
 import {
   createAdminFinanceRouter,
@@ -47,6 +48,7 @@ import { AppError } from '@/lib/errors';
 import { createErrorHandler, notFoundHandler } from '@/middleware/error-handler';
 import { createRateLimiters, type RateLimiters } from '@/middleware/rate-limit';
 import { requestId } from '@/middleware/request-id';
+import { Metrics } from '@/lib/metrics';
 import { createAuditRouter } from '@/modules/audit/audit.routes';
 import { createAuthRouter } from '@/modules/auth/auth.routes';
 import { createHealthRouter, type HealthChecks } from '@/modules/health/health.routes';
@@ -55,6 +57,8 @@ import { createNotificationsRouter } from '@/modules/notifications/notifications
 import { createPermissionsRouter } from '@/modules/permissions/permissions.routes';
 import { createRolesRouter } from '@/modules/roles/roles.routes';
 import { createUsersRouter } from '@/modules/users/users.routes';
+import { createPrivacyRouter } from '@/modules/privacy/privacy.routes';
+import { createSeoRouter, createSitemapRouter } from '@/modules/seo/seo.routes';
 import { createAdminHotelsRouter, createPartnerHotelsRouter } from '@/modules/hotels/hotels.routes';
 import {
   createAdminPartnersRouter,
@@ -89,6 +93,9 @@ export function createApp(container: Container, options: AppOptions = {}): Expre
   app.set('query parser', 'simple');
 
   app.use(requestId);
+  const metrics = new Metrics(container.redis);
+  app.locals.metrics = metrics;
+  app.use(metrics.middleware());
   app.use(scopeMiddleware);
   app.use(
     pinoHttp({
@@ -150,12 +157,32 @@ export function createApp(container: Container, options: AppOptions = {}): Expre
   // Health endpoints sit outside the versioned API and the rate limiter (used by orchestrators).
   const health = createHealthRouter(container, options.healthChecks);
   app.use('/health', health);
+  app.use(createSitemapRouter(container));
+  // Prometheus scrape endpoint; disabled unless METRICS_TOKEN is configured.
+  if (config.METRICS_TOKEN) {
+    const expected = Buffer.from(`Bearer ${config.METRICS_TOKEN}`);
+    app.get('/metrics', async (req, res) => {
+      const given = Buffer.from(req.get('authorization') ?? '');
+      if (given.length !== expected.length || !timingSafeEqual(given, expected)) {
+        res.status(401).json({
+          success: false,
+          error: { code: 'AUTH_REQUIRED', message: 'Authentication is required.' },
+        });
+        return;
+      }
+      res.setHeader('Content-Type', metrics.registry.contentType);
+      res.setHeader('Cache-Control', 'no-store');
+      res.send(await metrics.registry.metrics());
+    });
+  }
 
   const limiters = options.rateLimiters ?? createRateLimiters(config, container.redis);
   const api = express.Router();
   api.use(limiters.global);
   api.use('/health', health);
   api.use('/auth', createAuthRouter(container, limiters));
+  api.use('/users/me', createPrivacyRouter(container));
+  api.use('/seo', createSeoRouter(container));
   api.use('/users', createUsersRouter(container));
   api.use('/roles', createRolesRouter(container));
   api.use('/permissions', createPermissionsRouter(container));

@@ -8,6 +8,7 @@ export const SESSION_REVOKE_REASONS = [
   'REUSE_DETECTED',
   'PASSWORD_CHANGED',
   'ACCOUNT_SUSPENDED',
+  'ACCOUNT_DELETED',
 ] as const;
 export type SessionRevokeReason = (typeof SESSION_REVOKE_REASONS)[number];
 
