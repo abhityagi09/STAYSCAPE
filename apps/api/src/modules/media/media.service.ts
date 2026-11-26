@@ -61,7 +61,7 @@ export class MediaService {
     partnerId: string | null;
     hotelId: string | null;
     uploadedBy: string;
-    purpose: Extract<MediaPurpose, 'HOTEL_IMAGE' | 'ROOM_IMAGE' | 'REVIEW_IMAGE'>;
+    purpose: Extract<MediaPurpose, 'HOTEL_IMAGE' | 'ROOM_IMAGE' | 'REVIEW_IMAGE' | 'CONTENT_IMAGE'>;
     file: UploadedFile | undefined;
   }): Promise<MediaAssetRecord> {
     const { file } = params;

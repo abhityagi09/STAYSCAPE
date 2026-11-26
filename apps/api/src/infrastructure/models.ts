@@ -31,6 +31,7 @@ import { WishlistModel } from '@/modules/wishlists/wishlist.model';
 import { CouponModel, CouponRedemptionModel, CouponUsageModel } from '@/modules/coupons/coupons.models';
 import { HotelDailyStatModel } from '@/modules/analytics/hotel-stats.model';
 import { BookingEscalationModel, PropertyCategoryModel } from '@/modules/admin/admin.models';
+import { ContentEntryModel, ContentRevisionModel } from '@/modules/content/content.models';
 import { CommissionRuleModel, LedgerEntryModel, SettlementAllocationModel, SettlementModel } from '@/modules/finance/finance.models';
 import { MediaAssetModel } from '@/modules/media/media-asset.model';
 import { PartnerModel, PartnerStaffModel } from '@/modules/partners/partner.model';
@@ -78,6 +79,8 @@ export const ALL_MODELS = [
   HotelDailyStatModel,
   PropertyCategoryModel,
   BookingEscalationModel,
+  ContentEntryModel,
+  ContentRevisionModel,
   ReviewModel,
   ReviewReportModel,
   SupportTicketModel,

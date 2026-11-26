@@ -15,3 +15,4 @@ export * from './constants/booking';
 export * from './schemas/booking';
 export * from './contracts/booking-dto';
 export * from './schemas/admin';
+export * from './schemas/content';
