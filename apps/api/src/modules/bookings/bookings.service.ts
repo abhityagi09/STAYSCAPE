@@ -9,6 +9,7 @@ import {
   type BookingSummaryDto,
   type CreateBookingInput,
   type CreateHoldInput,
+  type PriceSnapshotDto,
   type CurrencyCode,
   type HoldDto,
   type ImageDto,
@@ -163,6 +164,73 @@ export class BookingsService {
       booking?.bookingReference ?? null,
       covers.get(hold.hotelId.toString()) ?? null,
     );
+  }
+
+  /**
+   * Apply (or with `code === null`, remove) a coupon on the customer's active hold. The previous
+   * coupon is released and the new one reserved atomically with the repriced hold; the base price
+   * is the server's own hold price, never anything from the client.
+   */
+  async setHoldCoupon(auth: AuthContext, reference: string, code: string | null): Promise<HoldDto> {
+    const hold = await BookingHoldModel.findOne({
+      holdReference: reference,
+      customerId: auth.userId,
+    }).lean<BookingHoldRecord>();
+    if (!hold) throw Errors.notFound('Hold');
+    if (hold.status !== 'ACTIVE' || hold.expiresAt <= new Date())
+      throw new AppError(
+        409,
+        'HOLD_EXPIRED',
+        'This hold is no longer active. Start again from the property page.',
+      );
+    // Once a booking exists its price is fixed; coupons can only change before that.
+    if (hold.bookingId)
+      throw new AppError(
+        409,
+        'INVALID_STATE',
+        'A booking was already created from this hold, so its price can no longer change.',
+      );
+    const price = hold.price as PriceSnapshotDto;
+    const previous = price.coupon?.discountMinor ?? 0;
+    const baseTotals = { ...price.totals, totalMinor: price.totals.totalMinor + previous };
+    const updated = await withTransaction(async (session) => {
+      await this.deps.coupons.unapply(hold._id, session);
+      let next: PriceSnapshotDto = { ...price, coupon: null, totals: baseTotals };
+      if (code) {
+        const applied = await this.deps.coupons.reserve(
+          code,
+          {
+            userId: auth.userId,
+            hotelId: hold.hotelId.toString(),
+            city: hold.hotelSnapshot.city,
+            currency: price.currency,
+            subtotalMinor: baseTotals.subtotalMinor,
+            totalMinor: baseTotals.totalMinor,
+            hasRateDiscounts: baseTotals.discountsMinor !== 0,
+          },
+          hold._id,
+          session,
+        );
+        next = {
+          ...price,
+          coupon: applied,
+          totals: { ...baseTotals, totalMinor: baseTotals.totalMinor - applied.discountMinor },
+        };
+      }
+      const doc = await BookingHoldModel.findOneAndUpdate(
+        { _id: hold._id, status: 'ACTIVE' },
+        { $set: { price: next } },
+        { new: true, session },
+      ).lean<BookingHoldRecord>();
+      if (!doc)
+        throw new AppError(
+          409,
+          'HOLD_EXPIRED',
+          'This hold is no longer active. Start again from the property page.',
+        );
+      return doc;
+    });
+    return this.holdDto(updated);
   }
 
   /**

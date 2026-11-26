@@ -128,6 +128,69 @@ function ExpiredHold({
   );
 }
 
+/** Coupon code on the active hold: the server reprices the hold and reserves the coupon. */
+function CouponField({ hold, onChange }: { hold: HoldDto; onChange: (h: HoldDto) => void }) {
+  const [code, setCode] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const applied = hold.price.coupon;
+  const run = async (fn: () => Promise<HoldDto>) => {
+    setBusy(true);
+    setError(null);
+    try {
+      onChange(await fn());
+      setCode('');
+    } catch (e) {
+      setError(normalizeApiError(e).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  if (applied)
+    return (
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-success-soft p-3 text-sm">
+        <span>
+          Coupon <strong className="font-mono">{applied.code}</strong> saves{' '}
+          {money(applied.discountMinor, hold.price.currency)}
+        </span>
+        <Button
+          size="sm"
+          variant="ghost"
+          loading={busy}
+          onClick={() => void run(() => bookingsApi.removeHoldCoupon(hold.reference))}
+        >
+          Remove
+        </Button>
+      </div>
+    );
+  return (
+    <form
+      className="flex items-end gap-2"
+      onSubmit={(e) => {
+        e.preventDefault();
+        void run(() => bookingsApi.applyHoldCoupon(hold.reference, code.trim()));
+      }}
+    >
+      <Input
+        label="Coupon code"
+        value={code}
+        onChange={(e) => setCode(e.target.value.toUpperCase())}
+        error={error ?? undefined}
+        containerClassName="flex-1"
+      />
+      <Button
+        type="submit"
+        size="sm"
+        variant="outline"
+        loading={busy}
+        disabled={code.trim().length < 3}
+      >
+        Apply
+      </Button>
+    </form>
+  );
+}
+
 /** /checkout — hold the rooms, collect guest details, accept terms. */
 export function CheckoutPage() {
   const { isAuthenticated, user } = useAuth();
@@ -439,10 +502,13 @@ export function CheckoutPage() {
               roomLine={`${quote.rooms} × ${quote.roomType.name} · ${quote.ratePlan.name}`}
             />
             {hold ? (
-              <PriceBreakdown
-                quote={breakdownSource(hold.price, hold.items, hold.nights)}
-                note="Price confirmed by the server for this hold."
-              />
+              <>
+                <PriceBreakdown
+                  quote={breakdownSource(hold.price, hold.items, hold.nights)}
+                  note="Price confirmed by the server for this hold."
+                />
+                {!expired && <CouponField hold={hold} onChange={setHold} />}
+              </>
             ) : (
               <PriceBreakdown quote={quote} />
             )}

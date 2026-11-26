@@ -55,6 +55,29 @@ const en = {
   'assistant.disclaimer':
     'Answers use only Stayscape listings and live prices. The assistant cannot book or pay for you.',
   'corporate.title': 'Corporate travel',
+  'site.findStay': 'Find a stay',
+  'site.destinations': 'Destinations',
+  'site.inspiration': 'Inspiration',
+  'site.listProperty': 'List your property',
+  'site.signIn': 'Sign in',
+  'site.createAccount': 'Create account',
+  'site.menu': 'Menu',
+  'footer.explore': 'Explore',
+  'footer.partners': 'Partners',
+  'footer.account': 'Account',
+  'footer.legal': 'Legal',
+  'footer.travelNotes': 'Travel notes',
+  'footer.guides': 'Travel guides',
+  'footer.faq': 'Help & FAQ',
+  'footer.partnerOnboarding': 'Partner onboarding',
+  'footer.myAccount': 'My account',
+  'footer.terms': 'Terms of service',
+  'footer.privacy': 'Privacy policy',
+  'footer.tagline':
+    'Verified hotels, resorts and boutique stays — booked with clear prices and real availability.',
+  'footer.rights': 'All rights reserved.',
+  'footer.prices':
+    "Prices are in the property's currency; any conversion shown is approximate (ECB reference rates). Taxes and fees are shown before payment.",
 } as const;
 export type MessageKey = keyof typeof en;
 
@@ -97,6 +120,29 @@ const hi: Partial<Record<MessageKey, string>> = {
   'assistant.disclaimer':
     'जवाब केवल Stayscape की लिस्टिंग और वर्तमान कीमतों पर आधारित हैं। सहायक आपके लिए बुकिंग या भुगतान नहीं कर सकता।',
   'corporate.title': 'कॉर्पोरेट यात्रा',
+  'site.findStay': 'ठहरने की जगह खोजें',
+  'site.destinations': 'गंतव्य',
+  'site.inspiration': 'प्रेरणा',
+  'site.listProperty': 'अपनी प्रॉपर्टी जोड़ें',
+  'site.signIn': 'साइन इन करें',
+  'site.createAccount': 'खाता बनाएँ',
+  'site.menu': 'मेन्यू',
+  'footer.explore': 'खोजें',
+  'footer.partners': 'पार्टनर',
+  'footer.account': 'खाता',
+  'footer.legal': 'कानूनी',
+  'footer.travelNotes': 'यात्रा नोट्स',
+  'footer.guides': 'यात्रा गाइड',
+  'footer.faq': 'सहायता और सामान्य प्रश्न',
+  'footer.partnerOnboarding': 'पार्टनर ऑनबोर्डिंग',
+  'footer.myAccount': 'मेरा खाता',
+  'footer.terms': 'सेवा की शर्तें',
+  'footer.privacy': 'गोपनीयता नीति',
+  'footer.tagline':
+    'सत्यापित होटल, रिसॉर्ट और बुटीक ठहराव — स्पष्ट कीमतों और वास्तविक उपलब्धता के साथ बुक करें।',
+  'footer.rights': 'सर्वाधिकार सुरक्षित।',
+  'footer.prices':
+    'कीमतें प्रॉपर्टी की मुद्रा में हैं; दिखाया गया कोई भी रूपांतरण अनुमानित है (ECB संदर्भ दरें)। कर और शुल्क भुगतान से पहले दिखाए जाते हैं।',
 };
 export const dictionaries: Record<Language, Partial<Record<MessageKey, string>>> = { en, hi };
 

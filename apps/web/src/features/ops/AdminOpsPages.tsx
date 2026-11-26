@@ -24,7 +24,7 @@ import {
 import { useAuth } from '@/features/auth/use-auth';
 import { http, unwrap } from '@/lib/api/client';
 import { normalizeApiError } from '@/lib/api/errors';
-import { api, downloadCsv, useApiMutation, useApiQuery, type Page } from './api';
+import { api, downloadCsv, downloadFile, useApiMutation, useApiQuery, type Page } from './api';
 import {
   BarChart,
   KpiGrid,
@@ -46,12 +46,35 @@ function useFail() {
   return (title: string) => (e: unknown) =>
     toast({ title, description: normalizeApiError(e).message, variant: 'error' });
 }
+const SORT_OPTIONS = [
+  { value: 'newest', label: 'Newest first' },
+  { value: 'oldest', label: 'Oldest first' },
+  { value: 'amount_desc', label: 'Highest amount' },
+  { value: 'amount_asc', label: 'Lowest amount' },
+];
+function SortSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <Select
+      label="Sort"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      options={SORT_OPTIONS}
+      containerClassName="w-44"
+    />
+  );
+}
 function usePaged() {
   const [page, setPage] = useState(1);
   const [q, setQ] = useState('');
+  const [sort, setSort] = useState('newest');
   return {
     page,
     setPage,
+    sort,
+    setSort: (v: string) => {
+      setSort(v);
+      setPage(1);
+    },
     q,
     setQ: (v: string) => {
       setQ(v);
@@ -628,6 +651,7 @@ export function AdminBookingsPage() {
     q: p.q || undefined,
     status: status || undefined,
     escalated: escalatedOnly ? 'true' : undefined,
+    sort: p.sort,
   });
   const fail = useFail();
   const escalate = useApiMutation(
@@ -652,6 +676,7 @@ export function AdminBookingsPage() {
           value={p.q}
           onValueChange={p.setQ}
         />
+        <SortSelect value={p.sort} onChange={p.setSort} />
         <Select
           label="Status"
           value={status}
@@ -786,6 +811,7 @@ export function AdminPaymentsPage() {
     page: p.page,
     q: p.q || undefined,
     exceptions: exceptions ? 'true' : undefined,
+    sort: p.sort,
   });
   return (
     <div className="flex flex-col gap-6">
@@ -795,6 +821,7 @@ export function AdminPaymentsPage() {
       />
       <div className="flex flex-wrap items-end gap-3">
         <SearchInput label="Booking reference or provider id" value={p.q} onValueChange={p.setQ} />
+        <SortSelect value={p.sort} onChange={p.setSort} />
         <Checkbox
           label="Exceptions only"
           checked={exceptions}
@@ -849,6 +876,7 @@ export function AdminPaymentsPage() {
 export function AdminRefundsPage() {
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
+  const [sort, setSort] = useState('newest');
   const list = useApiQuery<
     Page<{
       id: string;
@@ -862,7 +890,7 @@ export function AdminRefundsPage() {
       failureReason: string | null;
       requestedAt: string;
     }>
-  >(['admin', 'refunds'], '/admin/refunds', { page, status: status || undefined });
+  >(['admin', 'refunds'], '/admin/refunds', { page, status: status || undefined, sort });
   const fail = useFail();
   const retry = useApiMutation(
     (id: string) => api.post(`/admin/refunds/${id}/retry`),
@@ -889,6 +917,13 @@ export function AdminRefundsPage() {
           (s) => ({ value: s, label: s ? s.toLowerCase() : 'Any status' }),
         )}
         containerClassName="w-56"
+      />
+      <SortSelect
+        value={sort}
+        onChange={(v) => {
+          setSort(v);
+          setPage(1);
+        }}
       />
       <DataTable
         caption="Refunds"
@@ -1573,6 +1608,7 @@ function TicketPanel({ id, onClose }: { id: string; onClose: () => void }) {
   );
   const [channel, setChannel] = useState<'CUSTOMER' | 'PARTNER' | 'INTERNAL'>('CUSTOMER');
   const [body, setBody] = useState('');
+  const [file, setFile] = useState<File | null>(null);
   const [note, setNote] = useState('');
   const fail = useFail();
   const key = [['admin', 'support']];
@@ -1580,6 +1616,7 @@ function TicketPanel({ id, onClose }: { id: string; onClose: () => void }) {
     const fd = new FormData();
     fd.set('channel', channel);
     fd.set('body', body);
+    if (file) fd.set('file', file);
     return unwrap(http.post(`/admin/support/tickets/${id}/messages`, fd));
   }, key);
   const patch = useApiMutation((b: object) => api.patch(`/admin/support/tickets/${id}`, b), key);
@@ -1708,6 +1745,21 @@ function TicketPanel({ id, onClose }: { id: string; onClose: () => void }) {
                     </span>
                   </p>
                   <p className="whitespace-pre-wrap">{m.body}</p>
+                  {m.attachments.map((a) => (
+                    <Button
+                      key={a.id}
+                      size="sm"
+                      variant="link"
+                      onClick={() =>
+                        void downloadFile(
+                          `/admin/support/tickets/${id}/attachments/${a.id}`,
+                          a.fileName,
+                        )
+                      }
+                    >
+                      {a.fileName}
+                    </Button>
+                  ))}
                 </li>
               ))}
             </ol>
@@ -1716,7 +1768,10 @@ function TicketPanel({ id, onClose }: { id: string; onClose: () => void }) {
               onSubmit={(e) => {
                 e.preventDefault();
                 send.mutate(undefined, {
-                  onSuccess: () => setBody(''),
+                  onSuccess: () => {
+                    setBody('');
+                    setFile(null);
+                  },
                   onError: fail('Could not send'),
                 });
               }}
@@ -1733,6 +1788,14 @@ function TicketPanel({ id, onClose }: { id: string; onClose: () => void }) {
                 containerClassName="w-64"
               />
               <Textarea label="Message" value={body} onChange={(e) => setBody(e.target.value)} />
+              <label className="flex flex-col gap-1 text-sm">
+                Attachment (optional, PDF or image, up to 5 MB)
+                <input
+                  type="file"
+                  accept="application/pdf,image/jpeg,image/png,image/webp"
+                  onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                />
+              </label>
               <Button
                 type="submit"
                 size="sm"

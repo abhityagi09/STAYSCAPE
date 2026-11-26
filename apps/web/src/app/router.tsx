@@ -204,6 +204,10 @@ export const routes: RouteObject[] = [
                   },
                   { path: 'inventory', lazy: lazy(partner, (m) => m.InventoryPage) },
                   { path: 'bookings', lazy: lazy(reservations, (m) => m.PartnerReservationsPage) },
+                  {
+                    path: 'bookings/:hotelId/:reference',
+                    lazy: lazy(reservations, (m) => m.PartnerReservationDetailPage),
+                  },
                   { path: 'reservations', element: <Navigate to="/partner/bookings" replace /> },
                   { path: 'guests', element: <Navigate to="/partner/bookings" replace /> },
                   { path: 'rooms', element: <Navigate to="/partner/properties" replace /> },
@@ -217,6 +221,13 @@ export const routes: RouteObject[] = [
                   { path: 'channels', lazy: lazy(partnerOps, (m) => m.PartnerChannelsPage) },
                   { path: 'inventory/blocks', lazy: lazy(partnerOps, (m) => m.PartnerBlocksPage) },
                   { path: 'support', lazy: lazy(partnerOps, (m) => m.PartnerSupportPage) },
+                  {
+                    path: 'accessibility',
+                    lazy: lazy(
+                      () => import('@/features/ops/AccessibilityPages'),
+                      (m) => m.PartnerAccessibilityPage,
+                    ),
+                  },
                   { path: 'reviews', lazy: lazy(reservations, (m) => m.PartnerReviewsPage) },
                   {
                     path: 'properties/:id',

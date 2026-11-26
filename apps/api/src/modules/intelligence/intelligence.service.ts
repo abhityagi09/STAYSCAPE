@@ -12,6 +12,7 @@ import {
 } from '@stayscape/shared';
 import { AppError, Errors } from '@/lib/errors';
 import type { Logger } from '@/lib/logger';
+import type { CacheService } from '@/modules/catalog/cache.service';
 import { BookingModel } from '@/modules/bookings/booking.models';
 import { HotelModel, type HotelRecord } from '@/modules/hotels/hotel.model';
 import type { NotificationService } from '@/modules/notifications/notification.service';
@@ -119,8 +120,14 @@ export class IntelligenceService {
       search: SearchService;
       notifications: NotificationService;
       logger: Logger;
+      /** Public-response cache (Redis; short TTL). Optional so tests can run without Redis. */
+      cache?: CacheService;
     },
   ) {}
+
+  private cached<T>(key: string, load: () => Promise<T>): Promise<T> {
+    return this.deps.cache ? this.deps.cache.getOrSet(key, load) : load();
+  }
 
   // ------------------------------------------------------------------ recommendations
   /**
@@ -284,7 +291,18 @@ export class IntelligenceService {
   }
 
   /** Flexible dates: the lowest real total for each check-in date in the range. */
+  // Public and quote-heavy: served from the short-lived public cache (the hold re-prices anyway).
   async priceCalendar(
+    idOrSlug: string,
+    q: { from: string; to: string; nights: number; adults: number; rooms: number },
+  ): Promise<PriceCalendarDayDto[]> {
+    return this.cached(
+      `price-calendar:${idOrSlug}:${q.from}:${q.to}:${q.nights}:${q.adults}:${q.rooms}`,
+      () => this.computePriceCalendar(idOrSlug, q),
+    );
+  }
+
+  private async computePriceCalendar(
     idOrSlug: string,
     q: { from: string; to: string; nights: number; adults: number; rooms: number },
   ): Promise<PriceCalendarDayDto[]> {
@@ -334,28 +352,36 @@ export class IntelligenceService {
       const today = todayInTimeZone(hotel.timeZone);
       const ops = [];
       for (const stayDate of dateRange(today, addDays(today, days - 1))) {
-        const best = await this.cheapest(hotel, {
-          checkIn: stayDate,
-          checkOut: addDays(stayDate, 1),
-          adults: 2,
-          children: 0,
-          childrenAges: [],
-          rooms: 1,
-        });
-        if (!best) continue;
-        ops.push({
-          updateOne: {
-            filter: { hotelId: hotel._id, stayDate, observedOn: today },
-            update: {
-              $setOnInsert: {
-                lowestNightlyMinor: best.nightlyAverageMinor,
-                currency: best.currency,
-                createdAt: new Date(),
+        try {
+          const best = await this.cheapest(hotel, {
+            checkIn: stayDate,
+            checkOut: addDays(stayDate, 1),
+            adults: 2,
+            children: 0,
+            childrenAges: [],
+            rooms: 1,
+          });
+          if (!best) continue;
+          ops.push({
+            updateOne: {
+              filter: { hotelId: hotel._id, stayDate, observedOn: today },
+              update: {
+                $setOnInsert: {
+                  lowestNightlyMinor: best.nightlyAverageMinor,
+                  currency: best.currency,
+                  createdAt: new Date(),
+                },
               },
+              upsert: true,
             },
-            upsert: true,
-          },
-        });
+          });
+        } catch (error) {
+          // One bad record must not stop the rest of the batch.
+          this.deps.logger.warn(
+            { err: (error as Error).message },
+            'Price observation failed for one item; continuing',
+          );
+        }
       }
       if (ops.length)
         written += (await PriceObservationModel.bulkWrite(ops, { ordered: false })).upsertedCount;
@@ -365,6 +391,15 @@ export class IntelligenceService {
 
   /** Last-minute deals: arrivals within 3 days priced ≥ 15 % under the property's observed median. */
   async lastMinuteDeals(q: {
+    city?: string | undefined;
+    limit: number;
+  }): Promise<LastMinuteDealDto[]> {
+    return this.cached(`deals:${(q.city ?? '').toLowerCase()}:${q.limit}`, () =>
+      this.computeLastMinuteDeals(q),
+    );
+  }
+
+  private async computeLastMinuteDeals(q: {
     city?: string | undefined;
     limit: number;
   }): Promise<LastMinuteDealDto[]> {
@@ -526,70 +561,81 @@ export class IntelligenceService {
     let notified = 0;
     let expired = 0;
     for (const a of alerts) {
-      const hotel = await HotelModel.findById(a.hotelId).lean<HotelRecord>();
-      if (
-        !hotel ||
-        hotel.publicationStatus !== 'PUBLISHED' ||
-        a.checkIn < todayInTimeZone(hotel.timeZone)
-      ) {
-        await PriceAlertModel.updateOne(
-          { _id: a._id },
-          { $set: { active: false, lastCheckedAt: now } },
-        );
-        expired += 1;
-        continue;
-      }
-      const best = await this.cheapest(hotel, {
-        checkIn: a.checkIn,
-        checkOut: a.checkOut,
-        adults: a.adults,
-        children: 0,
-        childrenAges: [],
-        rooms: a.rooms,
-      });
-      const price = best?.totalMinor ?? null;
-      const threshold =
-        a.targetTotalMinor ?? (a.baselineTotalMinor !== null ? a.baselineTotalMinor - 1 : null);
-      const below = price !== null && threshold !== null && price <= threshold;
-      const newLow =
-        price !== null && (a.lastNotifiedTotalMinor === null || price < a.lastNotifiedTotalMinor);
-      const cooled =
-        !a.lastNotifiedAt || now.getTime() - a.lastNotifiedAt.getTime() >= ALERT_RENOTIFY_MS;
-      // Claim the notification atomically so overlapping runs cannot notify twice.
-      const claim =
-        below && newLow && cooled
-          ? await PriceAlertModel.updateOne(
-              {
-                _id: a._id,
-                $or: [{ lastNotifiedTotalMinor: null }, { lastNotifiedTotalMinor: { $gt: price } }],
-                ...(a.lastNotifiedAt
-                  ? { lastNotifiedAt: a.lastNotifiedAt }
-                  : { lastNotifiedAt: null }),
-              },
-              {
-                $set: {
-                  lastNotifiedTotalMinor: price,
-                  lastNotifiedAt: now,
-                  lastSeenTotalMinor: price,
-                  lastCheckedAt: now,
-                  currency: best!.currency,
-                },
-              },
-            )
-          : null;
-      if (claim?.modifiedCount === 1) {
-        notified += 1;
-        await this.deps.notifications.notifyInApp({
-          userId: a.userId.toString(),
-          type: 'PRICE_ALERT',
-          title: `Price drop at ${hotel.name}`,
-          body: `${a.checkIn} → ${a.checkOut}: now ${(price! / 100).toLocaleString('en-IN', { style: 'currency', currency: best!.currency })} total.`,
-          resource: { type: 'hotel', id: hotel.slug },
+      try {
+        const hotel = await HotelModel.findById(a.hotelId).lean<HotelRecord>();
+        if (
+          !hotel ||
+          hotel.publicationStatus !== 'PUBLISHED' ||
+          a.checkIn < todayInTimeZone(hotel.timeZone)
+        ) {
+          await PriceAlertModel.updateOne(
+            { _id: a._id },
+            { $set: { active: false, lastCheckedAt: now } },
+          );
+          expired += 1;
+          continue;
+        }
+        const best = await this.cheapest(hotel, {
+          checkIn: a.checkIn,
+          checkOut: a.checkOut,
+          adults: a.adults,
+          children: 0,
+          childrenAges: [],
+          rooms: a.rooms,
         });
-      } else {
-        await PriceAlertModel.updateOne(
-          { _id: a._id },
-          { $set: { lastSeenTotalMinor: price, lastCheckedAt: now } },
+        const price = best?.totalMinor ?? null;
+        const threshold =
+          a.targetTotalMinor ?? (a.baselineTotalMinor !== null ? a.baselineTotalMinor - 1 : null);
+        const below = price !== null && threshold !== null && price <= threshold;
+        const newLow =
+          price !== null && (a.lastNotifiedTotalMinor === null || price < a.lastNotifiedTotalMinor);
+        const cooled =
+          !a.lastNotifiedAt || now.getTime() - a.lastNotifiedAt.getTime() >= ALERT_RENOTIFY_MS;
+        // Claim the notification atomically so overlapping runs cannot notify twice.
+        const claim =
+          below && newLow && cooled
+            ? await PriceAlertModel.updateOne(
+                {
+                  _id: a._id,
+                  $or: [
+                    { lastNotifiedTotalMinor: null },
+                    { lastNotifiedTotalMinor: { $gt: price } },
+                  ],
+                  ...(a.lastNotifiedAt
+                    ? { lastNotifiedAt: a.lastNotifiedAt }
+                    : { lastNotifiedAt: null }),
+                },
+                {
+                  $set: {
+                    lastNotifiedTotalMinor: price,
+                    lastNotifiedAt: now,
+                    lastSeenTotalMinor: price,
+                    lastCheckedAt: now,
+                    currency: best!.currency,
+                  },
+                },
+              )
+            : null;
+        if (claim?.modifiedCount === 1) {
+          notified += 1;
+          await this.deps.notifications.notifyInApp({
+            userId: a.userId.toString(),
+            type: 'PRICE_ALERT',
+            title: `Price drop at ${hotel.name}`,
+            body: `${a.checkIn} → ${a.checkOut}: now ${(price! / 100).toLocaleString('en-IN', { style: 'currency', currency: best!.currency })} total.`,
+            resource: { type: 'hotel', id: hotel.slug },
+          });
+        } else {
+          await PriceAlertModel.updateOne(
+            { _id: a._id },
+            { $set: { lastSeenTotalMinor: price, lastCheckedAt: now } },
+          );
+        }
+      } catch (error) {
+        // One bad record must not stop the rest of the batch.
+        this.deps.logger.warn(
+          { err: (error as Error).message },
+          'Price alert check failed for one item; continuing',
         );
       }
     }

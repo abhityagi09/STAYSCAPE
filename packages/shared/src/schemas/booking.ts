@@ -241,3 +241,12 @@ export const ticketMessageSchema = z.strictObject({
   body: z.string().trim().min(1, 'Write a message').max(5000),
 });
 export const REVIEW_PHOTO_LIMIT = REVIEW_MAX_PHOTOS;
+
+/** Apply a coupon to an active hold. */
+export const holdCouponSchema = z.strictObject({
+  code: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(/^[A-Z0-9-]{3,32}$/, 'Enter a valid coupon code'),
+});

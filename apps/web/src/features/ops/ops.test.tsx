@@ -19,6 +19,7 @@ import {
 } from './AdminOpsPages';
 import { AssistantPage, RewardsPage, TripDetailPage, TripsPage } from './CustomerPages';
 import { HotelInsights } from './HotelInsights';
+import { PreferencesForm } from '@/features/account/components/PreferencesForm';
 import { PartnerAnalyticsPage, PartnerChannelsPage, PartnerStaffPage } from './PartnerOpsPages';
 
 vi.mock('@/lib/api/client', async () => (await import('@/test/api-mock')).apiClientMock());
@@ -535,5 +536,26 @@ describe('language preference', () => {
     expect(await screen.findByText('बुकिंग')).toBeInTheDocument();
     expect(document.documentElement.lang).toBe('hi');
     expect(localStorage.getItem('stayscape.language')).toBe('hi');
+  });
+});
+
+describe('preferences form (regression)', () => {
+  it('saves language and currency without sending the read-only consent timestamp', async () => {
+    on('patch', /\/users\/preferences/, () => makeUser());
+    const user = makeUser({
+      preferences: {
+        ...makeUser().preferences,
+        personalization: { recommendations: true, consentedAt: '2026-11-20T00:00:00.000Z' },
+      },
+    });
+    renderWithProviders(<PreferencesForm user={user} />, { user });
+    await userEvent.selectOptions(await screen.findByLabelText('Display currency'), 'USD');
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+    await waitFor(() =>
+      expect(calls.find((c) => c.method === 'patch')?.body).toEqual(
+        expect.objectContaining({ language: 'en', currency: 'USD' }),
+      ),
+    );
+    expect(calls.find((c) => c.method === 'patch')?.body).not.toHaveProperty('personalization');
   });
 });

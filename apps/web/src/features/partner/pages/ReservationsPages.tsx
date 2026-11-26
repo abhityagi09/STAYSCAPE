@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CalendarCheck, Star } from 'lucide-react';
 import type { PartnerBookingDto, PartnerReviewDto } from '@stayscape/shared';
@@ -9,6 +10,7 @@ import {
   ConfirmationDialog,
   EmptyState,
   ErrorState,
+  Input,
   PageHeader,
   PageSpinner,
   Pagination,
@@ -55,9 +57,11 @@ type Action = 'check-in' | 'check-out' | 'no-show' | 'reject';
 
 function ReservationRow({
   b,
+  hotelId,
   onAction,
 }: {
   b: PartnerBookingDto;
+  hotelId: string;
   onAction: (b: PartnerBookingDto, a: Action) => void;
 }) {
   return (
@@ -74,7 +78,13 @@ function ReservationRow({
           {b.roomSummary}
         </span>
         <span className="text-fg-subtle">
-          {b.reference} · {b.guestPhone} · {b.guestEmail}
+          <Link
+            to={`/partner/bookings/${hotelId}/${b.reference}`}
+            className="font-medium text-primary underline"
+          >
+            {b.reference}
+          </Link>{' '}
+          · {b.guestPhone} · {b.guestEmail}
           {b.estimatedArrivalTime ? ` · arriving ~${b.estimatedArrivalTime}` : ''}
         </span>
         {b.specialRequests && <span className="text-fg-muted">Requests: {b.specialRequests}</span>}
@@ -111,6 +121,11 @@ export function PartnerReservationsPage() {
   const [hotelId, setHotelId] = useState('');
   const [view, setView] = useState('upcoming');
   const [page, setPage] = useState(1);
+  const [filters, setFilters] = useState({ q: '', status: '', from: '', to: '' });
+  const setFilter = (k: keyof typeof filters, v: string) => {
+    setFilters((f) => ({ ...f, [k]: v }));
+    setPage(1);
+  };
   const [pending, setPending] = useState<{ booking: PartnerBookingDto; action: Action } | null>(
     null,
   );
@@ -118,8 +133,8 @@ export function PartnerReservationsPage() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const query = useQuery({
-    queryKey: ['partner-bookings', hotelId, view, page],
-    queryFn: ({ signal }) => partnerBookingsApi.list(hotelId, view, page, signal),
+    queryKey: ['partner-bookings', hotelId, view, page, filters],
+    queryFn: ({ signal }) => partnerBookingsApi.list(hotelId, view, page, signal, filters),
     enabled: Boolean(hotelId),
   });
   const act = useMutation({
@@ -183,6 +198,7 @@ export function PartnerReservationsPage() {
           <ReservationRow
             key={b.reference}
             b={b}
+            hotelId={hotelId}
             onAction={(booking, action) => setPending({ booking, action })}
           />
         ))}
@@ -210,6 +226,48 @@ export function PartnerReservationsPage() {
           />
         }
       />
+      <div
+        className="flex flex-wrap items-end gap-3"
+        role="search"
+        aria-label="Filter reservations"
+      >
+        <Input
+          label="Guest name or reference"
+          value={filters.q}
+          onChange={(e) => setFilter('q', e.target.value)}
+          containerClassName="w-64"
+        />
+        <Select
+          label="Status"
+          value={filters.status}
+          onChange={(e) => setFilter('status', e.target.value)}
+          options={[
+            '',
+            'CONFIRMED',
+            'CHECKED_IN',
+            'CHECKED_OUT',
+            'COMPLETED',
+            'CANCELLED',
+            'NO_SHOW',
+            'REJECTED',
+          ].map((s) => ({ value: s, label: s ? s.replace('_', ' ').toLowerCase() : 'Any status' }))}
+          containerClassName="w-48"
+        />
+        <Input
+          type="date"
+          label="Check-in from"
+          value={filters.from}
+          onChange={(e) => setFilter('from', e.target.value)}
+          containerClassName="w-44"
+        />
+        <Input
+          type="date"
+          label="Check-in to"
+          value={filters.to}
+          onChange={(e) => setFilter('to', e.target.value)}
+          containerClassName="w-44"
+        />
+      </div>
       <Tabs
         label="Reservation views"
         value={view}
@@ -219,6 +277,12 @@ export function PartnerReservationsPage() {
         }}
         items={[
           { id: 'arrivals', label: 'Arriving today', content: view === 'arrivals' ? list : null },
+          { id: 'in-house', label: 'In house', content: view === 'in-house' ? list : null },
+          {
+            id: 'departures',
+            label: 'Departing today',
+            content: view === 'departures' ? list : null,
+          },
           { id: 'upcoming', label: 'Upcoming', content: view === 'upcoming' ? list : null },
           { id: 'past', label: 'Past', content: view === 'past' ? list : null },
           { id: 'all', label: 'All', content: view === 'all' ? list : null },
@@ -347,6 +411,231 @@ export function PartnerReviewsPage() {
           ))}
         </ul>
       )}
+    </div>
+  );
+}
+
+/** /partner/bookings/:hotelId/:reference — reservation detail for front-desk operations. */
+export function PartnerReservationDetailPage() {
+  const { hotelId = '', reference = '' } = useParams();
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  const key = ['partner-booking', hotelId, reference];
+  const query = useQuery({
+    queryKey: key,
+    queryFn: ({ signal }) => partnerBookingsApi.detail(hotelId, reference, signal),
+  });
+  const [note, setNote] = useState('');
+  const [rooms, setRooms] = useState<Record<string, string>>({});
+  const fail = (title: string) => (e: unknown) =>
+    toast({ title, description: normalizeApiError(e).message, variant: 'error' });
+  const refresh = () => void qc.invalidateQueries({ queryKey: key });
+  const addNote = useMutation({
+    mutationFn: () => partnerBookingsApi.addNote(hotelId, reference, note),
+    onSuccess: () => {
+      setNote('');
+      refresh();
+    },
+    onError: fail('Could not add the note'),
+  });
+  const assign = useMutation({
+    mutationFn: () =>
+      partnerBookingsApi.assignRooms(
+        hotelId,
+        reference,
+        Object.entries(rooms)
+          .map(([roomTypeId, v]) => ({
+            roomTypeId,
+            roomNumbers: v
+              .split(',')
+              .map((x) => x.trim())
+              .filter(Boolean),
+          }))
+          .filter((a) => a.roomNumbers.length),
+      ),
+    onSuccess: () => {
+      toast({ title: 'Rooms assigned', variant: 'success' });
+      refresh();
+    },
+    onError: fail('Could not assign rooms'),
+  });
+  const act = useMutation({
+    mutationFn: (a: Action) => partnerBookingsApi.act(hotelId, reference, a),
+    onSuccess: refresh,
+    onError: fail('Action failed'),
+  });
+  if (query.isPending) return <PageSpinner />;
+  if (query.error)
+    return (
+      <ErrorState
+        description={normalizeApiError(query.error).message}
+        onRetry={() => void query.refetch()}
+      />
+    );
+  const b = query.data;
+  const g = b.guestDetails;
+  return (
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title={`${b.guestName} · ${b.reference}`}
+        description={`${formatStayDate(b.checkIn)} → ${formatStayDate(b.checkOut)} · ${b.nights} night${b.nights === 1 ? '' : 's'} · ${b.roomSummary}`}
+        breadcrumb={[{ label: 'Reservations', to: '/partner/bookings' }, { label: b.reference }]}
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <BookingStatusBadge status={b.status} />
+            <PaymentStatusBadge status={b.paymentStatus} />
+            {b.actions.canCheckIn && (
+              <Button size="sm" loading={act.isPending} onClick={() => act.mutate('check-in')}>
+                Check in
+              </Button>
+            )}
+            {b.actions.canCheckOut && (
+              <Button size="sm" loading={act.isPending} onClick={() => act.mutate('check-out')}>
+                Check out
+              </Button>
+            )}
+          </div>
+        }
+      />
+      <section
+        aria-labelledby="guest"
+        className="grid gap-3 rounded-2xl border border-border p-4 text-sm sm:grid-cols-2"
+      >
+        <h2 id="guest" className="font-semibold sm:col-span-2">
+          Guest
+        </h2>
+        <p>
+          {g.primaryGuest.firstName} {g.primaryGuest.lastName} · {g.primaryGuest.phone} ·{' '}
+          {g.primaryGuest.email}
+        </p>
+        {g.additionalGuests.length > 0 && (
+          <p>
+            Also staying: {g.additionalGuests.map((x) => `${x.firstName} ${x.lastName}`).join(', ')}
+          </p>
+        )}
+        {g.estimatedArrivalTime && <p>Arriving around {g.estimatedArrivalTime}</p>}
+        {g.specialRequests && <p className="sm:col-span-2">Requests: {g.specialRequests}</p>}
+        <p>
+          Checked in:{' '}
+          {b.checkedInAt
+            ? `${formatInstant(b.checkedInAt)}${b.checkedInBy ? ` by ${b.checkedInBy}` : ''}`
+            : '—'}
+        </p>
+        <p>
+          Checked out:{' '}
+          {b.checkedOutAt
+            ? `${formatInstant(b.checkedOutAt)}${b.checkedOutBy ? ` by ${b.checkedOutBy}` : ''}`
+            : '—'}
+        </p>
+      </section>
+      <section
+        aria-labelledby="payment"
+        className="flex flex-col gap-2 rounded-2xl border border-border p-4 text-sm"
+      >
+        <h2 id="payment" className="font-semibold">
+          Payment
+        </h2>
+        <p>
+          Total {money(b.price.totals.totalMinor, b.price.currency)}
+          {b.price.coupon ? ` (coupon ${b.price.coupon.code}, funded by Stayscape)` : ''}
+        </p>
+        {b.payments.map((p, i) => (
+          <p key={i}>
+            {formatInstant(p.createdAt)} · {money(p.amountMinor, p.currency)} ·{' '}
+            {p.status.toLowerCase()}
+            {p.refundedMinor ? ` · refunded ${money(p.refundedMinor, p.currency)}` : ''}
+          </p>
+        ))}
+        {b.refunds.map((r, i) => (
+          <p key={i}>
+            Refund {money(r.amountMinor, r.currency)} · {r.status.toLowerCase()} · {r.reason}
+          </p>
+        ))}
+        {b.cancellation && (
+          <p>
+            Cancelled: charge{' '}
+            {money(b.cancellation.cancellationChargeMinor, b.cancellation.currency)}, refundable{' '}
+            {money(b.cancellation.refundableAmountMinor, b.cancellation.currency)}
+          </p>
+        )}
+      </section>
+      <section
+        aria-labelledby="rooms"
+        className="flex flex-col gap-3 rounded-2xl border border-border p-4 text-sm"
+      >
+        <h2 id="rooms" className="font-semibold">
+          Room assignment
+        </h2>
+        {b.items.map((item) => {
+          const current =
+            b.roomAssignments
+              .find((a) => a.roomTypeId === item.roomTypeId)
+              ?.roomNumbers.join(', ') ?? '';
+          return (
+            <Input
+              key={item.roomTypeId}
+              label={`${item.roomTypeName}: ${item.rooms} room number${item.rooms === 1 ? '' : 's'} (comma separated)`}
+              value={rooms[item.roomTypeId] ?? current}
+              onChange={(e) => setRooms({ ...rooms, [item.roomTypeId]: e.target.value })}
+            />
+          );
+        })}
+        <Button
+          size="sm"
+          className="self-start"
+          loading={assign.isPending}
+          disabled={!Object.keys(rooms).length}
+          onClick={() => assign.mutate()}
+        >
+          Save room assignment
+        </Button>
+      </section>
+      <section
+        aria-labelledby="notes"
+        className="flex flex-col gap-3 rounded-2xl border border-border p-4 text-sm"
+      >
+        <h2 id="notes" className="font-semibold">
+          Internal notes
+        </h2>
+        <ol className="flex flex-col gap-2">
+          {b.notes.length ? (
+            b.notes.map((n) => (
+              <li key={n.id} className="rounded-lg bg-surface-muted p-2">
+                <span className="font-medium">{n.authorName}</span>{' '}
+                <span className="text-fg-subtle">{formatInstant(n.createdAt)}</span>
+                <p className="whitespace-pre-wrap">{n.body}</p>
+              </li>
+            ))
+          ) : (
+            <li className="text-fg-subtle">No notes yet. Notes are visible to your team only.</li>
+          )}
+        </ol>
+        <Textarea label="Add a note" value={note} onChange={(e) => setNote(e.target.value)} />
+        <Button
+          size="sm"
+          className="self-start"
+          loading={addNote.isPending}
+          disabled={!note.trim()}
+          onClick={() => addNote.mutate()}
+        >
+          Add note
+        </Button>
+      </section>
+      <section
+        aria-labelledby="timeline"
+        className="flex flex-col gap-2 rounded-2xl border border-border p-4 text-sm"
+      >
+        <h2 id="timeline" className="font-semibold">
+          Timeline
+        </h2>
+        <ol className="flex flex-col gap-1">
+          {b.timeline.map((t, i) => (
+            <li key={i}>
+              {formatInstant(t.at)} · {t.label}
+            </li>
+          ))}
+        </ol>
+      </section>
     </div>
   );
 }

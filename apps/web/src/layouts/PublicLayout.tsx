@@ -5,19 +5,20 @@ import { Logo } from '@/components/brand/Logo';
 import { ButtonLink, Drawer, IconButton } from '@/components/ui';
 import { useAuth } from '@/features/auth/use-auth';
 import { ThemeToggle } from '@/features/ui/ThemeToggle';
-import { LanguageSwitcher } from '@/lib/i18n';
+import { LanguageSwitcher, useI18n, type MessageKey } from '@/lib/i18n';
 import { cn } from '@/lib/cn';
 import { UserMenu } from './UserMenu';
 
 export const PUBLIC_NAV = [
-  { to: '/hotels', label: 'Find a stay' },
-  { to: '/#destinations', label: 'Destinations' },
-  { to: '/#inspiration', label: 'Inspiration' },
-  { to: '/partners', label: 'List your property' },
-];
+  { to: '/hotels', label: 'Find a stay', labelKey: 'site.findStay' },
+  { to: '/#destinations', label: 'Destinations', labelKey: 'site.destinations' },
+  { to: '/#inspiration', label: 'Inspiration', labelKey: 'site.inspiration' },
+  { to: '/partners', label: 'List your property', labelKey: 'site.listProperty' },
+] as const satisfies ReadonlyArray<{ to: string; label: string; labelKey: MessageKey }>;
 
 export function SiteHeader({ overlay = false }: { overlay?: boolean }) {
   const { isAuthenticated, status } = useAuth();
+  const { t } = useI18n();
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
@@ -57,7 +58,7 @@ export function SiteHeader({ overlay = false }: { overlay?: boolean }) {
                   : 'text-fg-muted hover:bg-surface-muted hover:text-fg',
               )}
             >
-              {item.label}
+              {t(item.labelKey)}
             </NavLink>
           ))}
         </nav>
@@ -75,10 +76,10 @@ export function SiteHeader({ overlay = false }: { overlay?: boolean }) {
                   size="sm"
                   className={cn(inverse && 'text-ivory hover:bg-white/10')}
                 >
-                  Sign in
+                  {t('site.signIn')}
                 </ButtonLink>
                 <ButtonLink to="/register" variant={inverse ? 'accent' : 'primary'} size="sm">
-                  Create account
+                  {t('site.createAccount')}
                 </ButtonLink>
               </div>
             ))}
@@ -92,7 +93,7 @@ export function SiteHeader({ overlay = false }: { overlay?: boolean }) {
           />
         </div>
       </div>
-      <Drawer open={menuOpen} onClose={() => setMenuOpen(false)} title="Menu">
+      <Drawer open={menuOpen} onClose={() => setMenuOpen(false)} title={t('site.menu')}>
         <nav aria-label="Mobile" className="flex flex-col gap-1">
           {PUBLIC_NAV.map((item) => (
             <Link
@@ -100,17 +101,17 @@ export function SiteHeader({ overlay = false }: { overlay?: boolean }) {
               to={item.to}
               className="rounded-lg px-3 py-3 text-base font-medium text-fg hover:bg-surface-muted"
             >
-              {item.label}
+              {t(item.labelKey)}
             </Link>
           ))}
         </nav>
         {!isAuthenticated && (
           <div className="mt-6 flex flex-col gap-2 border-t border-border pt-6">
             <ButtonLink to="/login" variant="outline" fullWidth>
-              Sign in
+              {t('site.signIn')}
             </ButtonLink>
             <ButtonLink to="/register" fullWidth>
-              Create account
+              {t('site.createAccount')}
             </ButtonLink>
           </div>
         )}
@@ -121,35 +122,37 @@ export function SiteHeader({ overlay = false }: { overlay?: boolean }) {
 
 export function SiteFooter() {
   const year = new Date().getFullYear();
+  const { t } = useI18n();
   const columns = [
     {
-      title: 'Explore',
+      title: t('footer.explore'),
       links: [
-        { to: '/search', label: 'Find a stay' },
-        { to: '/#destinations', label: 'Destinations' },
-        { to: '/#inspiration', label: 'Travel notes' },
+        { to: '/hotels', label: t('site.findStay') },
+        { to: '/#destinations', label: t('site.destinations') },
+        { to: '/guides', label: t('footer.guides') },
+        { to: '/help/faq', label: t('footer.faq') },
       ],
     },
     {
-      title: 'Partners',
+      title: t('footer.partners'),
       links: [
-        { to: '/partners', label: 'List your property' },
-        { to: '/partner/onboarding', label: 'Partner onboarding' },
+        { to: '/partners', label: t('site.listProperty') },
+        { to: '/partner/onboarding', label: t('footer.partnerOnboarding') },
       ],
     },
     {
-      title: 'Account',
+      title: t('footer.account'),
       links: [
-        { to: '/login', label: 'Sign in' },
-        { to: '/register', label: 'Create account' },
-        { to: '/account', label: 'My account' },
+        { to: '/login', label: t('site.signIn') },
+        { to: '/register', label: t('site.createAccount') },
+        { to: '/account', label: t('footer.myAccount') },
       ],
     },
     {
-      title: 'Legal',
+      title: t('footer.legal'),
       links: [
-        { to: '/terms', label: 'Terms of service' },
-        { to: '/privacy', label: 'Privacy policy' },
+        { to: '/terms', label: t('footer.terms') },
+        { to: '/privacy', label: t('footer.privacy') },
       ],
     },
   ];
@@ -158,10 +161,7 @@ export function SiteFooter() {
       <div className="container-page grid gap-12 py-16 md:grid-cols-[1.4fr_repeat(4,1fr)]">
         <div className="flex flex-col gap-4">
           <Logo tone="inverse" />
-          <p className="max-w-xs text-sm text-ivory/65">
-            Verified hotels, resorts and boutique stays — booked with clear prices and real
-            availability.
-          </p>
+          <p className="max-w-xs text-sm text-ivory/65">{t('footer.tagline')}</p>
         </div>
         {columns.map((column) => (
           <nav key={column.title} aria-label={column.title}>
@@ -182,8 +182,10 @@ export function SiteFooter() {
       </div>
       <div className="border-t border-white/10">
         <div className="container-page flex flex-col gap-2 py-6 text-xs text-ivory/50 sm:flex-row sm:justify-between">
-          <p>© {year} STAYSCAPE. All rights reserved.</p>
-          <p>Prices shown in your preferred currency. Taxes and fees disclosed before payment.</p>
+          <p>
+            © {year} STAYSCAPE. {t('footer.rights')}
+          </p>
+          <p>{t('footer.prices')}</p>
         </div>
       </div>
     </footer>

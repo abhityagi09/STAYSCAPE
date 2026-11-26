@@ -456,7 +456,15 @@ export interface PricingRuleDto {
   adjustmentValue: number;
   priority: number;
   stackingPolicy: StackingPolicy;
-  conditions: { minNights?: number; minDaysBeforeArrival?: number; maxDaysBeforeArrival?: number };
+  conditions: {
+    minNights?: number;
+    minDaysBeforeArrival?: number;
+    maxDaysBeforeArrival?: number;
+    minOccupancyBp?: number;
+    maxOccupancyBp?: number;
+    bookFrom?: string;
+    bookTo?: string;
+  };
   active: boolean;
 }
 

@@ -17,8 +17,8 @@ export const priceCalendarQuerySchema = z
     adults: z.coerce.number().int().min(1).max(30).default(2),
     rooms: z.coerce.number().int().min(1).max(9).default(1),
   })
-  .refine((q) => diffDays(q.from, q.to) >= 0 && diffDays(q.from, q.to) <= 30, {
-    message: 'Choose up to 31 check-in dates',
+  .refine((q) => diffDays(q.from, q.to) >= 0 && diffDays(q.from, q.to) <= 13, {
+    message: 'Choose up to 14 check-in dates',
     path: ['to'],
   });
 

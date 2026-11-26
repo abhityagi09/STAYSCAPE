@@ -1,3 +1,4 @@
+import { AdminAccessibilityPanel } from '@/features/ops/AccessibilityPages';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -634,6 +635,7 @@ export function AdminPropertyDetailPage() {
           </Badge>
         }
       />
+      <AdminAccessibilityPanel hotelId={id} />
       {!h.completeness.ready && (
         <Alert tone="warning" title="Incomplete">
           {h.completeness.missing.join(', ')}

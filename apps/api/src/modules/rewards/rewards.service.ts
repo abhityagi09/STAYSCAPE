@@ -10,6 +10,7 @@ import {
 import { AppError, Errors, isMongoDuplicateKey } from '@/lib/errors';
 import { randomCode } from '@/lib/references';
 import type { RequestContext } from '@/lib/request-context';
+import type { Logger } from '@/lib/logger';
 import { withTransaction } from '@/lib/transaction';
 import type { AuditService } from '@/modules/audit/audit.service';
 import { BookingModel, type BookingRecord } from '@/modules/bookings/booking.models';
@@ -161,6 +162,7 @@ export class RewardsService {
       coupons: CouponsService;
       notifications: NotificationService;
       audit: AuditService;
+      logger: Logger;
     },
   ) {}
 
@@ -360,28 +362,36 @@ export class RewardsService {
       ).map((e) => e.entryKey),
     );
     for (const b of completed) {
-      if (done.has(`earn:${b._id.toString()}`)) continue;
-      const { paid, refunded } = await this.paidAndRefunded(b._id);
-      const pts = stayPoints(b.priceSnapshot.totals.subtotalMinor, paid, refunded);
-      // Recorded even when zero, so the stay is not re-examined and later refunds reverse correctly.
-      const posted = await this.post({
-        userId: b.customerId,
-        entryKey: `earn:${b._id.toString()}`,
-        type: 'EARN',
-        points: pts,
-        description: `Stay ${b.bookingReference}`,
-        bookingId: b._id,
-        bookingReference: b.bookingReference,
-      });
-      if (posted > 0) {
-        earned += posted;
-        await this.deps.notifications.notifyInApp({
-          userId: b.customerId.toString(),
-          type: 'LOYALTY_UPDATE',
-          title: `You earned ${posted} points`,
-          body: `For your stay ${b.bookingReference}.`,
-          resource: { type: 'rewards', id: 'loyalty' },
+      try {
+        if (done.has(`earn:${b._id.toString()}`)) continue;
+        const { paid, refunded } = await this.paidAndRefunded(b._id);
+        const pts = stayPoints(b.priceSnapshot.totals.subtotalMinor, paid, refunded);
+        // Recorded even when zero, so the stay is not re-examined and later refunds reverse correctly.
+        const posted = await this.post({
+          userId: b.customerId,
+          entryKey: `earn:${b._id.toString()}`,
+          type: 'EARN',
+          points: pts,
+          description: `Stay ${b.bookingReference}`,
+          bookingId: b._id,
+          bookingReference: b.bookingReference,
         });
+        if (posted > 0) {
+          earned += posted;
+          await this.deps.notifications.notifyInApp({
+            userId: b.customerId.toString(),
+            type: 'LOYALTY_UPDATE',
+            title: `You earned ${posted} points`,
+            body: `For your stay ${b.bookingReference}.`,
+            resource: { type: 'rewards', id: 'loyalty' },
+          });
+        }
+      } catch (error) {
+        // One bad record must not stop the rest of the batch.
+        this.deps.logger.warn(
+          { err: (error as Error).message },
+          'Loyalty accrual failed for one item; continuing',
+        );
       }
     }
     // Refunds completed after points were earned.
@@ -393,35 +403,43 @@ export class RewardsService {
       .limit(batch)
       .lean<LoyaltyEntryRecord[]>();
     for (const earn of earnRows) {
-      const refunds = await RefundModel.find(
-        { bookingId: earn.bookingId, status: 'SUCCEEDED' },
-        { _id: 1 },
-      )
-        .sort({ completedAt: 1 })
-        .lean<Array<{ _id: Types.ObjectId }>>();
-      if (refunds.length === 0) continue;
-      const booking = await BookingModel.findById(earn.bookingId, {
-        priceSnapshot: 1,
-      }).lean<BookingRecord>();
-      if (!booking) continue;
-      const { paid, refunded } = await this.paidAndRefunded(earn.bookingId!);
-      const entitled = stayPoints(booking.priceSnapshot.totals.subtotalMinor, paid, refunded);
-      const prior = await LoyaltyEntryModel.aggregate<{ n: number }>([
-        { $match: { bookingId: earn.bookingId, type: 'REVERSE' } },
-        { $group: { _id: null, n: { $sum: '$points' } } },
-      ]);
-      const toReverse = earn.points + (prior[0]?.n ?? 0) - entitled;
-      if (toReverse <= 0) continue;
-      const latest = refunds[refunds.length - 1]!;
-      reversed -= await this.post({
-        userId: earn.userId,
-        entryKey: `reverse:${latest._id.toString()}`,
-        type: 'REVERSE',
-        points: -toReverse,
-        description: `Refund on stay ${earn.bookingReference}`,
-        bookingId: earn.bookingId,
-        bookingReference: earn.bookingReference,
-      });
+      try {
+        const refunds = await RefundModel.find(
+          { bookingId: earn.bookingId, status: 'SUCCEEDED' },
+          { _id: 1 },
+        )
+          .sort({ completedAt: 1 })
+          .lean<Array<{ _id: Types.ObjectId }>>();
+        if (refunds.length === 0) continue;
+        const booking = await BookingModel.findById(earn.bookingId, {
+          priceSnapshot: 1,
+        }).lean<BookingRecord>();
+        if (!booking) continue;
+        const { paid, refunded } = await this.paidAndRefunded(earn.bookingId!);
+        const entitled = stayPoints(booking.priceSnapshot.totals.subtotalMinor, paid, refunded);
+        const prior = await LoyaltyEntryModel.aggregate<{ n: number }>([
+          { $match: { bookingId: earn.bookingId, type: 'REVERSE' } },
+          { $group: { _id: null, n: { $sum: '$points' } } },
+        ]);
+        const toReverse = earn.points + (prior[0]?.n ?? 0) - entitled;
+        if (toReverse <= 0) continue;
+        const latest = refunds[refunds.length - 1]!;
+        reversed -= await this.post({
+          userId: earn.userId,
+          entryKey: `reverse:${latest._id.toString()}`,
+          type: 'REVERSE',
+          points: -toReverse,
+          description: `Refund on stay ${earn.bookingReference}`,
+          bookingId: earn.bookingId,
+          bookingReference: earn.bookingReference,
+        });
+      } catch (error) {
+        // One bad record must not stop the rest of the batch.
+        this.deps.logger.warn(
+          { err: (error as Error).message },
+          'Loyalty reversal failed for one item; continuing',
+        );
+      }
     }
     return { earned, reversed };
   }
@@ -436,22 +454,30 @@ export class RewardsService {
       .lean<Array<{ _id: Types.ObjectId; code: string }>>();
     let released = 0;
     for (const c of expired) {
-      const redeem = await LoyaltyEntryModel.findOne({
-        entryKey: `redeem:${c._id.toString()}`,
-      }).lean<LoyaltyEntryRecord>();
-      await CouponModel.updateOne(
-        { _id: c._id, usedCount: 0, reservedCount: 0 },
-        { $set: { active: false } },
-      );
-      if (!redeem) continue;
-      released += await this.post({
-        userId: redeem.userId,
-        entryKey: `release:${c._id.toString()}`,
-        type: 'REDEEM_RELEASE',
-        points: -redeem.points,
-        description: `Coupon ${c.code} expired unused`,
-        couponId: c._id,
-      });
+      try {
+        const redeem = await LoyaltyEntryModel.findOne({
+          entryKey: `redeem:${c._id.toString()}`,
+        }).lean<LoyaltyEntryRecord>();
+        await CouponModel.updateOne(
+          { _id: c._id, usedCount: 0, reservedCount: 0 },
+          { $set: { active: false } },
+        );
+        if (!redeem) continue;
+        released += await this.post({
+          userId: redeem.userId,
+          entryKey: `release:${c._id.toString()}`,
+          type: 'REDEEM_RELEASE',
+          points: -redeem.points,
+          description: `Coupon ${c.code} expired unused`,
+          couponId: c._id,
+        });
+      } catch (error) {
+        // One bad record must not stop the rest of the batch.
+        this.deps.logger.warn(
+          { err: (error as Error).message },
+          'Points coupon release failed for one item; continuing',
+        );
+      }
     }
     return released;
   }
@@ -567,89 +593,99 @@ export class RewardsService {
       .limit(500)
       .lean<ReferralRecord[]>();
     for (const r of pending) {
-      if (now.getTime() - r.createdAt.getTime() > 365 * 86_400_000) {
-        rejected += (
-          await ReferralModel.updateOne(
-            { _id: r._id, status: 'PENDING' },
-            { $set: { status: 'REJECTED', reason: 'No qualifying stay within a year' } },
-          )
-        ).modifiedCount;
-        continue;
-      }
-      const stay = await BookingModel.findOne(
-        {
-          customerId: r.refereeId,
-          bookingStatus: 'COMPLETED',
-          paymentStatus: { $ne: 'REFUNDED' },
-          'priceSnapshot.totals.subtotalMinor': { $gte: REFERRAL_RULES.minQualifyingSubtotalMinor },
-        },
-        { _id: 1, bookingReference: 1 },
-      )
-        .sort({ completedAt: 1 })
-        .lean<BookingRecord>();
-      if (!stay) continue;
-      const count = await ReferralModel.countDocuments({
-        referrerId: r.referrerId,
-        status: 'REWARDED',
-        rewardedAt: { $gte: new Date(now.getTime() - 365 * 86_400_000) },
-      });
-      if (count >= REFERRAL_RULES.maxRewardedPerYear) {
-        rejected += (
-          await ReferralModel.updateOne(
-            { _id: r._id, status: 'PENDING' },
-            {
-              $set: {
-                status: 'REJECTED',
-                reason: 'The referrer reached the yearly referral limit',
-              },
+      try {
+        if (now.getTime() - r.createdAt.getTime() > 365 * 86_400_000) {
+          rejected += (
+            await ReferralModel.updateOne(
+              { _id: r._id, status: 'PENDING' },
+              { $set: { status: 'REJECTED', reason: 'No qualifying stay within a year' } },
+            )
+          ).modifiedCount;
+          continue;
+        }
+        const stay = await BookingModel.findOne(
+          {
+            customerId: r.refereeId,
+            bookingStatus: 'COMPLETED',
+            paymentStatus: { $ne: 'REFUNDED' },
+            'priceSnapshot.totals.subtotalMinor': {
+              $gte: REFERRAL_RULES.minQualifyingSubtotalMinor,
             },
-          )
-        ).modifiedCount;
-        continue;
-      }
-      const ok = await withTransaction(async (session) => {
-        const claimed = await ReferralModel.updateOne(
-          { _id: r._id, status: 'PENDING' },
-          { $set: { status: 'REWARDED', rewardedAt: now, qualifyingBookingId: stay._id } },
-          { session },
-        );
-        if (claimed.modifiedCount !== 1) return false;
-        await this.post(
-          {
-            userId: r.referrerId,
-            entryKey: `referral:${r._id.toString()}:referrer`,
-            type: 'REFERRAL_BONUS',
-            points: REFERRAL_RULES.referrerPoints,
-            description: 'Referral reward: a friend completed their first stay',
           },
-          session,
-        );
-        await this.post(
-          {
-            userId: r.refereeId,
-            entryKey: `referral:${r._id.toString()}:referee`,
-            type: 'REFERRAL_BONUS',
-            points: REFERRAL_RULES.refereePoints,
-            description: 'Welcome reward for your first stay',
-          },
-          session,
-        );
-        return true;
-      });
-      if (ok) {
-        rewarded += 1;
-        await this.deps.notifications.notifyInApp({
-          userId: r.referrerId.toString(),
-          type: 'REFERRAL_REWARD',
-          title: `You earned ${REFERRAL_RULES.referrerPoints} referral points`,
-          body: 'A friend you referred completed their first stay.',
+          { _id: 1, bookingReference: 1 },
+        )
+          .sort({ completedAt: 1 })
+          .lean<BookingRecord>();
+        if (!stay) continue;
+        const count = await ReferralModel.countDocuments({
+          referrerId: r.referrerId,
+          status: 'REWARDED',
+          rewardedAt: { $gte: new Date(now.getTime() - 365 * 86_400_000) },
         });
-        await this.deps.notifications.notifyInApp({
-          userId: r.refereeId.toString(),
-          type: 'REFERRAL_REWARD',
-          title: `You earned ${REFERRAL_RULES.refereePoints} welcome points`,
-          body: 'Thanks for completing your first stay.',
+        if (count >= REFERRAL_RULES.maxRewardedPerYear) {
+          rejected += (
+            await ReferralModel.updateOne(
+              { _id: r._id, status: 'PENDING' },
+              {
+                $set: {
+                  status: 'REJECTED',
+                  reason: 'The referrer reached the yearly referral limit',
+                },
+              },
+            )
+          ).modifiedCount;
+          continue;
+        }
+        const ok = await withTransaction(async (session) => {
+          const claimed = await ReferralModel.updateOne(
+            { _id: r._id, status: 'PENDING' },
+            { $set: { status: 'REWARDED', rewardedAt: now, qualifyingBookingId: stay._id } },
+            { session },
+          );
+          if (claimed.modifiedCount !== 1) return false;
+          await this.post(
+            {
+              userId: r.referrerId,
+              entryKey: `referral:${r._id.toString()}:referrer`,
+              type: 'REFERRAL_BONUS',
+              points: REFERRAL_RULES.referrerPoints,
+              description: 'Referral reward: a friend completed their first stay',
+            },
+            session,
+          );
+          await this.post(
+            {
+              userId: r.refereeId,
+              entryKey: `referral:${r._id.toString()}:referee`,
+              type: 'REFERRAL_BONUS',
+              points: REFERRAL_RULES.refereePoints,
+              description: 'Welcome reward for your first stay',
+            },
+            session,
+          );
+          return true;
         });
+        if (ok) {
+          rewarded += 1;
+          await this.deps.notifications.notifyInApp({
+            userId: r.referrerId.toString(),
+            type: 'REFERRAL_REWARD',
+            title: `You earned ${REFERRAL_RULES.referrerPoints} referral points`,
+            body: 'A friend you referred completed their first stay.',
+          });
+          await this.deps.notifications.notifyInApp({
+            userId: r.refereeId.toString(),
+            type: 'REFERRAL_REWARD',
+            title: `You earned ${REFERRAL_RULES.refereePoints} welcome points`,
+            body: 'Thanks for completing your first stay.',
+          });
+        }
+      } catch (error) {
+        // One bad record must not stop the rest of the batch.
+        this.deps.logger.warn(
+          { err: (error as Error).message },
+          'Referral qualification failed for one item; continuing',
+        );
       }
     }
     return { rewarded, rejected };

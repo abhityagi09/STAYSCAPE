@@ -556,6 +556,7 @@ export class FinanceService {
   async ledger(
     filter: {
       partnerId?: Types.ObjectId;
+      hotelIds?: Types.ObjectId[];
       account?: LedgerAccount;
       bookingId?: Types.ObjectId;
       from?: Date;
@@ -566,6 +567,7 @@ export class FinanceService {
   ): Promise<Paginated<LedgerEntryRecord>> {
     const q: Record<string, unknown> = {};
     if (filter.partnerId) q.partnerId = filter.partnerId;
+    if (filter.hotelIds) q.hotelId = { $in: filter.hotelIds };
     if (filter.account) q.account = filter.account;
     if (filter.bookingId) q.bookingId = filter.bookingId;
     if (filter.from || filter.to)

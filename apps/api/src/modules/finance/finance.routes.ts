@@ -54,7 +54,16 @@ export function createPartnerFinanceRouter(container: Container): Router {
   );
   router.get('/ledger', validate({ query: pageQuerySchema }), async (req, res) => {
     const q = validatedQuery<{ page: number; limit: number }>(req);
-    sendSuccess(res, await finance.ledger({ partnerId: await partner(req) }, q.page, q.limit));
+    const auth = requireAuth(req);
+    if (await partnerAccess.findOwnedPartner(auth.userId)) {
+      sendSuccess(res, await finance.ledger({ partnerId: await partner(req) }, q.page, q.limit));
+      return;
+    }
+    // Staff: only entries for properties where they hold financials:view.
+    const hotelIds = await partnerAccess.hotelIdsWithPermission(auth, 'financials:view');
+    if (hotelIds.length === 0)
+      throw Errors.forbidden('You do not have access to financial information.');
+    sendSuccess(res, await finance.ledger({ hotelIds }, q.page, q.limit));
   });
   router.get('/settlements', validate({ query: pageQuerySchema }), async (req, res) => {
     const q = validatedQuery<{ page: number; limit: number }>(req);

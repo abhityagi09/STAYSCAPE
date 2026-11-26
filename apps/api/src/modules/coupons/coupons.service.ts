@@ -158,6 +158,12 @@ export class CouponsService {
     return { code: coupon.code, discountMinor };
   }
 
+  /** Remove a hold's reserved coupon so another can be applied (the hold stays active). */
+  async unapply(holdId: Types.ObjectId, session: ClientSession): Promise<void> {
+    await this.release(holdId, session);
+    await CouponRedemptionModel.deleteOne({ holdId, status: 'RELEASED' }, { session });
+  }
+
   /** Hold released or expired: give the use back (exactly once). */
   async release(holdId: Types.ObjectId, session: ClientSession): Promise<void> {
     const r = await CouponRedemptionModel.findOneAndUpdate(

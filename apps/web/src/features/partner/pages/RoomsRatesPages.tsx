@@ -646,6 +646,10 @@ const ruleForm = z.object({
   minNights: z.string(),
   minDays: z.string(),
   maxDays: z.string(),
+  minOccupancy: z.string(),
+  maxOccupancy: z.string(),
+  bookFrom: z.string(),
+  bookTo: z.string(),
 });
 type RuleValues = z.infer<typeof ruleForm>;
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -684,10 +688,16 @@ function RuleModal({
       minNights: r?.conditions.minNights?.toString() ?? '',
       minDays: r?.conditions.minDaysBeforeArrival?.toString() ?? '',
       maxDays: r?.conditions.maxDaysBeforeArrival?.toString() ?? '',
+      minOccupancy:
+        r?.conditions.minOccupancyBp !== undefined ? String(r.conditions.minOccupancyBp / 100) : '',
+      maxOccupancy:
+        r?.conditions.maxOccupancyBp !== undefined ? String(r.conditions.maxOccupancyBp / 100) : '',
+      bookFrom: r?.conditions.bookFrom ?? '',
+      bookTo: r?.conditions.bookTo ?? '',
     },
   });
   const type = watch('ruleType');
-  const isDiscount = ['LONG_STAY', 'EARLY_BIRD', 'LAST_MINUTE'].includes(type);
+  const isDiscount = ['LONG_STAY', 'EARLY_BIRD', 'LAST_MINUTE', 'PROMOTIONAL'].includes(type);
   const onSubmit = handleSubmit(async (v) => {
     const raw =
       v.mode === 'PERCENT'
@@ -716,6 +726,11 @@ function RuleModal({
           minNights: num(v.minNights),
           minDaysBeforeArrival: num(v.minDays),
           maxDaysBeforeArrival: num(v.maxDays),
+          // Occupancy is entered as a percentage and stored in basis points.
+          minOccupancyBp: v.minOccupancy ? Math.round(Number(v.minOccupancy) * 100) : undefined,
+          maxOccupancyBp: v.maxOccupancy ? Math.round(Number(v.maxOccupancy) * 100) : undefined,
+          bookFrom: v.bookFrom || undefined,
+          bookTo: v.bookTo || undefined,
         },
         active: true,
       });
@@ -816,6 +831,31 @@ function RuleModal({
         )}
         {type === 'EARLY_BIRD' && (
           <Input label="Book at least N days ahead" type="number" {...register('minDays')} />
+        )}
+        {type === 'OCCUPANCY' && (
+          <>
+            <Input
+              label="When occupancy is at least (%)"
+              type="number"
+              min={0}
+              max={100}
+              {...register('minOccupancy')}
+              hint="Rooms held or booked ÷ rooms on sale that night"
+            />
+            <Input
+              label="…and at most (%) — optional"
+              type="number"
+              min={0}
+              max={100}
+              {...register('maxOccupancy')}
+            />
+          </>
+        )}
+        {type === 'PROMOTIONAL' && (
+          <>
+            <DatePicker label="Bookable from" {...register('bookFrom')} />
+            <DatePicker label="Bookable until" {...register('bookTo')} />
+          </>
         )}
         {type === 'LAST_MINUTE' && (
           <Input label="Book within N days of arrival" type="number" {...register('maxDays')} />

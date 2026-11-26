@@ -272,6 +272,26 @@ export class TrustService {
     }));
   }
 
+  /** The property's own view of its declarations (property:edit). */
+  async listAccessibility(auth: AuthContext, hotelId: string) {
+    const { hotel } = await this.deps.access.resolveHotel(auth, hotelId, 'property:edit');
+    return TrustService.toAccessibilityDtos(hotel);
+  }
+
+  /** Admin view including internal verification evidence (hotels:moderate). */
+  async adminAccessibility(hotelId: string) {
+    if (!Types.ObjectId.isValid(hotelId)) throw Errors.notFound('Property');
+    const hotel = await HotelModel.findById(hotelId, { accessibilityFeatures: 1 }).lean<
+      Pick<HotelRecord, 'accessibilityFeatures'>
+    >();
+    if (!hotel) throw Errors.notFound('Property');
+    return (hotel.accessibilityFeatures ?? []).map((f, i) => ({
+      ...TrustService.toAccessibilityDtos(hotel)[i]!,
+      evidence: f.evidence,
+      declaredAt: new Date(f.declaredAt).toISOString(),
+    }));
+  }
+
   /** Partner declaration (property:edit). Removing a feature removes its verification too. */
   async declareAccessibility(
     auth: AuthContext,

@@ -178,7 +178,7 @@ export function buildContainer(core: CoreDependencies) {
     { config, access: partnerAccess, inventory, encryptor, audit, logger },
     [new LocalSimulatorAdapter()],
   );
-  const intelligence = new IntelligenceService({ quotes, search, notifications, logger });
+  const intelligence = new IntelligenceService({ quotes, search, notifications, logger, cache });
 
   // ---- Phase 3: reservations, payments, refunds, customer experience
   const lateQueue = core.domainEventQueue ? null : new LateBoundInlineQueue();
@@ -186,7 +186,7 @@ export function buildContainer(core: CoreDependencies) {
   const paymentProvider = core.paymentProvider ?? createPaymentProvider(config, logger);
   const finance = new FinanceService({ config, audit, logger });
   const coupons = new CouponsService({ audit });
-  const rewards = new RewardsService({ coupons, notifications, audit });
+  const rewards = new RewardsService({ coupons, notifications, audit, logger });
   const analytics = new AnalyticsService({ access: partnerAccess, finance, coupons });
   const bookings = new BookingsService({
     config,

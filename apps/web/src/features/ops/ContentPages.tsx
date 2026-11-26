@@ -18,6 +18,7 @@ import {
   Textarea,
   useToast,
 } from '@/components/ui';
+import { http, unwrap } from '@/lib/api/client';
 import { normalizeApiError } from '@/lib/api/errors';
 import { useI18n } from '@/lib/i18n';
 import { api, useApiMutation, useApiQuery, type Page } from './api';
@@ -367,6 +368,26 @@ function Editor({ entry, onDone }: { entry: AdminContentDto | null; onDone: () =
   const [f, setF] = useState<Form>(entry ? fromEntry(entry) : blank);
   const [publishAt, setPublishAt] = useState('');
   const [preview, setPreview] = useState<string | null>(null);
+  // Images are kept with their alt text as one list, so ids and alts can never drift apart.
+  const [images, setImages] = useState<Array<{ id: string; alt: string; url: string }>>(
+    entry ? entry.draft.images.map((i) => ({ id: i.id, alt: i.alt, url: i.variants.sm })) : [],
+  );
+  const [uploading, setUploading] = useState(false);
+  const upload = async (file: File) => {
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.set('file', file);
+      const img = await unwrap<{ id: string; variants: { sm: string } }>(
+        http.post('/admin/content/images', fd),
+      );
+      setImages((list) => [...list, { id: img.id, alt: '', url: img.variants.sm }]);
+    } catch (e) {
+      fail('Upload failed')(e);
+    } finally {
+      setUploading(false);
+    }
+  };
   const { toast } = useToast();
   const fail = (title: string) => (e: unknown) =>
     toast({ title, description: normalizeApiError(e).message, variant: 'error' });
@@ -377,13 +398,17 @@ function Editor({ entry, onDone }: { entry: AdminContentDto | null; onDone: () =
         ? api.put<AdminContentDto>(`/admin/content/${entry.id}`, {
             ...bodyOf(
               f,
-              entry.draft.imageIds,
-              entry.draft.images.map((i) => i.alt),
+              images.map((i) => i.id),
+              images.map((i) => i.alt),
             ),
             version: entry.version,
           })
         : api.post<AdminContentDto>('/admin/content', {
-            ...bodyOf(f),
+            ...bodyOf(
+              f,
+              images.map((i) => i.id),
+              images.map((i) => i.alt),
+            ),
             type: f.type,
             locale: f.locale,
             slug: f.slug,
@@ -472,6 +497,44 @@ function Editor({ entry, onDone }: { entry: AdminContentDto | null; onDone: () =
           onChange={set('body')}
           rows={12}
         />
+        <fieldset className="flex flex-col gap-2 rounded-xl border border-border p-3">
+          <legend className="px-1 text-sm font-medium">Images</legend>
+          {images.map((img, i) => (
+            <div key={img.id} className="flex flex-wrap items-end gap-2">
+              <img src={img.url} alt="" className="h-14 w-20 rounded object-cover" />
+              <Input
+                label={`Alt text for image ${i + 1} (required)`}
+                value={img.alt}
+                onChange={(e) =>
+                  setImages(
+                    images.map((x) => (x.id === img.id ? { ...x, alt: e.target.value } : x)),
+                  )
+                }
+                containerClassName="w-80"
+              />
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setImages(images.filter((x) => x.id !== img.id))}
+              >
+                Remove
+              </Button>
+            </div>
+          ))}
+          <label className="flex flex-col gap-1 text-sm">
+            Add an image (JPEG, PNG, WebP or AVIF, up to 10 MB)
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/avif"
+              disabled={uploading || images.length >= 10}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) void upload(file);
+                e.target.value = '';
+              }}
+            />
+          </label>
+        </fieldset>
         <div className="flex flex-wrap gap-3">
           <Input
             label="Button label"
@@ -524,7 +587,11 @@ function Editor({ entry, onDone }: { entry: AdminContentDto | null; onDone: () =
           type="submit"
           className="self-start"
           loading={save.isPending}
-          disabled={f.title.length < 2 || (!entry && f.slug.length < 2)}
+          disabled={
+            f.title.length < 2 ||
+            (!entry && f.slug.length < 2) ||
+            images.some((i) => i.alt.trim().length < 2)
+          }
         >
           Save draft
         </Button>

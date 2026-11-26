@@ -193,4 +193,82 @@ describe('coupons', () => {
       })
       .expect(422);
   });
+
+  it('applies, swaps and removes a coupon on an existing hold, and freezes it once booked', async () => {
+    const { app, admin, hotel, customer } = await bookingWorld();
+    await makeCoupon(app, admin, { code: 'TENOFF', totalLimit: 5 });
+    await makeCoupon(app, admin, { code: 'FLAT500', discountType: 'FIXED', value: 50_000 });
+    const held = await createHold(
+      app,
+      customer,
+      holdBody(hotel, daysFromToday(10), daysFromToday(12)),
+    );
+    const ref = held.body.data.reference;
+    const url = `/api/v1/bookings/holds/${ref}/coupon`;
+    // 10 % of the ₹10,000 room subtotal off the ₹10,500 total.
+    expect(
+      (
+        await request(app)
+          .put(url)
+          .set(bearer(customer.accessToken))
+          .send({ code: 'tenoff' })
+          .expect(200)
+      ).body.data.price,
+    ).toMatchObject({
+      coupon: { code: 'TENOFF', discountMinor: 100_000 },
+      totals: { totalMinor: 950_000 },
+    });
+    expect(await CouponModel.findOne({ code: 'TENOFF' }).lean()).toMatchObject({
+      reservedCount: 1,
+    });
+    // Swapping releases the first coupon's use.
+    expect(
+      (
+        await request(app)
+          .put(url)
+          .set(bearer(customer.accessToken))
+          .send({ code: 'FLAT500' })
+          .expect(200)
+      ).body.data.price,
+    ).toMatchObject({
+      coupon: { code: 'FLAT500', discountMinor: 50_000 },
+      totals: { totalMinor: 1_000_000 },
+    });
+    expect(await CouponModel.findOne({ code: 'TENOFF' }).lean()).toMatchObject({
+      reservedCount: 0,
+    });
+    await request(app)
+      .put(url)
+      .set(bearer(customer.accessToken))
+      .send({ code: 'NOPE99' })
+      .expect(422);
+    // A rejected code leaves the previous coupon in place (transaction rolled back).
+    expect(
+      (
+        await request(app)
+          .get(`/api/v1/bookings/holds/${ref}`)
+          .set(bearer(customer.accessToken))
+          .expect(200)
+      ).body.data.price.coupon,
+    ).toMatchObject({ code: 'FLAT500' });
+    const other = await registerUser(app);
+    await request(app).put(url).set(bearer(other.accessToken)).send({ code: 'TENOFF' }).expect(404);
+    expect(
+      (await request(app).delete(url).set(bearer(customer.accessToken)).expect(200)).body.data
+        .price,
+    ).toMatchObject({ coupon: null, totals: { totalMinor: 1_050_000 } });
+    await request(app)
+      .put(url)
+      .set(bearer(customer.accessToken))
+      .send({ code: 'TENOFF' })
+      .expect(200);
+    const booked = await request(app)
+      .post('/api/v1/bookings')
+      .set(bearer(customer.accessToken))
+      .set(idem())
+      .send({ holdReference: ref, guestDetails, acceptTerms: true })
+      .expect(201);
+    expect(booked.body.data.totalMinor).toBe(950_000);
+    await request(app).delete(url).set(bearer(customer.accessToken)).expect(409);
+  });
 });

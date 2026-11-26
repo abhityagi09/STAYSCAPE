@@ -1,4 +1,6 @@
 import {
+  Accessibility,
+  Ban,
   Bell,
   BedDouble,
   Bot,
@@ -131,6 +133,13 @@ const partnerSections: NavSection[] = [
         to: '/partner/inventory',
         label: 'Inventory calendar',
         icon: BedDouble,
+        end: true,
+        permissions: ['partner:access'],
+      },
+      {
+        to: '/partner/inventory/blocks',
+        label: 'Blocks & closures',
+        icon: Ban,
         permissions: ['partner:access'],
       },
       {
@@ -143,6 +152,12 @@ const partnerSections: NavSection[] = [
         to: '/partner/reviews',
         label: 'Guest reviews',
         icon: Star,
+        permissions: ['partner:access'],
+      },
+      {
+        to: '/partner/accessibility',
+        label: 'Accessibility',
+        icon: Accessibility,
         permissions: ['partner:access'],
       },
       {

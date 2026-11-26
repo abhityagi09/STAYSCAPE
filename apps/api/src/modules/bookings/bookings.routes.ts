@@ -8,6 +8,7 @@ import {
   cancelBookingSchema,
   createBookingSchema,
   createHoldSchema,
+  holdCouponSchema,
   createTicketSchema,
   listBookingsQuerySchema,
   objectIdSchema,
@@ -90,6 +91,28 @@ export function createBookingsRouter(container: Container): Router {
   });
   router.get('/holds/:reference', canRead, validate({ params: holdParams }), async (req, res) =>
     sendSuccess(res, await bookings.getHold(requireAuth(req), ref(req))),
+  );
+  // Apply or remove a coupon on an active hold (repriced and reserved server-side).
+  router.put(
+    '/holds/:reference/coupon',
+    canBook,
+    validate({ params: holdParams, body: holdCouponSchema }),
+    async (req, res) =>
+      sendSuccess(
+        res,
+        await bookings.setHoldCoupon(
+          requireAuth(req),
+          ref(req),
+          (req.body as { code: string }).code,
+        ),
+      ),
+  );
+  router.delete(
+    '/holds/:reference/coupon',
+    canBook,
+    validate({ params: holdParams }),
+    async (req, res) =>
+      sendSuccess(res, await bookings.setHoldCoupon(requireAuth(req), ref(req), null)),
   );
   router.delete('/holds/:reference', canBook, validate({ params: holdParams }), async (req, res) =>
     sendSuccess(res, await bookings.releaseHold(requireAuth(req), ref(req))),

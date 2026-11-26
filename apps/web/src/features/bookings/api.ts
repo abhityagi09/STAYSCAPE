@@ -26,6 +26,7 @@ import type {
   BookingStatus,
   OperationsOverviewDto,
   PartnerBookingDto,
+  PartnerBookingDetailDto,
   PartnerReviewDto,
 } from '@stayscape/shared';
 import { API_BASE_URL, http, unwrap } from '@/lib/api/client';
@@ -74,6 +75,10 @@ export const bookingsApi = {
     unwrap<HoldDto>(http.post('/bookings/holds', body, withKey(key))),
   hold: (reference: string) => unwrap<HoldDto>(http.get(`/bookings/holds/${reference}`)),
   releaseHold: (reference: string) => unwrap<HoldDto>(http.delete(`/bookings/holds/${reference}`)),
+  applyHoldCoupon: (reference: string, code: string) =>
+    unwrap<HoldDto>(http.put(`/bookings/holds/${reference}/coupon`, { code })),
+  removeHoldCoupon: (reference: string) =>
+    unwrap<HoldDto>(http.delete(`/bookings/holds/${reference}/coupon`)),
   createBooking: (
     body: { holdReference: string; guestDetails: GuestDetailsInput; acceptTerms: true },
     key: string,
@@ -273,9 +278,34 @@ export const supportApi = {
 
 // ---------------------------------------------------------------- partner & admin
 export const partnerBookingsApi = {
-  list: (hotelId: string, view: string, page: number, signal?: AbortSignal) =>
+  list: (
+    hotelId: string,
+    view: string,
+    page: number,
+    signal?: AbortSignal,
+    filters: { q?: string; status?: string; from?: string; to?: string } = {},
+  ) =>
     unwrap<Paginated<PartnerBookingDto>>(
-      http.get(`/partner/hotels/${hotelId}/bookings`, { params: { view, page }, signal }),
+      http.get(`/partner/hotels/${hotelId}/bookings`, {
+        params: Object.fromEntries(
+          Object.entries({ view, page, ...filters }).filter(([, v]) => v !== undefined && v !== ''),
+        ),
+        signal,
+      }),
+    ),
+  detail: (hotelId: string, reference: string, signal?: AbortSignal) =>
+    unwrap<PartnerBookingDetailDto>(
+      http.get(`/partner/hotels/${hotelId}/bookings/${reference}`, { signal }),
+    ),
+  addNote: (hotelId: string, reference: string, body: string) =>
+    unwrap<unknown>(http.post(`/partner/hotels/${hotelId}/bookings/${reference}/notes`, { body })),
+  assignRooms: (
+    hotelId: string,
+    reference: string,
+    assignments: Array<{ roomTypeId: string; roomNumbers: string[] }>,
+  ) =>
+    unwrap<unknown>(
+      http.put(`/partner/hotels/${hotelId}/bookings/${reference}/rooms`, { assignments }),
     ),
   act: (
     hotelId: string,

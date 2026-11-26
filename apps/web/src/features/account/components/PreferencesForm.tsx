@@ -83,7 +83,9 @@ export function PreferencesForm({ user }: { user: UserDto }) {
   const onSubmit = handleSubmit(async (values) => {
     setFormError(null);
     try {
-      const updated = await update.mutateAsync(values);
+      // Send only what this form edits (personalisation consent has its own control).
+      const { language, currency, notifications } = values;
+      const updated = await update.mutateAsync({ language, currency, notifications });
       reset(updated.preferences);
       toast({ title: 'Preferences saved', variant: 'success' });
     } catch (error) {

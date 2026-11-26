@@ -219,4 +219,42 @@ describe('property staff permissions', () => {
     ).body.data.items;
     expect(byStatus).toHaveLength(0);
   });
+
+  it('gives staff with financials:view the ledger for their properties only', async () => {
+    const { app, customer, hotel, owner, admin } = await bookingWorld();
+    const second = await createPublishedHotel(app, owner, admin, {
+      content: hotelContent({ name: 'Finance Second', city: 'Jaipur' }),
+    });
+    const { booking } = await holdAndBook(app, customer, hotel, [10, 12]);
+    await payInFull(app, customer, booking.reference);
+    const finance = await addStaff(app, owner, [second.hotelId], ['financials:view']);
+    // Their only property has no ledger activity yet.
+    expect(
+      (
+        await request(app)
+          .get('/api/v1/partner/finance/ledger')
+          .set(bearer(finance.staff.accessToken))
+          .expect(200)
+      ).body.data.items,
+    ).toHaveLength(0);
+    const both = await addStaff(app, owner, [hotel.hotelId], ['financials:view']);
+    const items = (
+      await request(app)
+        .get('/api/v1/partner/finance/ledger')
+        .set(bearer(both.staff.accessToken))
+        .expect(200)
+    ).body.data.items as Array<{ hotelId: string }>;
+    expect(items.length).toBeGreaterThan(0);
+    expect(items.every((e) => e.hotelId === hotel.hotelId)).toBe(true);
+    const viewer = await addStaff(app, owner, [hotel.hotelId], ['bookings:view']);
+    await request(app)
+      .get('/api/v1/partner/finance/ledger')
+      .set(bearer(viewer.staff.accessToken))
+      .expect(403);
+    // Partner-wide summary and settlements stay with the owner.
+    await request(app)
+      .get('/api/v1/partner/finance/summary')
+      .set(bearer(both.staff.accessToken))
+      .expect(403);
+  });
 });

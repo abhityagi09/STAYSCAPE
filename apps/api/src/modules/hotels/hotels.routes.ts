@@ -280,6 +280,9 @@ export function createPartnerHotelsRouter(container: Container): Router {
   );
 
   // Accessibility declaration (provenance: PARTNER_DECLARED until Stayscape verifies it).
+  router.get('/:hotelId/accessibility', validate({ params: hotelParam }), async (req, res) =>
+    sendSuccess(res, await container.services.trust.listAccessibility(requireAuth(req), hp(req))),
+  );
   router.put(
     '/:hotelId/accessibility',
     validate({ params: hotelParam, body: accessibilityDeclarationSchema }),
@@ -364,6 +367,14 @@ export function createAdminHotelsRouter(container: Container): Router {
   router.use(container.authenticate, requirePermission('hotels:moderate'));
   router.get('/', validate({ query: listAdminHotelsQuerySchema }), async (req, res) =>
     sendSuccess(res, await hotels.listForAdmin(validatedQuery(req))),
+  );
+  router.get('/:hotelId/accessibility', validate({ params: hotelParam }), async (req, res) =>
+    sendSuccess(
+      res,
+      await container.services.trust.adminAccessibility(
+        validatedParams<{ hotelId: string }>(req).hotelId,
+      ),
+    ),
   );
   router.post(
     '/:hotelId/accessibility/verify',
