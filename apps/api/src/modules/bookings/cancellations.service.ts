@@ -455,14 +455,25 @@ export class CancellationsService {
       });
     if (query.view === 'past') Object.assign(filter, { checkOutLocalDate: { $lt: today } });
     if (query.view === 'in-house') Object.assign(filter, { bookingStatus: 'CHECKED_IN' });
-    if (query.view === 'departures') Object.assign(filter, { checkOutLocalDate: today, bookingStatus: { $in: ['CHECKED_IN', 'CHECKED_OUT'] } });
+    if (query.view === 'departures')
+      Object.assign(filter, {
+        checkOutLocalDate: today,
+        bookingStatus: { $in: ['CHECKED_IN', 'CHECKED_OUT'] },
+      });
     if (query.status) filter.bookingStatus = query.status;
     if (query.from || query.to) {
-      filter.checkInLocalDate = { ...(query.from ? { $gte: query.from } : {}), ...(query.to ? { $lte: query.to } : {}) };
+      filter.checkInLocalDate = {
+        ...(query.from ? { $gte: query.from } : {}),
+        ...(query.to ? { $lte: query.to } : {}),
+      };
     }
     if (query.q) {
       const pattern = new RegExp(query.q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-      filter.$or = [{ bookingReference: pattern }, { 'guestDetails.primaryGuest.lastName': pattern }, { 'guestDetails.primaryGuest.firstName': pattern }];
+      filter.$or = [
+        { bookingReference: pattern },
+        { 'guestDetails.primaryGuest.lastName': pattern },
+        { 'guestDetails.primaryGuest.firstName': pattern },
+      ];
     }
     const [items, total] = await Promise.all([
       BookingModel.find(filter)
@@ -496,7 +507,11 @@ export class CancellationsService {
     const updated = await BookingModel.findOneAndUpdate(
       { _id: booking._id, bookingStatus: 'CONFIRMED' },
       {
-        $set: { bookingStatus: 'CHECKED_IN', checkedInAt: new Date(), checkedInBy: new Types.ObjectId(auth.userId) },
+        $set: {
+          bookingStatus: 'CHECKED_IN',
+          checkedInAt: new Date(),
+          checkedInBy: new Types.ObjectId(auth.userId),
+        },
         $push: { statusHistory: statusEvent('CHECKED_IN', 'Guest checked in') },
       },
       { new: true },
@@ -522,7 +537,11 @@ export class CancellationsService {
     const updated = await BookingModel.findOneAndUpdate(
       { _id: booking._id, bookingStatus: 'CHECKED_IN' },
       {
-        $set: { bookingStatus: 'CHECKED_OUT', checkedOutAt: new Date(), checkedOutBy: new Types.ObjectId(auth.userId) },
+        $set: {
+          bookingStatus: 'CHECKED_OUT',
+          checkedOutAt: new Date(),
+          checkedOutBy: new Types.ObjectId(auth.userId),
+        },
         $push: { statusHistory: statusEvent('CHECKED_OUT', 'Guest checked out') },
       },
       { new: true },

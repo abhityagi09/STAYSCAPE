@@ -58,13 +58,18 @@ export interface CommissionResult {
 
 const SCOPE_RANK: Record<CommissionScope, number> = { HOTEL: 3, PARTNER: 2, GLOBAL: 1 };
 
-export function selectCommissionRule(rules: CommissionRuleInput[], ctx: { partnerId: string; hotelId: string; at: Date }): CommissionRuleInput | null {
+export function selectCommissionRule(
+  rules: CommissionRuleInput[],
+  ctx: { partnerId: string; hotelId: string; at: Date },
+): CommissionRuleInput | null {
   const applicable = rules.filter(
     (r) =>
       r.active &&
       r.effectiveFrom <= ctx.at &&
       (!r.effectiveTo || ctx.at < r.effectiveTo) &&
-      (r.scope === 'GLOBAL' || (r.scope === 'PARTNER' && r.partnerId === ctx.partnerId) || (r.scope === 'HOTEL' && r.hotelId === ctx.hotelId)),
+      (r.scope === 'GLOBAL' ||
+        (r.scope === 'PARTNER' && r.partnerId === ctx.partnerId) ||
+        (r.scope === 'HOTEL' && r.hotelId === ctx.hotelId)),
   );
   applicable.sort(
     (a, b) =>
@@ -76,13 +81,21 @@ export function selectCommissionRule(rules: CommissionRuleInput[], ctx: { partne
   return applicable[0] ?? null;
 }
 
-export function commissionBaseMinor(totals: PriceTotals, base: CommissionBase, includeFees: boolean): number {
+export function commissionBaseMinor(
+  totals: PriceTotals,
+  base: CommissionBase,
+  includeFees: boolean,
+): number {
   // roomChargesMinor is pre-discount; subtotalMinor is after discounts, before taxes and fees.
   const room = base === 'ROOM_SUBTOTAL' ? totals.roomChargesMinor : totals.subtotalMinor;
   return Math.max(0, room + (includeFees ? totals.feesMinor : 0));
 }
 
-export function calculateCommission(totals: PriceTotals, rule: CommissionRuleInput | null, defaultBasisPoints: number): CommissionResult {
+export function calculateCommission(
+  totals: PriceTotals,
+  rule: CommissionRuleInput | null,
+  defaultBasisPoints: number,
+): CommissionResult {
   const r = rule ?? null;
   const base = r?.base ?? 'DISCOUNTED_ROOM_SUBTOTAL';
   const includeFees = r?.includeFees ?? false;
@@ -90,7 +103,9 @@ export function calculateCommission(totals: PriceTotals, rule: CommissionRuleInp
   const exempt = r?.exempt ?? false;
   const rate = r ? r.rateBasisPoints : defaultBasisPoints;
   const fixed = r?.fixedMinor ?? 0;
-  const commissionMinor = exempt ? 0 : Math.min(baseMinor, applyBasisPoints(baseMinor, rate) + fixed);
+  const commissionMinor = exempt
+    ? 0
+    : Math.min(baseMinor, applyBasisPoints(baseMinor, rate) + fixed);
   return {
     ruleId: r?.id ?? null,
     ruleName: r?.name ?? 'Platform default',
@@ -109,7 +124,11 @@ export function calculateCommission(totals: PriceTotals, rule: CommissionRuleInp
  * Proportional reversal for a refund of `refundMinor` out of `paidMinor`: the platform gives back
  * the same share of its commission. Rounded half away from zero; never more than was charged.
  */
-export function proportionalShare(amountMinor: number, partMinor: number, wholeMinor: number): number {
+export function proportionalShare(
+  amountMinor: number,
+  partMinor: number,
+  wholeMinor: number,
+): number {
   if (wholeMinor <= 0 || amountMinor === 0) return 0;
   const numerator = amountMinor * partMinor;
   if (!Number.isSafeInteger(numerator)) throw new RangeError('Amount too large');

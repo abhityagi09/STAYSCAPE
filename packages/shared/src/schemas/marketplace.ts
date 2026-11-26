@@ -461,14 +461,38 @@ export const pricingRuleSchema = z
         path: ['conditions', 'maxDaysBeforeArrival'],
         message: 'Last-minute discounts need a booking window',
       });
-    if (r.ruleType === 'OCCUPANCY' && r.conditions.minOccupancyBp === undefined && r.conditions.maxOccupancyBp === undefined)
-      ctx.addIssue({ code: 'custom', path: ['conditions', 'minOccupancyBp'], message: 'Occupancy rules need an occupancy range' });
-    if (r.conditions.minOccupancyBp !== undefined && r.conditions.maxOccupancyBp !== undefined && r.conditions.maxOccupancyBp < r.conditions.minOccupancyBp)
-      ctx.addIssue({ code: 'custom', path: ['conditions', 'maxOccupancyBp'], message: 'Maximum occupancy must be at least the minimum' });
+    if (
+      r.ruleType === 'OCCUPANCY' &&
+      r.conditions.minOccupancyBp === undefined &&
+      r.conditions.maxOccupancyBp === undefined
+    )
+      ctx.addIssue({
+        code: 'custom',
+        path: ['conditions', 'minOccupancyBp'],
+        message: 'Occupancy rules need an occupancy range',
+      });
+    if (
+      r.conditions.minOccupancyBp !== undefined &&
+      r.conditions.maxOccupancyBp !== undefined &&
+      r.conditions.maxOccupancyBp < r.conditions.minOccupancyBp
+    )
+      ctx.addIssue({
+        code: 'custom',
+        path: ['conditions', 'maxOccupancyBp'],
+        message: 'Maximum occupancy must be at least the minimum',
+      });
     if (r.ruleType === 'PROMOTIONAL' && (!r.conditions.bookFrom || !r.conditions.bookTo))
-      ctx.addIssue({ code: 'custom', path: ['conditions', 'bookFrom'], message: 'Promotions need a booking window' });
+      ctx.addIssue({
+        code: 'custom',
+        path: ['conditions', 'bookFrom'],
+        message: 'Promotions need a booking window',
+      });
     if (r.conditions.bookFrom && r.conditions.bookTo && r.conditions.bookTo < r.conditions.bookFrom)
-      ctx.addIssue({ code: 'custom', path: ['conditions', 'bookTo'], message: 'The booking window must end on or after it starts' });
+      ctx.addIssue({
+        code: 'custom',
+        path: ['conditions', 'bookTo'],
+        message: 'The booking window must end on or after it starts',
+      });
     if (
       (ADJUSTMENT_RULE_TYPES as readonly string[]).includes(r.ruleType) &&
       r.ruleType !== 'DATE_OVERRIDE' &&
@@ -596,7 +620,10 @@ export const searchCriteriaObject = z.object({
   wifi: z.boolean().default(false),
   petFriendly: z.boolean().default(false),
   accessible: z.boolean().default(false),
-  accessibilityFeatures: z.array(z.enum(ACCESSIBILITY_FEATURES)).max(ACCESSIBILITY_FEATURES.length).default([]),
+  accessibilityFeatures: z
+    .array(z.enum(ACCESSIBILITY_FEATURES))
+    .max(ACCESSIBILITY_FEATURES.length)
+    .default([]),
   accessibilityVerifiedOnly: z.boolean().default(false),
   freeCancellation: z.boolean().default(false),
   instantConfirmation: z.boolean().default(false),
@@ -754,11 +781,19 @@ export const inventoryBlockSchema = z
     reason: z.enum(['MAINTENANCE', 'RENOVATION', 'OWNER_USE', 'OTHER']),
     note: z.string().trim().max(300).default(''),
   })
-  .refine((u) => diffDays(u.from, u.to) >= 0 && diffDays(u.from, u.to) <= 365, { message: 'Blocks can cover up to one year', path: ['to'] });
+  .refine((u) => diffDays(u.from, u.to) >= 0 && diffDays(u.from, u.to) <= 365, {
+    message: 'Blocks can cover up to one year',
+    path: ['to'],
+  });
 
 export const accessibilityDeclarationSchema = z.strictObject({
   features: z
-    .array(z.strictObject({ code: z.enum(ACCESSIBILITY_FEATURES), note: z.string().trim().max(200).default('') }))
+    .array(
+      z.strictObject({
+        code: z.enum(ACCESSIBILITY_FEATURES),
+        note: z.string().trim().max(200).default(''),
+      }),
+    )
     .max(ACCESSIBILITY_FEATURES.length)
     .refine((f) => new Set(f.map((x) => x.code)).size === f.length, 'Each feature once'),
 });

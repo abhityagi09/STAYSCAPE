@@ -6,7 +6,14 @@ import type { RequestContext } from '@/lib/request-context';
 import type { AuditService } from '@/modules/audit/audit.service';
 import { BookingModel } from '@/modules/bookings/booking.models';
 import { applyBasisPoints } from '@/modules/pricing/pricing.engine';
-import { CouponModel, CouponRedemptionModel, CouponUsageModel, type CouponAttrs, type CouponRecord, type CouponRedemptionRecord } from './coupons.models';
+import {
+  CouponModel,
+  CouponRedemptionModel,
+  CouponUsageModel,
+  type CouponAttrs,
+  type CouponRecord,
+  type CouponRedemptionRecord,
+} from './coupons.models';
 
 export interface CouponContext {
   userId: string;
@@ -21,13 +28,21 @@ export interface CouponContext {
 }
 
 /** Discount for a coupon on a price, never leaving less than ₹1 (minimum chargeable) to pay. */
-export function couponDiscount(coupon: Pick<CouponAttrs, 'discountType' | 'value' | 'maxDiscountMinor'>, subtotalMinor: number, totalMinor: number): number {
-  let discount = coupon.discountType === 'PERCENT' ? applyBasisPoints(subtotalMinor, coupon.value) : coupon.value;
+export function couponDiscount(
+  coupon: Pick<CouponAttrs, 'discountType' | 'value' | 'maxDiscountMinor'>,
+  subtotalMinor: number,
+  totalMinor: number,
+): number {
+  let discount =
+    coupon.discountType === 'PERCENT'
+      ? applyBasisPoints(subtotalMinor, coupon.value)
+      : coupon.value;
   if (coupon.maxDiscountMinor !== null) discount = Math.min(discount, coupon.maxDiscountMinor);
   return Math.max(0, Math.min(discount, subtotalMinor, totalMinor - 100));
 }
 
-const reject = (message: string) => new AppError(422, 'NOT_ELIGIBLE', message, { fieldErrors: { couponCode: [message] } });
+const reject = (message: string) =>
+  new AppError(422, 'NOT_ELIGIBLE', message, { fieldErrors: { couponCode: [message] } });
 
 /**
  * Coupons. Platform-funded: the discount reduces what the guest pays, not the property's payable
@@ -41,19 +56,46 @@ export class CouponsService {
   constructor(private readonly deps: { audit: AuditService }) {}
 
   /** Static eligibility checks (dates, currency, property, destination, customer, first booking, stacking, minimum). */
-  async evaluate(code: string, ctx: CouponContext, session?: ClientSession): Promise<{ coupon: CouponRecord; discountMinor: number }> {
+  async evaluate(
+    code: string,
+    ctx: CouponContext,
+    session?: ClientSession,
+  ): Promise<{ coupon: CouponRecord; discountMinor: number }> {
     const now = ctx.now ?? new Date();
-    const coupon = await CouponModel.findOne({ code: code.trim().toUpperCase() }, null, session ? { session } : {}).lean<CouponRecord>();
+    const coupon = await CouponModel.findOne(
+      { code: code.trim().toUpperCase() },
+      null,
+      session ? { session } : {},
+    ).lean<CouponRecord>();
     if (!coupon || !coupon.active) throw reject('This coupon code is not valid.');
-    if (coupon.startsAt > now || (coupon.endsAt && coupon.endsAt <= now)) throw reject('This coupon is not valid at the moment.');
-    if (!coupon.currencies.includes(ctx.currency)) throw reject(`This coupon cannot be used for ${ctx.currency} bookings.`);
-    if (coupon.eligibleHotelIds.length && !coupon.eligibleHotelIds.some((id) => id.toString() === ctx.hotelId)) throw reject('This coupon is not valid for this property.');
-    if (coupon.eligibleCities.length && !coupon.eligibleCities.some((c) => c.toLowerCase() === ctx.city.toLowerCase())) throw reject('This coupon is not valid for this destination.');
-    if (coupon.eligibleUserIds.length && !coupon.eligibleUserIds.some((id) => id.toString() === ctx.userId)) throw reject('This coupon is not available on your account.');
-    if (!coupon.stackableWithRateDiscounts && ctx.hasRateDiscounts) throw reject('This coupon cannot be combined with the discounted rate you selected.');
-    if (ctx.totalMinor < coupon.minBookingMinor) throw reject('The booking total is below this coupon’s minimum.');
+    if (coupon.startsAt > now || (coupon.endsAt && coupon.endsAt <= now))
+      throw reject('This coupon is not valid at the moment.');
+    if (!coupon.currencies.includes(ctx.currency))
+      throw reject(`This coupon cannot be used for ${ctx.currency} bookings.`);
+    if (
+      coupon.eligibleHotelIds.length &&
+      !coupon.eligibleHotelIds.some((id) => id.toString() === ctx.hotelId)
+    )
+      throw reject('This coupon is not valid for this property.');
+    if (
+      coupon.eligibleCities.length &&
+      !coupon.eligibleCities.some((c) => c.toLowerCase() === ctx.city.toLowerCase())
+    )
+      throw reject('This coupon is not valid for this destination.');
+    if (
+      coupon.eligibleUserIds.length &&
+      !coupon.eligibleUserIds.some((id) => id.toString() === ctx.userId)
+    )
+      throw reject('This coupon is not available on your account.');
+    if (!coupon.stackableWithRateDiscounts && ctx.hasRateDiscounts)
+      throw reject('This coupon cannot be combined with the discounted rate you selected.');
+    if (ctx.totalMinor < coupon.minBookingMinor)
+      throw reject('The booking total is below this coupon’s minimum.');
     if (coupon.firstBookingOnly) {
-      const previous = await BookingModel.exists({ customerId: ctx.userId, confirmedAt: { $ne: null } }).session(session ?? null);
+      const previous = await BookingModel.exists({
+        customerId: ctx.userId,
+        confirmedAt: { $ne: null },
+      }).session(session ?? null);
       if (previous) throw reject('This coupon is for your first booking only.');
     }
     const discountMinor = couponDiscount(coupon, ctx.subtotalMinor, ctx.totalMinor);
@@ -62,13 +104,21 @@ export class CouponsService {
   }
 
   /** Reserve one use for a hold, atomically against both limits. Call inside the hold transaction. */
-  async reserve(code: string, ctx: CouponContext, holdId: Types.ObjectId, session: ClientSession): Promise<{ code: string; discountMinor: number }> {
+  async reserve(
+    code: string,
+    ctx: CouponContext,
+    holdId: Types.ObjectId,
+    session: ClientSession,
+  ): Promise<{ code: string; discountMinor: number }> {
     const { coupon, discountMinor } = await this.evaluate(code, ctx, session);
     const claimed = await CouponModel.updateOne(
       {
         _id: coupon._id,
         active: true,
-        $or: [{ totalLimit: null }, { $expr: { $lt: [{ $add: ['$usedCount', '$reservedCount'] }, '$totalLimit'] } }],
+        $or: [
+          { totalLimit: null },
+          { $expr: { $lt: [{ $add: ['$usedCount', '$reservedCount'] }, '$totalLimit'] } },
+        ],
       },
       { $inc: { reservedCount: 1 } },
       { session },
@@ -76,17 +126,33 @@ export class CouponsService {
     if (claimed.modifiedCount !== 1) throw reject('This coupon has reached its usage limit.');
     try {
       await CouponUsageModel.updateOne(
-        { couponId: coupon._id, userId: new Types.ObjectId(ctx.userId), count: { $lt: coupon.perUserLimit } },
+        {
+          couponId: coupon._id,
+          userId: new Types.ObjectId(ctx.userId),
+          count: { $lt: coupon.perUserLimit },
+        },
         { $inc: { count: 1 } },
         { upsert: true, session },
       );
     } catch (error) {
       // The unique (coupon, user) key makes an upsert at the limit collide → limit reached.
-      if (isMongoDuplicateKey(error)) throw reject('You have already used this coupon the maximum number of times.');
+      if (isMongoDuplicateKey(error))
+        throw reject('You have already used this coupon the maximum number of times.');
       throw error;
     }
     await CouponRedemptionModel.create(
-      [{ couponId: coupon._id, code: coupon.code, userId: new Types.ObjectId(ctx.userId), holdId, discountMinor, currency: ctx.currency, status: 'RESERVED', reservedAt: new Date() }],
+      [
+        {
+          couponId: coupon._id,
+          code: coupon.code,
+          userId: new Types.ObjectId(ctx.userId),
+          holdId,
+          discountMinor,
+          currency: ctx.currency,
+          status: 'RESERVED',
+          reservedAt: new Date(),
+        },
+      ],
       { session },
     );
     return { code: coupon.code, discountMinor };
@@ -94,36 +160,114 @@ export class CouponsService {
 
   /** Hold released or expired: give the use back (exactly once). */
   async release(holdId: Types.ObjectId, session: ClientSession): Promise<void> {
-    const r = await CouponRedemptionModel.findOneAndUpdate({ holdId, status: 'RESERVED' }, { $set: { status: 'RELEASED', releasedAt: new Date() } }, { session, new: true }).lean<CouponRedemptionRecord>();
+    const r = await CouponRedemptionModel.findOneAndUpdate(
+      { holdId, status: 'RESERVED' },
+      { $set: { status: 'RELEASED', releasedAt: new Date() } },
+      { session, new: true },
+    ).lean<CouponRedemptionRecord>();
     if (!r) return;
-    await CouponModel.updateOne({ _id: r.couponId, reservedCount: { $gt: 0 } }, { $inc: { reservedCount: -1 } }, { session });
-    await CouponUsageModel.updateOne({ couponId: r.couponId, userId: r.userId, count: { $gt: 0 } }, { $inc: { count: -1 } }, { session });
+    await CouponModel.updateOne(
+      { _id: r.couponId, reservedCount: { $gt: 0 } },
+      { $inc: { reservedCount: -1 } },
+      { session },
+    );
+    await CouponUsageModel.updateOne(
+      { couponId: r.couponId, userId: r.userId, count: { $gt: 0 } },
+      { $inc: { count: -1 } },
+      { session },
+    );
   }
 
   /**
    * Payment confirmed the booking: the use becomes permanent. A use released by an expired hold is
    * re-counted when a late payment is still honoured at the price the guest paid.
    */
-  async redeem(holdId: Types.ObjectId, bookingId: Types.ObjectId, session: ClientSession): Promise<void> {
-    const r = await CouponRedemptionModel.findOneAndUpdate({ holdId, status: { $in: ['RESERVED', 'RELEASED'] } }, { $set: { status: 'REDEEMED', redeemedAt: new Date(), bookingId } }, { session }).lean<CouponRedemptionRecord>();
+  async redeem(
+    holdId: Types.ObjectId,
+    bookingId: Types.ObjectId,
+    session: ClientSession,
+  ): Promise<void> {
+    const r = await CouponRedemptionModel.findOneAndUpdate(
+      { holdId, status: { $in: ['RESERVED', 'RELEASED'] } },
+      { $set: { status: 'REDEEMED', redeemedAt: new Date(), bookingId } },
+      { session },
+    ).lean<CouponRedemptionRecord>();
     if (!r) return;
     if (r.status === 'RESERVED') {
-      await CouponModel.updateOne({ _id: r.couponId }, { $inc: { reservedCount: -1, usedCount: 1 } }, { session });
+      await CouponModel.updateOne(
+        { _id: r.couponId },
+        { $inc: { reservedCount: -1, usedCount: 1 } },
+        { session },
+      );
     } else {
       await CouponModel.updateOne({ _id: r.couponId }, { $inc: { usedCount: 1 } }, { session });
-      await CouponUsageModel.updateOne({ couponId: r.couponId, userId: r.userId }, { $inc: { count: 1 } }, { upsert: true, session });
+      await CouponUsageModel.updateOne(
+        { couponId: r.couponId, userId: r.userId },
+        { $inc: { count: 1 } },
+        { upsert: true, session },
+      );
     }
   }
 
   // ------------------------------------------------------------------ administration
-  async list(page: number, limit: number, q?: string): Promise<Paginated<CouponRecord & { redeemedDiscountMinor: number }>> {
-    const filter = q ? { $or: [{ code: new RegExp(q.replace(/[^A-Za-z0-9-]/g, ''), 'i') }, { name: new RegExp(q.replace(/[^\w\s-]/g, ''), 'i') }] } : {};
-    const [items, total] = await Promise.all([CouponModel.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).lean<CouponRecord[]>(), CouponModel.countDocuments(filter)]);
-    const sums = await CouponRedemptionModel.aggregate<{ _id: Types.ObjectId; total: number }>([{ $match: { couponId: { $in: items.map((c) => c._id) }, status: 'REDEEMED' } }, { $group: { _id: '$couponId', total: { $sum: '$discountMinor' } } }]);
-    return paginated(items.map((c) => ({ ...c, redeemedDiscountMinor: sums.find((s) => s._id.equals(c._id))?.total ?? 0 })), page, limit, total);
+  async list(
+    page: number,
+    limit: number,
+    q?: string,
+  ): Promise<Paginated<CouponRecord & { redeemedDiscountMinor: number }>> {
+    const filter = q
+      ? {
+          $or: [
+            { code: new RegExp(q.replace(/[^A-Za-z0-9-]/g, ''), 'i') },
+            { name: new RegExp(q.replace(/[^\w\s-]/g, ''), 'i') },
+          ],
+        }
+      : {};
+    const [items, total] = await Promise.all([
+      CouponModel.find(filter)
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean<CouponRecord[]>(),
+      CouponModel.countDocuments(filter),
+    ]);
+    const sums = await CouponRedemptionModel.aggregate<{ _id: Types.ObjectId; total: number }>([
+      { $match: { couponId: { $in: items.map((c) => c._id) }, status: 'REDEEMED' } },
+      { $group: { _id: '$couponId', total: { $sum: '$discountMinor' } } },
+    ]);
+    return paginated(
+      items.map((c) => ({
+        ...c,
+        redeemedDiscountMinor: sums.find((s) => s._id.equals(c._id))?.total ?? 0,
+      })),
+      page,
+      limit,
+      total,
+    );
   }
 
-  async save(actorId: string, id: string | null, input: Omit<CouponAttrs, 'usedCount' | 'reservedCount' | 'createdBy' | 'createdAt' | 'updatedAt' | 'eligibleHotelIds' | 'eligibleUserIds' | 'startsAt' | 'endsAt'> & { eligibleHotelIds: string[]; eligibleUserIds: string[]; startsAt: string; endsAt: string | null }, context: RequestContext): Promise<CouponRecord> {
+  async save(
+    actorId: string,
+    id: string | null,
+    input: Omit<
+      CouponAttrs,
+      | 'usedCount'
+      | 'reservedCount'
+      | 'createdBy'
+      | 'createdAt'
+      | 'updatedAt'
+      | 'eligibleHotelIds'
+      | 'eligibleUserIds'
+      | 'startsAt'
+      | 'endsAt'
+    > & {
+      eligibleHotelIds: string[];
+      eligibleUserIds: string[];
+      startsAt: string;
+      endsAt: string | null;
+    },
+    context: RequestContext,
+  ): Promise<CouponRecord> {
     const doc = {
       ...input,
       code: input.code.trim().toUpperCase(),
@@ -139,21 +283,48 @@ export class CouponsService {
         if (!Types.ObjectId.isValid(id)) throw Errors.notFound('Coupon');
         before = await CouponModel.findById(id).lean<CouponRecord>();
         if (!before) throw Errors.notFound('Coupon');
-        if (doc.totalLimit !== null && doc.totalLimit < before.usedCount + before.reservedCount) throw new AppError(409, 'CONFLICT', 'The limit cannot be below uses already made or reserved.');
-        saved = await CouponModel.findByIdAndUpdate(id, { $set: doc }, { new: true, runValidators: true }).lean<CouponRecord>();
+        if (doc.totalLimit !== null && doc.totalLimit < before.usedCount + before.reservedCount)
+          throw new AppError(
+            409,
+            'CONFLICT',
+            'The limit cannot be below uses already made or reserved.',
+          );
+        saved = await CouponModel.findByIdAndUpdate(
+          id,
+          { $set: doc },
+          { new: true, runValidators: true },
+        ).lean<CouponRecord>();
       } else {
-        saved = (await CouponModel.create({ ...doc, createdBy: new Types.ObjectId(actorId) })).toObject() as CouponRecord;
+        saved = (
+          await CouponModel.create({ ...doc, createdBy: new Types.ObjectId(actorId) })
+        ).toObject() as CouponRecord;
       }
     } catch (error) {
-      if (isMongoDuplicateKey(error)) throw Errors.validation({ fieldErrors: { code: ['This code already exists'] } });
+      if (isMongoDuplicateKey(error))
+        throw Errors.validation({ fieldErrors: { code: ['This code already exists'] } });
       throw error;
     }
-    await this.deps.audit.record({ actorId, action: id ? 'coupon.updated' : 'coupon.created', entityType: 'Coupon', entityId: saved!._id.toString(), metadata: { before, after: doc }, context });
+    await this.deps.audit.record({
+      actorId,
+      action: id ? 'coupon.updated' : 'coupon.created',
+      entityType: 'Coupon',
+      entityId: saved!._id.toString(),
+      metadata: { before, after: doc },
+      context,
+    });
     return saved!;
   }
 
   /** System-issued single-use coupons (referral rewards, loyalty vouchers). */
-  async issuePersonal(params: { userId: string; code: string; name: string; kind: 'REFERRAL' | 'LOYALTY'; valueMinor: number; validDays: number; session?: ClientSession }): Promise<CouponRecord> {
+  async issuePersonal(params: {
+    userId: string;
+    code: string;
+    name: string;
+    kind: 'REFERRAL' | 'LOYALTY';
+    valueMinor: number;
+    validDays: number;
+    session?: ClientSession;
+  }): Promise<CouponRecord> {
     const now = new Date();
     const [doc] = await CouponModel.create(
       [
@@ -178,14 +349,21 @@ export class CouponsService {
 
   /** Coupon performance for reporting: redemptions and discount granted per coupon in a period. */
   async performance(from: Date, to: Date) {
-    return CouponRedemptionModel.aggregate<{ _id: string; redemptions: number; discountMinor: number; released: number }>([
+    return CouponRedemptionModel.aggregate<{
+      _id: string;
+      redemptions: number;
+      discountMinor: number;
+      released: number;
+    }>([
       { $match: { reservedAt: { $gte: from, $lt: to } } },
       {
         $group: {
           _id: '$code',
           redemptions: { $sum: { $cond: [{ $eq: ['$status', 'REDEEMED'] }, 1, 0] } },
           released: { $sum: { $cond: [{ $eq: ['$status', 'RELEASED'] }, 1, 0] } },
-          discountMinor: { $sum: { $cond: [{ $eq: ['$status', 'REDEEMED'] }, '$discountMinor', 0] } },
+          discountMinor: {
+            $sum: { $cond: [{ $eq: ['$status', 'REDEEMED'] }, '$discountMinor', 0] },
+          },
         },
       },
       { $sort: { redemptions: -1 } },

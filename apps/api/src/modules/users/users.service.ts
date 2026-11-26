@@ -116,7 +116,9 @@ export class UsersService {
     if (input.personalization) {
       set['preferences.personalization.recommendations'] = input.personalization.recommendations;
       // The consent timestamp records when the user opted in (cleared on opt-out).
-      set['preferences.personalization.consentedAt'] = input.personalization.recommendations ? new Date() : null;
+      set['preferences.personalization.consentedAt'] = input.personalization.recommendations
+        ? new Date()
+        : null;
     }
     const user = await this.deps.users.update(userId, { $set: set });
     if (!user) throw Errors.notFound('User');

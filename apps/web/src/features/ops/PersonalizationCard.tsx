@@ -24,13 +24,21 @@ export function PersonalizationCard() {
           onChange={(e) =>
             update.mutate(
               { personalization: { recommendations: e.target.checked } },
-              { onError: (err) => toast({ title: 'Could not update', description: normalizeApiError(err).message, variant: 'error' }) },
+              {
+                onError: (err) =>
+                  toast({
+                    title: 'Could not update',
+                    description: normalizeApiError(err).message,
+                    variant: 'error',
+                  }),
+              },
             )
           }
         />
         <p>
-          We only use your own bookings and saved stays on Stayscape, never browsing history or third-party data. Turning this off stops
-          personalised picks immediately.{p.consentedAt && ` You agreed on ${fmtDate(p.consentedAt)}.`}
+          We only use your own bookings and saved stays on Stayscape, never browsing history or
+          third-party data. Turning this off stops personalised picks immediately.
+          {p.consentedAt && ` You agreed on ${fmtDate(p.consentedAt)}.`}
         </p>
       </CardContent>
     </Card>

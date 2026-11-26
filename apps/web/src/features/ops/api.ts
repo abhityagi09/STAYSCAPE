@@ -3,7 +3,12 @@ import { http, unwrap } from '@/lib/api/client';
 
 /** Thin typed helpers for the Phase 4 endpoints (operations, administration, intelligent features). */
 type Params = Record<string, string | number | boolean | undefined | null>;
-const clean = (p?: Params) => (p ? Object.fromEntries(Object.entries(p).filter(([, v]) => v !== undefined && v !== null && v !== '')) : undefined);
+const clean = (p?: Params) =>
+  p
+    ? Object.fromEntries(
+        Object.entries(p).filter(([, v]) => v !== undefined && v !== null && v !== ''),
+      )
+    : undefined;
 
 export const api = {
   get: <T>(url: string, params?: Params) => unwrap<T>(http.get(url, { params: clean(params) })),
@@ -13,7 +18,12 @@ export const api = {
   del: <T>(url: string) => unwrap<T>(http.delete(url)),
 };
 
-export function useApiQuery<T>(key: QueryKey, url: string | null, params?: Params, options: { enabled?: boolean } = {}) {
+export function useApiQuery<T>(
+  key: QueryKey,
+  url: string | null,
+  params?: Params,
+  options: { enabled?: boolean } = {},
+) {
   return useQuery({
     queryKey: [...key, url, params],
     queryFn: () => api.get<T>(url!, params),
@@ -22,7 +32,10 @@ export function useApiQuery<T>(key: QueryKey, url: string | null, params?: Param
 }
 
 /** Mutation that refreshes the given query prefixes on success. */
-export function useApiMutation<TVars, TResult = unknown>(fn: (vars: TVars) => Promise<TResult>, invalidate: QueryKey[] = []) {
+export function useApiMutation<TVars, TResult = unknown>(
+  fn: (vars: TVars) => Promise<TResult>,
+  invalidate: QueryKey[] = [],
+) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: fn,
@@ -39,7 +52,10 @@ export interface Page<T> {
 
 /** CSV export: the API streams text/csv; download it through the authenticated client. */
 export async function downloadCsv(url: string, params: Params, fileName: string) {
-  const res = await http.get(url, { params: { ...clean(params), format: 'csv' }, responseType: 'blob' });
+  const res = await http.get(url, {
+    params: { ...clean(params), format: 'csv' },
+    responseType: 'blob',
+  });
   const href = URL.createObjectURL(res.data as Blob);
   const a = document.createElement('a');
   a.href = href;

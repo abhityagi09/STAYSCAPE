@@ -31,7 +31,11 @@ const commissionRuleSchema = new Schema<CommissionRuleAttrs>(
     hotelId: { type: Schema.Types.ObjectId, ref: 'Hotel', default: null },
     rateBasisPoints: { type: Number, required: true, min: 0, max: 10_000 },
     fixedMinor: { type: Number, default: 0, min: 0 },
-    base: { type: String, enum: ['ROOM_SUBTOTAL', 'DISCOUNTED_ROOM_SUBTOTAL'], default: 'DISCOUNTED_ROOM_SUBTOTAL' },
+    base: {
+      type: String,
+      enum: ['ROOM_SUBTOTAL', 'DISCOUNTED_ROOM_SUBTOTAL'],
+      default: 'DISCOUNTED_ROOM_SUBTOTAL',
+    },
     includeFees: { type: Boolean, default: false },
     promotional: { type: Boolean, default: false },
     exempt: { type: Boolean, default: false },
@@ -42,8 +46,14 @@ const commissionRuleSchema = new Schema<CommissionRuleAttrs>(
   },
   { timestamps: true, versionKey: false },
 );
-commissionRuleSchema.index({ active: 1, scope: 1, effectiveFrom: -1 }, { name: 'active_scope_from' });
-export const CommissionRuleModel = model<CommissionRuleAttrs>('CommissionRule', commissionRuleSchema);
+commissionRuleSchema.index(
+  { active: 1, scope: 1, effectiveFrom: -1 },
+  { name: 'active_scope_from' },
+);
+export const CommissionRuleModel = model<CommissionRuleAttrs>(
+  'CommissionRule',
+  commissionRuleSchema,
+);
 
 // ------------------------------------------------------------------ ledger
 /**
@@ -56,9 +66,20 @@ export const CommissionRuleModel = model<CommissionRuleAttrs>('CommissionRule', 
  *   UNALLOCATED        captured money not tied to a confirmed stay (duplicate/late payments)
  * Every event's entries sum so that CASH = PARTNER_PAYABLE + PLATFORM_REVENUE + PROMOTION_EXPENSE + UNALLOCATED.
  */
-export const LEDGER_ACCOUNTS = ['CASH', 'PARTNER_PAYABLE', 'PLATFORM_REVENUE', 'PROMOTION_EXPENSE', 'UNALLOCATED'] as const;
+export const LEDGER_ACCOUNTS = [
+  'CASH',
+  'PARTNER_PAYABLE',
+  'PLATFORM_REVENUE',
+  'PROMOTION_EXPENSE',
+  'UNALLOCATED',
+] as const;
 export type LedgerAccount = (typeof LEDGER_ACCOUNTS)[number];
-export const LEDGER_EVENTS = ['BOOKING_CONFIRMED', 'REFUND_SUCCEEDED', 'UNALLOCATED_CAPTURE', 'SETTLEMENT_PAID'] as const;
+export const LEDGER_EVENTS = [
+  'BOOKING_CONFIRMED',
+  'REFUND_SUCCEEDED',
+  'UNALLOCATED_CAPTURE',
+  'SETTLEMENT_PAID',
+] as const;
 export type LedgerEvent = (typeof LEDGER_EVENTS)[number];
 
 export interface LedgerEntryAttrs {
@@ -85,7 +106,11 @@ const ledgerSchema = new Schema<LedgerEntryAttrs>(
     entryKey: { type: String, required: true, maxlength: 200 },
     event: { type: String, enum: LEDGER_EVENTS, required: true },
     account: { type: String, enum: LEDGER_ACCOUNTS, required: true },
-    amountMinor: { type: Number, required: true, validate: { validator: Number.isSafeInteger, message: 'Integer minor units' } },
+    amountMinor: {
+      type: Number,
+      required: true,
+      validate: { validator: Number.isSafeInteger, message: 'Integer minor units' },
+    },
     currency: { type: String, required: true },
     bookingId: { type: Schema.Types.ObjectId, ref: 'Booking', default: null },
     partnerId: { type: Schema.Types.ObjectId, ref: 'Partner', default: null },
@@ -106,7 +131,15 @@ ledgerSchema.index({ partnerId: 1, account: 1, occurredAt: 1 }, { name: 'partner
 ledgerSchema.index({ account: 1, occurredAt: 1 }, { name: 'account_time' });
 ledgerSchema.index({ bookingId: 1 }, { name: 'booking' });
 // Ledger rows are immutable: block updates at the model level (defence in depth).
-for (const op of ['updateOne', 'updateMany', 'findOneAndUpdate', 'deleteOne', 'deleteMany', 'findOneAndDelete', 'replaceOne'] as const) {
+for (const op of [
+  'updateOne',
+  'updateMany',
+  'findOneAndUpdate',
+  'deleteOne',
+  'deleteMany',
+  'findOneAndDelete',
+  'replaceOne',
+] as const) {
   ledgerSchema.pre(op, function () {
     throw new Error('Ledger entries are append-only');
   });
@@ -114,7 +147,14 @@ for (const op of ['updateOne', 'updateMany', 'findOneAndUpdate', 'deleteOne', 'd
 export const LedgerEntryModel = model<LedgerEntryAttrs>('LedgerEntry', ledgerSchema);
 
 // ------------------------------------------------------------------ settlements
-export const SETTLEMENT_STATUSES = ['PENDING', 'ELIGIBLE', 'PROCESSING', 'PAID', 'FAILED', 'ON_HOLD'] as const;
+export const SETTLEMENT_STATUSES = [
+  'PENDING',
+  'ELIGIBLE',
+  'PROCESSING',
+  'PAID',
+  'FAILED',
+  'ON_HOLD',
+] as const;
 export type SettlementStatus = (typeof SETTLEMENT_STATUSES)[number];
 
 export interface SettlementAttrs {
@@ -127,10 +167,21 @@ export interface SettlementAttrs {
   netPayableMinor: number;
   entryCount: number;
   status: SettlementStatus;
-  statusHistory: Array<{ status: SettlementStatus; at: Date; by: Types.ObjectId | null; note: string | null }>;
+  statusHistory: Array<{
+    status: SettlementStatus;
+    at: Date;
+    by: Types.ObjectId | null;
+    note: string | null;
+  }>;
   holdReason: string | null;
   failureReason: string | null;
-  evidence: { method: string; providerReference: string; paidAt: Date; documentKey: string | null; recordedBy: Types.ObjectId } | null;
+  evidence: {
+    method: string;
+    providerReference: string;
+    paidAt: Date;
+    documentKey: string | null;
+    recordedBy: Types.ObjectId;
+  } | null;
   createdBy: Types.ObjectId | null;
   createdAt: Date;
   updatedAt: Date;
@@ -182,4 +233,7 @@ const allocationSchema = new Schema<SettlementAllocationAttrs>(
 allocationSchema.index({ liveKey: 1 }, { unique: true, name: 'uniq_live' });
 allocationSchema.index({ settlementId: 1 }, { name: 'settlement' });
 allocationSchema.index({ entryId: 1 }, { name: 'entry' });
-export const SettlementAllocationModel = model<SettlementAllocationAttrs>('SettlementAllocation', allocationSchema);
+export const SettlementAllocationModel = model<SettlementAllocationAttrs>(
+  'SettlementAllocation',
+  allocationSchema,
+);

@@ -1,16 +1,37 @@
 import { createAdminCouponsRouter, createCouponsRouter } from '@/modules/coupons/coupons.routes';
-import { createAdminFinanceRouter, createPartnerFinanceRouter } from '@/modules/finance/finance.routes';
-import { createAdminAnalyticsRouter, createPartnerAnalyticsRouter } from '@/modules/analytics/analytics.routes';
-import { createAdminSupportRouter, createPartnerSupportRouter } from '@/modules/support/support-console.routes';
-import { createAdminManagementRouter, createCategoriesRouter } from '@/modules/admin/admin-management.routes';
-import { createAdminContentRouter, createPublicContentRouter } from '@/modules/content/content.routes';
+import {
+  createAdminFinanceRouter,
+  createPartnerFinanceRouter,
+} from '@/modules/finance/finance.routes';
+import {
+  createAdminAnalyticsRouter,
+  createPartnerAnalyticsRouter,
+} from '@/modules/analytics/analytics.routes';
+import {
+  createAdminSupportRouter,
+  createPartnerSupportRouter,
+} from '@/modules/support/support-console.routes';
+import {
+  createAdminManagementRouter,
+  createCategoriesRouter,
+} from '@/modules/admin/admin-management.routes';
+import {
+  createAdminContentRouter,
+  createPublicContentRouter,
+} from '@/modules/content/content.routes';
 import { createIntelligenceRouters } from '@/modules/intelligence/intelligence.routes';
 import { createRewardsRouter } from '@/modules/rewards/rewards.routes';
 import { createAssistantRouter } from '@/modules/assistant/assistant.routes';
 import { createCurrencyRouter } from '@/modules/currency/currency.routes';
-import { createChannelWebhookHandler, createPartnerChannelsRouter } from '@/modules/channels/channels.routes';
+import {
+  createChannelWebhookHandler,
+  createPartnerChannelsRouter,
+} from '@/modules/channels/channels.routes';
 import { createTripsRouter } from '@/modules/trips/trips.routes';
-import { createAdminCorporateRouter, createCorporateRouter } from '@/modules/corporate/corporate.routes';
+import {
+  createAdminCorporateRouter,
+  createCorporateRouter,
+} from '@/modules/corporate/corporate.routes';
 import { scopeMiddleware } from '@/lib/scope';
 import express, { type Express } from 'express';
 import cookieParser from 'cookie-parser';
@@ -117,7 +138,10 @@ export function createApp(container: Container, options: AppOptions = {}): Expre
   // Payment webhooks need the exact raw bytes for signature verification: registered before the
   // JSON parser and outside the rate limiter (authenticated by HMAC signature instead).
   app.post(`${API_PREFIX}/payments/webhooks/razorpay`, ...createPaymentWebhookHandler(container));
-  app.post(`${API_PREFIX}/channels/webhooks/:connectionId`, ...createChannelWebhookHandler(container));
+  app.post(
+    `${API_PREFIX}/channels/webhooks/:connectionId`,
+    ...createChannelWebhookHandler(container),
+  );
 
   app.use(express.json({ limit: config.REQUEST_BODY_LIMIT }));
   app.use(express.urlencoded({ extended: false, limit: config.REQUEST_BODY_LIMIT }));

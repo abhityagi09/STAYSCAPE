@@ -167,7 +167,11 @@ const envSchema = z
       }
     }
     if (env.AI_PROVIDER === 'anthropic' && !env.ANTHROPIC_API_KEY)
-      ctx.addIssue({ code: 'custom', path: ['ANTHROPIC_API_KEY'], message: 'ANTHROPIC_API_KEY is required when AI_PROVIDER=anthropic' });
+      ctx.addIssue({
+        code: 'custom',
+        path: ['ANTHROPIC_API_KEY'],
+        message: 'ANTHROPIC_API_KEY is required when AI_PROVIDER=anthropic',
+      });
     if (env.NODE_ENV !== 'production') return;
     const fail = (path: string, message: string) =>
       ctx.addIssue({ code: 'custom', path: [path], message });

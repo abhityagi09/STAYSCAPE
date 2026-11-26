@@ -1,4 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
 import { http } from '@/lib/api/client';
 import { useAppSelector } from '@/app/store';
 
@@ -34,7 +42,8 @@ const en = {
   'common.retry': 'Try again',
   'common.empty': 'Nothing here yet.',
   'trips.title': 'TripSpace',
-  'trips.description': 'Plan trips together: save stays, add your bookings and share notes with the people travelling with you.',
+  'trips.description':
+    'Plan trips together: save stays, add your bookings and share notes with the people travelling with you.',
   'trips.new': 'New trip',
   'rewards.title': 'Rewards',
   'rewards.balance': 'Points balance',
@@ -43,7 +52,8 @@ const en = {
   'assistant.title': 'Travel assistant',
   'assistant.placeholder': 'Ask about places to stay, dates or prices…',
   'assistant.send': 'Send',
-  'assistant.disclaimer': 'Answers use only Stayscape listings and live prices. The assistant cannot book or pay for you.',
+  'assistant.disclaimer':
+    'Answers use only Stayscape listings and live prices. The assistant cannot book or pay for you.',
   'corporate.title': 'Corporate travel',
 } as const;
 export type MessageKey = keyof typeof en;
@@ -74,7 +84,8 @@ const hi: Partial<Record<MessageKey, string>> = {
   'common.retry': 'फिर से कोशिश करें',
   'common.empty': 'अभी यहाँ कुछ नहीं है।',
   'trips.title': 'ट्रिपस्पेस',
-  'trips.description': 'साथ मिलकर यात्रा की योजना बनाएँ: ठहरने की जगहें सहेजें, अपनी बुकिंग जोड़ें और साथ यात्रा करने वालों के साथ नोट्स साझा करें।',
+  'trips.description':
+    'साथ मिलकर यात्रा की योजना बनाएँ: ठहरने की जगहें सहेजें, अपनी बुकिंग जोड़ें और साथ यात्रा करने वालों के साथ नोट्स साझा करें।',
   'trips.new': 'नई यात्रा',
   'rewards.title': 'रिवॉर्ड्स',
   'rewards.balance': 'पॉइंट्स बैलेंस',
@@ -83,7 +94,8 @@ const hi: Partial<Record<MessageKey, string>> = {
   'assistant.title': 'यात्रा सहायक',
   'assistant.placeholder': 'ठहरने की जगह, तारीखें या कीमतों के बारे में पूछें…',
   'assistant.send': 'भेजें',
-  'assistant.disclaimer': 'जवाब केवल Stayscape की लिस्टिंग और वर्तमान कीमतों पर आधारित हैं। सहायक आपके लिए बुकिंग या भुगतान नहीं कर सकता।',
+  'assistant.disclaimer':
+    'जवाब केवल Stayscape की लिस्टिंग और वर्तमान कीमतों पर आधारित हैं। सहायक आपके लिए बुकिंग या भुगतान नहीं कर सकता।',
   'corporate.title': 'कॉर्पोरेट यात्रा',
 };
 export const dictionaries: Record<Language, Partial<Record<MessageKey, string>>> = { en, hi };
@@ -93,7 +105,11 @@ interface I18nValue {
   setLanguage: (l: Language) => void;
   t: (key: MessageKey) => string;
 }
-const I18nContext = createContext<I18nValue>({ language: 'en', setLanguage: () => undefined, t: (k) => en[k] });
+const I18nContext = createContext<I18nValue>({
+  language: 'en',
+  setLanguage: () => undefined,
+  t: (k) => en[k],
+});
 
 function stored(): Language | null {
   try {
@@ -127,7 +143,10 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     },
     [signedIn],
   );
-  const value = useMemo<I18nValue>(() => ({ language, setLanguage, t: (key) => dictionaries[language][key] ?? en[key] }), [language, setLanguage]);
+  const value = useMemo<I18nValue>(
+    () => ({ language, setLanguage, t: (key) => dictionaries[language][key] ?? en[key] }),
+    [language, setLanguage],
+  );
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }
 
@@ -143,8 +162,12 @@ export function LanguageSwitcher({ className }: { className?: string }) {
         onChange={(e) => setLanguage(e.target.value as Language)}
         className="h-9 rounded-full border border-border bg-surface px-3 text-sm text-fg focus-visible:outline-2 focus-visible:outline-ring"
       >
-        <option value="en" lang="en">English</option>
-        <option value="hi" lang="hi">हिन्दी</option>
+        <option value="en" lang="en">
+          English
+        </option>
+        <option value="hi" lang="hi">
+          हिन्दी
+        </option>
       </select>
     </label>
   );

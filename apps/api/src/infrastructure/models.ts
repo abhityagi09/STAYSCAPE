@@ -28,21 +28,47 @@ import {
 import { ReviewModel, ReviewReportModel } from '@/modules/reviews/review.models';
 import { SupportTicketModel, TicketMessageModel } from '@/modules/support/support.models';
 import { WishlistModel } from '@/modules/wishlists/wishlist.model';
-import { CouponModel, CouponRedemptionModel, CouponUsageModel } from '@/modules/coupons/coupons.models';
+import {
+  CouponModel,
+  CouponRedemptionModel,
+  CouponUsageModel,
+} from '@/modules/coupons/coupons.models';
 import { HotelDailyStatModel } from '@/modules/analytics/hotel-stats.model';
 import { BookingEscalationModel, PropertyCategoryModel } from '@/modules/admin/admin.models';
 import { ContentEntryModel, ContentRevisionModel } from '@/modules/content/content.models';
 import { InventoryBlockModel } from '@/modules/inventory/inventory.models';
 import { TrustSnapshotModel } from '@/modules/trust/trust.service';
-import { PriceAlertModel, PriceObservationModel } from '@/modules/intelligence/intelligence.service';
-import { LoyaltyAccountModel, LoyaltyEntryModel, ReferralCodeModel, ReferralModel } from '@/modules/rewards/rewards.service';
+import {
+  PriceAlertModel,
+  PriceObservationModel,
+} from '@/modules/intelligence/intelligence.service';
+import {
+  LoyaltyAccountModel,
+  LoyaltyEntryModel,
+  ReferralCodeModel,
+  ReferralModel,
+} from '@/modules/rewards/rewards.service';
 import { TripModel } from '@/modules/trips/trips.service';
 import { AssistantUsageModel } from '@/modules/assistant/assistant.service';
-import { ChannelConnectionModel, ChannelEventModel, ChannelReservationModel } from '@/modules/channels/channels.service';
+import {
+  ChannelConnectionModel,
+  ChannelEventModel,
+  ChannelReservationModel,
+} from '@/modules/channels/channels.service';
 import { ChannelSimulatorInboxModel } from '@/modules/channels/channel.adapter';
 import { ExchangeRateSnapshotModel } from '@/modules/currency/currency.service';
-import { OrgInvitationModel, OrgMemberModel, OrganizationModel, TravelRequestModel } from '@/modules/corporate/corporate.service';
-import { CommissionRuleModel, LedgerEntryModel, SettlementAllocationModel, SettlementModel } from '@/modules/finance/finance.models';
+import {
+  OrgInvitationModel,
+  OrgMemberModel,
+  OrganizationModel,
+  TravelRequestModel,
+} from '@/modules/corporate/corporate.service';
+import {
+  CommissionRuleModel,
+  LedgerEntryModel,
+  SettlementAllocationModel,
+  SettlementModel,
+} from '@/modules/finance/finance.models';
 import { MediaAssetModel } from '@/modules/media/media-asset.model';
 import { PartnerModel, PartnerStaffModel } from '@/modules/partners/partner.model';
 import { PricingRuleModel, RatePlanModel, RoomTypeModel } from '@/modules/rooms/room.models';

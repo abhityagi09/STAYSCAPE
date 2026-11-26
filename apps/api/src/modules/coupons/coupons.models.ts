@@ -1,7 +1,16 @@
 import { Schema, model, type Types } from 'mongoose';
 import type { CurrencyCode } from '@stayscape/shared';
 
-export const COUPON_KINDS = ['STANDARD', 'FIRST_BOOKING', 'PROPERTY', 'DESTINATION', 'SEASONAL', 'LIMITED_TIME', 'REFERRAL', 'LOYALTY'] as const;
+export const COUPON_KINDS = [
+  'STANDARD',
+  'FIRST_BOOKING',
+  'PROPERTY',
+  'DESTINATION',
+  'SEASONAL',
+  'LIMITED_TIME',
+  'REFERRAL',
+  'LOYALTY',
+] as const;
 export type CouponKind = (typeof COUPON_KINDS)[number];
 
 export interface CouponAttrs {
@@ -115,4 +124,7 @@ const redemptionSchema = new Schema<CouponRedemptionAttrs>(
 redemptionSchema.index({ holdId: 1 }, { unique: true, name: 'uniq_hold' });
 redemptionSchema.index({ couponId: 1, status: 1 }, { name: 'coupon_status' });
 redemptionSchema.index({ userId: 1, reservedAt: -1 }, { name: 'user_reserved' });
-export const CouponRedemptionModel = model<CouponRedemptionAttrs>('CouponRedemption', redemptionSchema);
+export const CouponRedemptionModel = model<CouponRedemptionAttrs>(
+  'CouponRedemption',
+  redemptionSchema,
+);

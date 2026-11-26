@@ -266,15 +266,31 @@ export class BookingsService {
         await this.deps.inventory.reserveHeld(roomType, nights, item.rooms, session);
         // Coupon (optional): validated and its use reserved atomically in the same transaction.
         const holdId = new Types.ObjectId();
-        let finalPrice: typeof price & { coupon?: { code: string; discountMinor: number } | null } = price;
+        let finalPrice: typeof price & { coupon?: { code: string; discountMinor: number } | null } =
+          price;
         if (input.couponCode) {
           const applied = await this.deps.coupons.reserve(
             input.couponCode,
-            { userId: auth.userId, hotelId: hotel._id.toString(), city: hotel.city, currency, subtotalMinor: quote.totals.subtotalMinor, totalMinor: quote.totals.totalMinor, hasRateDiscounts: quote.totals.discountsMinor !== 0 },
+            {
+              userId: auth.userId,
+              hotelId: hotel._id.toString(),
+              city: hotel.city,
+              currency,
+              subtotalMinor: quote.totals.subtotalMinor,
+              totalMinor: quote.totals.totalMinor,
+              hasRateDiscounts: quote.totals.discountsMinor !== 0,
+            },
             holdId,
             session,
           );
-          finalPrice = { ...price, coupon: applied, totals: { ...price.totals, totalMinor: price.totals.totalMinor - applied.discountMinor } };
+          finalPrice = {
+            ...price,
+            coupon: applied,
+            totals: {
+              ...price.totals,
+              totalMinor: price.totals.totalMinor - applied.discountMinor,
+            },
+          };
         }
         const [doc] = await BookingHoldModel.create(
           [

@@ -137,7 +137,9 @@ export function parseSearch(params: URLSearchParams): SearchState {
     minPrice: validDates && params.get('minPrice') ? int(params.get('minPrice'), 0, 0, 1e9) : null,
     maxPrice: validDates && params.get('maxPrice') ? int(params.get('maxPrice'), 0, 0, 1e9) : null,
     amenities: list(params.get('amenities')),
-    accessibilityFeatures: list(params.get('accessibilityFeatures')).filter((f): f is AccessibilityFeature => (ACCESSIBILITY_FEATURES as readonly string[]).includes(f)),
+    accessibilityFeatures: list(params.get('accessibilityFeatures')).filter(
+      (f): f is AccessibilityFeature => (ACCESSIBILITY_FEATURES as readonly string[]).includes(f),
+    ),
     ...Object.fromEntries(FLAGS.map((f) => [f, params.get(f) === 'true'])),
     bbox:
       bbox.length === 4 && bbox.every(Number.isFinite)

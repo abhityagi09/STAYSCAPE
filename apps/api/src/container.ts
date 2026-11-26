@@ -170,8 +170,14 @@ export function buildContainer(core: CoreDependencies) {
   const trust = new TrustService({ access: partnerAccess, audit, cache });
   const search = new SearchService(quotes, media, cache, logger, trust);
   const assistant = new AssistantService({ config, search, quotes, logger });
-  const currency = new CurrencyService({ provider: config.FX_PROVIDER === 'ecb' ? new EcbRatesProvider() : null, logger });
-  const channels = new ChannelsService({ config, access: partnerAccess, inventory, encryptor, audit, logger }, [new LocalSimulatorAdapter()]);
+  const currency = new CurrencyService({
+    provider: config.FX_PROVIDER === 'ecb' ? new EcbRatesProvider() : null,
+    logger,
+  });
+  const channels = new ChannelsService(
+    { config, access: partnerAccess, inventory, encryptor, audit, logger },
+    [new LocalSimulatorAdapter()],
+  );
   const intelligence = new IntelligenceService({ quotes, search, notifications, logger });
 
   // ---- Phase 3: reservations, payments, refunds, customer experience
@@ -182,8 +188,16 @@ export function buildContainer(core: CoreDependencies) {
   const coupons = new CouponsService({ audit });
   const rewards = new RewardsService({ coupons, notifications, audit });
   const analytics = new AnalyticsService({ access: partnerAccess, finance, coupons });
-  const bookings = new BookingsService({ config, quotes, inventory, outbox,
-    coupons, media, audit, logger });
+  const bookings = new BookingsService({
+    config,
+    quotes,
+    inventory,
+    outbox,
+    coupons,
+    media,
+    audit,
+    logger,
+  });
   const refunds = new RefundsService({ provider: paymentProvider, finance, outbox, audit, logger });
   const payments = new PaymentsService({
     config,
@@ -223,7 +237,11 @@ export function buildContainer(core: CoreDependencies) {
   const adminManagement = new AdminManagementService({ audit, cache });
   const content = new ContentService({ media, audit });
   const lifecycle = new LifecycleService({ bookings, outbox, reviews, wishlists, support, logger });
-  const partnerReservations = new PartnerReservationsService({ access: partnerAccess, audit, cancellations });
+  const partnerReservations = new PartnerReservationsService({
+    access: partnerAccess,
+    audit,
+    cancellations,
+  });
   const operations = new OperationsService({
     refunds,
     notifications: bookingNotifications,

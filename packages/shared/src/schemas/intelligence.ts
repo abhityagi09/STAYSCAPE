@@ -5,7 +5,9 @@ import { objectIdSchema } from './common';
 import { localDateSchema } from './marketplace';
 
 /** Phase 4: recommendations and price intelligence. */
-export const recommendationsQuerySchema = z.object({ limit: z.coerce.number().int().min(1).max(24).default(8) });
+export const recommendationsQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(24).default(8),
+});
 
 export const priceCalendarQuerySchema = z
   .object({
@@ -15,7 +17,10 @@ export const priceCalendarQuerySchema = z
     adults: z.coerce.number().int().min(1).max(30).default(2),
     rooms: z.coerce.number().int().min(1).max(9).default(1),
   })
-  .refine((q) => diffDays(q.from, q.to) >= 0 && diffDays(q.from, q.to) <= 30, { message: 'Choose up to 31 check-in dates', path: ['to'] });
+  .refine((q) => diffDays(q.from, q.to) >= 0 && diffDays(q.from, q.to) <= 30, {
+    message: 'Choose up to 31 check-in dates',
+    path: ['to'],
+  });
 
 export const priceHistoryQuerySchema = z.object({ stayDate: localDateSchema });
 
@@ -29,7 +34,10 @@ export const createPriceAlertSchema = z
     /** Notify when the lowest total falls to or below this; otherwise on any drop. */
     targetTotalMinor: z.number().int().min(1).nullable().default(null),
   })
-  .refine((a) => diffDays(a.checkIn, a.checkOut) >= 1 && diffDays(a.checkIn, a.checkOut) <= 30, { message: 'Stays of 1–30 nights', path: ['checkOut'] });
+  .refine((a) => diffDays(a.checkIn, a.checkOut) >= 1 && diffDays(a.checkIn, a.checkOut) <= 30, {
+    message: 'Stays of 1–30 nights',
+    path: ['checkOut'],
+  });
 
 export const lastMinuteQuerySchema = z.object({
   city: z.string().trim().max(80).optional(),
@@ -110,8 +118,16 @@ export const REFERRAL_RULES = {
   maxRewardedPerYear: 10,
 } as const;
 export type LoyaltyTier = (typeof LOYALTY_RULES.tiers)[number]['tier'];
-export const redeemPointsSchema = z.strictObject({ points: z.number().int().min(LOYALTY_RULES.minRedeemPoints).max(LOYALTY_RULES.maxRedeemPoints) });
-export const claimReferralSchema = z.strictObject({ code: z.string().trim().toUpperCase().regex(/^[A-Z0-9]{6,12}$/) });
+export const redeemPointsSchema = z.strictObject({
+  points: z.number().int().min(LOYALTY_RULES.minRedeemPoints).max(LOYALTY_RULES.maxRedeemPoints),
+});
+export const claimReferralSchema = z.strictObject({
+  code: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(/^[A-Z0-9]{6,12}$/),
+});
 
 export interface LoyaltyEntryDto {
   id: string;
@@ -134,7 +150,13 @@ export interface ReferralSummaryDto {
   code: string;
   rewardedThisYear: number;
   limitPerYear: number;
-  referrals: Array<{ status: 'PENDING' | 'REWARDED' | 'REJECTED'; joinedAt: string; rewardedAt: string | null; refereeInitials: string; reason: string | null }>;
+  referrals: Array<{
+    status: 'PENDING' | 'REWARDED' | 'REJECTED';
+    joinedAt: string;
+    rewardedAt: string | null;
+    refereeInitials: string;
+    reason: string | null;
+  }>;
   referredBy: { status: 'PENDING' | 'REWARDED' | 'REJECTED' } | null;
 }
 
@@ -142,7 +164,10 @@ export interface ReferralSummaryDto {
 export const assistantRequestSchema = z.strictObject({
   message: z.string().trim().min(1).max(1_000),
   /** Prior turns kept by the client (the server stores no conversation). */
-  history: z.array(z.strictObject({ role: z.enum(['user', 'assistant']), content: z.string().max(2_000) })).max(10).default([]),
+  history: z
+    .array(z.strictObject({ role: z.enum(['user', 'assistant']), content: z.string().max(2_000) }))
+    .max(10)
+    .default([]),
 });
 export interface AssistantQuoteDto {
   hotelId: string;

@@ -55,15 +55,50 @@ export function createPartnerBookingsRouter(container: Container): Router {
       );
     },
   );
-  router.get('/:hotelId/bookings/:reference', validate({ params: bookingParams }), async (req, res) => {
-    sendSuccess(res, await partnerReservations.detail(requireAuth(req), p(req).hotelId, p(req).reference));
-  });
-  router.post('/:hotelId/bookings/:reference/notes', validate({ params: bookingParams, body: bookingNoteSchema }), async (req, res) => {
-    sendSuccess(res, await partnerReservations.addNote(requireAuth(req), p(req).hotelId, p(req).reference, (req.body as { body: string }).body, requestContext(req)), 201);
-  });
-  router.put('/:hotelId/bookings/:reference/rooms', validate({ params: bookingParams, body: roomAssignmentSchema }), async (req, res) => {
-    sendSuccess(res, await partnerReservations.assignRooms(requireAuth(req), p(req).hotelId, p(req).reference, (req.body as { assignments: Array<{ roomTypeId: string; roomNumbers: string[] }> }).assignments, requestContext(req)));
-  });
+  router.get(
+    '/:hotelId/bookings/:reference',
+    validate({ params: bookingParams }),
+    async (req, res) => {
+      sendSuccess(
+        res,
+        await partnerReservations.detail(requireAuth(req), p(req).hotelId, p(req).reference),
+      );
+    },
+  );
+  router.post(
+    '/:hotelId/bookings/:reference/notes',
+    validate({ params: bookingParams, body: bookingNoteSchema }),
+    async (req, res) => {
+      sendSuccess(
+        res,
+        await partnerReservations.addNote(
+          requireAuth(req),
+          p(req).hotelId,
+          p(req).reference,
+          (req.body as { body: string }).body,
+          requestContext(req),
+        ),
+        201,
+      );
+    },
+  );
+  router.put(
+    '/:hotelId/bookings/:reference/rooms',
+    validate({ params: bookingParams, body: roomAssignmentSchema }),
+    async (req, res) => {
+      sendSuccess(
+        res,
+        await partnerReservations.assignRooms(
+          requireAuth(req),
+          p(req).hotelId,
+          p(req).reference,
+          (req.body as { assignments: Array<{ roomTypeId: string; roomNumbers: string[] }> })
+            .assignments,
+          requestContext(req),
+        ),
+      );
+    },
+  );
   router.post(
     '/:hotelId/bookings/:reference/check-in',
     validate({ params: bookingParams }),

@@ -31,7 +31,12 @@ export interface ChannelAdapter {
   readonly provider: string;
   /** True only for adapters exercised against the provider's real API. */
   readonly verifiedAgainstProvider: boolean;
-  verifySignature(raw: Buffer, headers: Record<string, string | undefined>, secret: string, now?: Date): boolean;
+  verifySignature(
+    raw: Buffer,
+    headers: Record<string, string | undefined>,
+    secret: string,
+    now?: Date,
+  ): boolean;
   parse(raw: Buffer): NormalizedChannelEvent[];
   pushAvailability(connectionId: string, secret: string, days: AvailabilityPush[]): Promise<void>;
 }
@@ -61,9 +66,19 @@ interface SimulatorInboxAttrs {
   days: AvailabilityPush[];
   receivedAt: Date;
 }
-const inboxSchema = new Schema<SimulatorInboxAttrs>({ connectionId: { type: Schema.Types.ObjectId, required: true }, days: { type: Schema.Types.Mixed, required: true }, receivedAt: { type: Date, default: () => new Date() } }, { versionKey: false });
+const inboxSchema = new Schema<SimulatorInboxAttrs>(
+  {
+    connectionId: { type: Schema.Types.ObjectId, required: true },
+    days: { type: Schema.Types.Mixed, required: true },
+    receivedAt: { type: Date, default: () => new Date() },
+  },
+  { versionKey: false },
+);
 inboxSchema.index({ receivedAt: 1 }, { expireAfterSeconds: 7 * 86_400, name: 'ttl' });
-export const ChannelSimulatorInboxModel = model<SimulatorInboxAttrs>('ChannelSimulatorInbox', inboxSchema);
+export const ChannelSimulatorInboxModel = model<SimulatorInboxAttrs>(
+  'ChannelSimulatorInbox',
+  inboxSchema,
+);
 
 export const SIGNATURE_HEADER = 'x-stayscape-channel-signature';
 const TOLERANCE_S = 300;
@@ -83,13 +98,21 @@ export class LocalSimulatorAdapter implements ChannelAdapter {
   readonly verifiedAgainstProvider = false;
   failNextPushes = 0;
 
-  verifySignature(raw: Buffer, headers: Record<string, string | undefined>, secret: string, now = new Date()) {
+  verifySignature(
+    raw: Buffer,
+    headers: Record<string, string | undefined>,
+    secret: string,
+    now = new Date(),
+  ) {
     const header = headers[SIGNATURE_HEADER];
     const m = header ? /^t=(\d+),v1=([a-f0-9]{64})$/.exec(header) : null;
     if (!m) return false;
     const t = Number(m[1]);
     if (Math.abs(now.getTime() / 1000 - t) > TOLERANCE_S) return false;
-    const expected = Buffer.from(createHmac('sha256', secret).update(`${t}.`).update(raw).digest('hex'), 'hex');
+    const expected = Buffer.from(
+      createHmac('sha256', secret).update(`${t}.`).update(raw).digest('hex'),
+      'hex',
+    );
     const given = Buffer.from(m[2]!, 'hex');
     return expected.length === given.length && timingSafeEqual(expected, given);
   }
@@ -102,10 +125,22 @@ export class LocalSimulatorAdapter implements ChannelAdapter {
       throw new ChannelPayloadError('Body is not valid JSON');
     }
     const parsed = simulatorPayload.safeParse(json);
-    if (!parsed.success) throw new ChannelPayloadError(parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; '));
+    if (!parsed.success)
+      throw new ChannelPayloadError(
+        parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; '),
+      );
     return parsed.data.events.map((e) => {
-      if (e.checkOut <= e.checkIn) throw new ChannelPayloadError(`Event ${e.id}: check-out must be after check-in`);
-      return { externalEventId: e.id, type: e.type === 'reservation.created' ? 'RESERVATION_CREATED' : 'RESERVATION_CANCELLED', externalRef: e.reservationId, externalRoomCode: e.roomCode, checkIn: e.checkIn, checkOut: e.checkOut, rooms: e.rooms };
+      if (e.checkOut <= e.checkIn)
+        throw new ChannelPayloadError(`Event ${e.id}: check-out must be after check-in`);
+      return {
+        externalEventId: e.id,
+        type: e.type === 'reservation.created' ? 'RESERVATION_CREATED' : 'RESERVATION_CANCELLED',
+        externalRef: e.reservationId,
+        externalRoomCode: e.roomCode,
+        checkIn: e.checkIn,
+        checkOut: e.checkOut,
+        rooms: e.rooms,
+      };
     });
   }
 

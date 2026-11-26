@@ -251,7 +251,13 @@ export interface AccessibilityFeatureDto {
 }
 
 export interface TrustScoreComponentDto {
-  key: 'guest_reviews' | 'reliability' | 'verification' | 'responsiveness' | 'complaints' | 'completeness';
+  key:
+    | 'guest_reviews'
+    | 'reliability'
+    | 'verification'
+    | 'responsiveness'
+    | 'complaints'
+    | 'completeness';
   label: string;
   /** 0-100 for this component. */
   score: number;

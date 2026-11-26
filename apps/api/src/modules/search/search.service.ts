@@ -91,7 +91,9 @@ export class SearchService {
 
   /** Cities that currently have published stays (used by the deterministic assistant). */
   async destinationsForAssistant(): Promise<string[]> {
-    return this.cache.getOrSet('assistant:cities', async () => (await HotelModel.distinct('city', { publicationStatus: 'PUBLISHED' })).sort());
+    return this.cache.getOrSet('assistant:cities', async () =>
+      (await HotelModel.distinct('city', { publicationStatus: 'PUBLISHED' })).sort(),
+    );
   }
 
   /** Build public hotel cards (shared with wishlists). */
@@ -159,7 +161,10 @@ export class SearchService {
     if (c.accessibilityFeatures?.length)
       filter.accessibilityFeatures = {
         $all: c.accessibilityFeatures.map((code) => ({
-          $elemMatch: { code, ...(c.accessibilityVerifiedOnly ? { source: 'ADMIN_VERIFIED' } : {}) },
+          $elemMatch: {
+            code,
+            ...(c.accessibilityVerifiedOnly ? { source: 'ADMIN_VERIFIED' } : {}),
+          },
         })),
       };
 
@@ -487,7 +492,11 @@ export class SearchService {
     void HotelModel.updateOne({ _id: hotel._id }, { $inc: { popularityScore: 1 } })
       .exec()
       .catch(() => undefined);
-    void HotelDailyStatModel.updateOne({ hotelId: hotel._id, date: todayInTimeZone(hotel.timeZone ?? 'Asia/Kolkata') }, { $inc: { views: 1 } }, { upsert: true })
+    void HotelDailyStatModel.updateOne(
+      { hotelId: hotel._id, date: todayInTimeZone(hotel.timeZone ?? 'Asia/Kolkata') },
+      { $inc: { views: 1 } },
+      { upsert: true },
+    )
       .exec()
       .catch(() => undefined);
     const [roomTypes, ratePlans, amenityRecords] = await Promise.all([

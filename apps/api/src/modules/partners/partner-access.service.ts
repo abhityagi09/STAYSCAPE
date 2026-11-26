@@ -106,15 +106,22 @@ export class PartnerAccessService {
    * Hotels this user may see for a given staff permission: every hotel of an owner's approved
    * partner, or a staff member's assigned hotels where that permission is granted.
    */
-  async hotelIdsWithPermission(auth: AuthContext, need: StaffPermission): Promise<Types.ObjectId[]> {
+  async hotelIdsWithPermission(
+    auth: AuthContext,
+    need: StaffPermission,
+  ): Promise<Types.ObjectId[]> {
     const partner = await this.findOwnedPartner(auth.userId);
     if (partner?.verificationStatus === 'APPROVED' && hasPermission(auth.roles, 'hotels:update')) {
-      const hotels = await HotelModel.find({ partnerId: partner._id }, { _id: 1 }).lean<Array<{ _id: Types.ObjectId }>>();
+      const hotels = await HotelModel.find({ partnerId: partner._id }, { _id: 1 }).lean<
+        Array<{ _id: Types.ObjectId }>
+      >();
       setScope({ partnerId: partner._id.toString() });
       return hotels.map((h) => h._id);
     }
     if (!hasPermission(auth.roles, 'partner:access')) return [];
     const staff = await this.staffRecords(auth.userId);
-    return staff.filter((s) => normalizeStaffPermissions(s.permissions).includes(need)).flatMap((s) => s.assignedProperties);
+    return staff
+      .filter((s) => normalizeStaffPermissions(s.permissions).includes(need))
+      .flatMap((s) => s.assignedProperties);
   }
 }

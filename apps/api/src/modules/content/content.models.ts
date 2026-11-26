@@ -1,5 +1,10 @@
 import { Schema, model, type Types } from 'mongoose';
-import { CONTENT_LOCALES, CONTENT_TYPES, type ContentLocale, type ContentType } from '@stayscape/shared';
+import {
+  CONTENT_LOCALES,
+  CONTENT_TYPES,
+  type ContentLocale,
+  type ContentType,
+} from '@stayscape/shared';
 
 export interface ContentBody {
   title: string;

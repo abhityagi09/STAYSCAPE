@@ -21,23 +21,61 @@ export function createIntelligenceRouters(container: Container) {
   const { intelligence } = container.services;
 
   const recommendations = Router();
-  recommendations.get('/', container.authenticate, validate({ query: recommendationsQuerySchema }), async (req, res) => {
-    res.setHeader('Cache-Control', 'private, no-store');
-    sendSuccess(res, await intelligence.recommendations(requireAuth(req).userId, validatedQuery<{ limit: number }>(req).limit));
-  });
+  recommendations.get(
+    '/',
+    container.authenticate,
+    validate({ query: recommendationsQuerySchema }),
+    async (req, res) => {
+      res.setHeader('Cache-Control', 'private, no-store');
+      sendSuccess(
+        res,
+        await intelligence.recommendations(
+          requireAuth(req).userId,
+          validatedQuery<{ limit: number }>(req).limit,
+        ),
+      );
+    },
+  );
 
   const prices = Router();
-  prices.get('/:idOrSlug/calendar', validate({ params: idOrSlug, query: priceCalendarQuerySchema }), async (req, res) => sendSuccess(res, await intelligence.priceCalendar(slug(req), validatedQuery(req))));
-  prices.get('/:idOrSlug/history', validate({ params: idOrSlug, query: priceHistoryQuerySchema }), async (req, res) => sendSuccess(res, await intelligence.priceHistory(slug(req), validatedQuery<{ stayDate: string }>(req).stayDate)));
+  prices.get(
+    '/:idOrSlug/calendar',
+    validate({ params: idOrSlug, query: priceCalendarQuerySchema }),
+    async (req, res) =>
+      sendSuccess(res, await intelligence.priceCalendar(slug(req), validatedQuery(req))),
+  );
+  prices.get(
+    '/:idOrSlug/history',
+    validate({ params: idOrSlug, query: priceHistoryQuerySchema }),
+    async (req, res) =>
+      sendSuccess(
+        res,
+        await intelligence.priceHistory(
+          slug(req),
+          validatedQuery<{ stayDate: string }>(req).stayDate,
+        ),
+      ),
+  );
 
   const alerts = Router();
   alerts.use(container.authenticate);
-  alerts.get('/', async (req, res) => sendSuccess(res, await intelligence.listAlerts(requireAuth(req).userId)));
-  alerts.post('/', validate({ body: createPriceAlertSchema }), async (req, res) => sendSuccess(res, await intelligence.createAlert(requireAuth(req).userId, req.body), 201));
-  alerts.delete('/:id', validate({ params: z.object({ id: objectIdSchema }) }), async (req, res) => {
-    await intelligence.deleteAlert(requireAuth(req).userId, validatedParams<{ id: string }>(req).id);
-    sendMessage(res, 'Alert removed.');
-  });
+  alerts.get('/', async (req, res) =>
+    sendSuccess(res, await intelligence.listAlerts(requireAuth(req).userId)),
+  );
+  alerts.post('/', validate({ body: createPriceAlertSchema }), async (req, res) =>
+    sendSuccess(res, await intelligence.createAlert(requireAuth(req).userId, req.body), 201),
+  );
+  alerts.delete(
+    '/:id',
+    validate({ params: z.object({ id: objectIdSchema }) }),
+    async (req, res) => {
+      await intelligence.deleteAlert(
+        requireAuth(req).userId,
+        validatedParams<{ id: string }>(req).id,
+      );
+      sendMessage(res, 'Alert removed.');
+    },
+  );
 
   const deals = Router();
   deals.get('/last-minute', validate({ query: lastMinuteQuerySchema }), async (req, res) => {

@@ -33,7 +33,10 @@ const categorySchema = new Schema<PropertyCategoryAttrs>(
 );
 categorySchema.index({ code: 1 }, { unique: true, name: 'uniq_code' });
 categorySchema.index({ active: 1, sortOrder: 1 }, { name: 'active_sort' });
-export const PropertyCategoryModel = model<PropertyCategoryAttrs>('PropertyCategory', categorySchema);
+export const PropertyCategoryModel = model<PropertyCategoryAttrs>(
+  'PropertyCategory',
+  categorySchema,
+);
 
 /** A booking an admin has escalated (disputes, overbooking, guest-safety issues). One open per booking. */
 export interface BookingEscalationAttrs {
@@ -71,7 +74,13 @@ const escalationSchema = new Schema<BookingEscalationAttrs>(
   },
   { timestamps: true, versionKey: false },
 );
-escalationSchema.index({ openKey: 1 }, { unique: true, partialFilterExpression: { openKey: { $type: 'string' } }, name: 'uniq_open' });
+escalationSchema.index(
+  { openKey: 1 },
+  { unique: true, partialFilterExpression: { openKey: { $type: 'string' } }, name: 'uniq_open' },
+);
 escalationSchema.index({ status: 1, priority: 1, createdAt: 1 }, { name: 'status_priority' });
 escalationSchema.index({ bookingId: 1, createdAt: -1 }, { name: 'booking' });
-export const BookingEscalationModel = model<BookingEscalationAttrs>('BookingEscalation', escalationSchema);
+export const BookingEscalationModel = model<BookingEscalationAttrs>(
+  'BookingEscalation',
+  escalationSchema,
+);

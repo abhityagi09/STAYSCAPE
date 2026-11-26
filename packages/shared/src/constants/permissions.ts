@@ -63,7 +63,13 @@ const HOTEL_OWNER: Permission[] = [
   'reports:view',
 ];
 
-const SUPPORT: Permission[] = ['admin:access', 'users:read', 'bookings:read-all', 'payments:read', 'support:manage'];
+const SUPPORT: Permission[] = [
+  'admin:access',
+  'users:read',
+  'bookings:read-all',
+  'payments:read',
+  'support:manage',
+];
 
 const ADMIN: Permission[] = [
   ...SUPPORT,

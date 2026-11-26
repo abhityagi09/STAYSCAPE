@@ -14,9 +14,19 @@ export function createCurrencyRouter(container: Container): Router {
     res.setHeader('Cache-Control', 'public, max-age=900');
     sendSuccess(res, await currency.publicRates());
   });
-  router.get('/convert', validate({ query: z.object({ amountMinor: z.coerce.number().int().min(0).max(1e12), from: z.enum(CURRENCIES), to: z.enum(CURRENCIES) }) }), async (req, res) => {
-    const q = validatedQuery<{ amountMinor: number; from: CurrencyCode; to: CurrencyCode }>(req);
-    sendSuccess(res, { converted: await currency.convert(q.amountMinor, q.from, q.to) });
-  });
+  router.get(
+    '/convert',
+    validate({
+      query: z.object({
+        amountMinor: z.coerce.number().int().min(0).max(1e12),
+        from: z.enum(CURRENCIES),
+        to: z.enum(CURRENCIES),
+      }),
+    }),
+    async (req, res) => {
+      const q = validatedQuery<{ amountMinor: number; from: CurrencyCode; to: CurrencyCode }>(req);
+      sendSuccess(res, { converted: await currency.convert(q.amountMinor, q.from, q.to) });
+    },
+  );
   return router;
 }

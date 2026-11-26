@@ -156,22 +156,79 @@ export function createPartnerApplicationRouter(
       sendMessage(res, 'Access revoked.');
     },
   );
-  router.patch('/staff/:id', validate({ params: idParam, body: updateStaffSchema }), async (req: Request, res: Response) => {
-    const auth = requireAuth(req);
-    sendSuccess(res, await partners.updateStaff(await partnerAccess.requireApprovedOwner(auth), validatedParams<{ id: string }>(req).id, auth.userId, req.body, requestContext(req)));
-  });
-  router.post('/staff/:id/suspend', validate({ params: idParam }), async (req: Request, res: Response) => {
-    const auth = requireAuth(req);
-    sendSuccess(res, await partners.setStaffSuspended(await partnerAccess.requireApprovedOwner(auth), validatedParams<{ id: string }>(req).id, auth.userId, true, requestContext(req)));
-  });
-  router.post('/staff/:id/reactivate', validate({ params: idParam }), async (req: Request, res: Response) => {
-    const auth = requireAuth(req);
-    sendSuccess(res, await partners.setStaffSuspended(await partnerAccess.requireApprovedOwner(auth), validatedParams<{ id: string }>(req).id, auth.userId, false, requestContext(req)));
-  });
-  router.get('/staff/:id/activity', validate({ params: idParam, query: z.object({ page: z.coerce.number().int().min(1).default(1), limit: z.coerce.number().int().min(1).max(100).default(25) }) }), async (req: Request, res: Response) => {
-    const q = validatedQuery<{ page: number; limit: number }>(req);
-    sendSuccess(res, await partners.staffActivity(await partnerAccess.requireApprovedOwner(requireAuth(req)), validatedParams<{ id: string }>(req).id, q.page, q.limit));
-  });
+  router.patch(
+    '/staff/:id',
+    validate({ params: idParam, body: updateStaffSchema }),
+    async (req: Request, res: Response) => {
+      const auth = requireAuth(req);
+      sendSuccess(
+        res,
+        await partners.updateStaff(
+          await partnerAccess.requireApprovedOwner(auth),
+          validatedParams<{ id: string }>(req).id,
+          auth.userId,
+          req.body,
+          requestContext(req),
+        ),
+      );
+    },
+  );
+  router.post(
+    '/staff/:id/suspend',
+    validate({ params: idParam }),
+    async (req: Request, res: Response) => {
+      const auth = requireAuth(req);
+      sendSuccess(
+        res,
+        await partners.setStaffSuspended(
+          await partnerAccess.requireApprovedOwner(auth),
+          validatedParams<{ id: string }>(req).id,
+          auth.userId,
+          true,
+          requestContext(req),
+        ),
+      );
+    },
+  );
+  router.post(
+    '/staff/:id/reactivate',
+    validate({ params: idParam }),
+    async (req: Request, res: Response) => {
+      const auth = requireAuth(req);
+      sendSuccess(
+        res,
+        await partners.setStaffSuspended(
+          await partnerAccess.requireApprovedOwner(auth),
+          validatedParams<{ id: string }>(req).id,
+          auth.userId,
+          false,
+          requestContext(req),
+        ),
+      );
+    },
+  );
+  router.get(
+    '/staff/:id/activity',
+    validate({
+      params: idParam,
+      query: z.object({
+        page: z.coerce.number().int().min(1).default(1),
+        limit: z.coerce.number().int().min(1).max(100).default(25),
+      }),
+    }),
+    async (req: Request, res: Response) => {
+      const q = validatedQuery<{ page: number; limit: number }>(req);
+      sendSuccess(
+        res,
+        await partners.staffActivity(
+          await partnerAccess.requireApprovedOwner(requireAuth(req)),
+          validatedParams<{ id: string }>(req).id,
+          q.page,
+          q.limit,
+        ),
+      );
+    },
+  );
   router.get('/invitations', async (req: Request, res: Response) => {
     sendSuccess(res, await partners.myInvitations(requireAuth(req).userId));
   });

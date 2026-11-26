@@ -10,14 +10,34 @@ const tripFields = {
   startDate: localDateSchema.nullable().default(null),
   endDate: localDateSchema.nullable().default(null),
 };
-const datesOk = (t: { startDate: string | null; endDate: string | null }) => !t.startDate || !t.endDate || t.endDate >= t.startDate;
-export const tripSchema = z.strictObject(tripFields).refine(datesOk, { message: 'End date must be on or after the start date', path: ['endDate'] });
+const datesOk = (t: { startDate: string | null; endDate: string | null }) =>
+  !t.startDate || !t.endDate || t.endDate >= t.startDate;
+export const tripSchema = z
+  .strictObject(tripFields)
+  .refine(datesOk, { message: 'End date must be on or after the start date', path: ['endDate'] });
 export const tripItemSchema = z.discriminatedUnion('kind', [
-  z.strictObject({ kind: z.literal('HOTEL'), hotelId: objectIdSchema, date: localDateSchema.nullable().default(null), note: z.string().trim().max(500).default('') }),
-  z.strictObject({ kind: z.literal('BOOKING'), bookingReference: z.string().regex(/^SS-[A-Z0-9]{8}$/), note: z.string().trim().max(500).default('') }),
-  z.strictObject({ kind: z.literal('NOTE'), title: z.string().trim().min(1).max(120), date: localDateSchema.nullable().default(null), note: z.string().trim().max(2000).default('') }),
+  z.strictObject({
+    kind: z.literal('HOTEL'),
+    hotelId: objectIdSchema,
+    date: localDateSchema.nullable().default(null),
+    note: z.string().trim().max(500).default(''),
+  }),
+  z.strictObject({
+    kind: z.literal('BOOKING'),
+    bookingReference: z.string().regex(/^SS-[A-Z0-9]{8}$/),
+    note: z.string().trim().max(500).default(''),
+  }),
+  z.strictObject({
+    kind: z.literal('NOTE'),
+    title: z.string().trim().min(1).max(120),
+    date: localDateSchema.nullable().default(null),
+    note: z.string().trim().max(2000).default(''),
+  }),
 ]);
-export const tripInviteSchema = z.strictObject({ email: emailSchema, role: z.enum(['EDITOR', 'VIEWER']).default('VIEWER') });
+export const tripInviteSchema = z.strictObject({
+  email: emailSchema,
+  role: z.enum(['EDITOR', 'VIEWER']).default('VIEWER'),
+});
 export const tripTokenSchema = z.strictObject({ token: z.string().regex(/^[\w-]{40,64}$/) });
 
 export type TripRole = 'OWNER' | 'EDITOR' | 'VIEWER';
@@ -63,7 +83,13 @@ export type OrgRole = (typeof ORG_ROLES)[number];
 export const createOrganizationSchema = z.strictObject({
   name: z.string().trim().min(2).max(120),
   billingEmail: emailSchema,
-  gstin: z.string().trim().toUpperCase().regex(/^[0-9]{2}[A-Z0-9]{13}$/, 'Enter a valid 15-character GSTIN').nullable().default(null),
+  gstin: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(/^[0-9]{2}[A-Z0-9]{13}$/, 'Enter a valid 15-character GSTIN')
+    .nullable()
+    .default(null),
 });
 export const travelPolicySchema = z.strictObject({
   maxNightlyMinor: z.number().int().min(1).nullable().default(null),
@@ -73,8 +99,15 @@ export const travelPolicySchema = z.strictObject({
   approvalRequiredAboveMinor: z.number().int().min(0).nullable().default(null),
   monthlyBudgetMinor: z.number().int().min(0).nullable().default(null),
 });
-export const orgInviteSchema = z.strictObject({ email: emailSchema, role: z.enum(ORG_ROLES).default('EMPLOYEE'), department: z.string().trim().max(60).default('') });
-export const orgMemberUpdateSchema = z.strictObject({ role: z.enum(ORG_ROLES), department: z.string().trim().max(60).default('') });
+export const orgInviteSchema = z.strictObject({
+  email: emailSchema,
+  role: z.enum(ORG_ROLES).default('EMPLOYEE'),
+  department: z.string().trim().max(60).default(''),
+});
+export const orgMemberUpdateSchema = z.strictObject({
+  role: z.enum(ORG_ROLES),
+  department: z.string().trim().max(60).default(''),
+});
 export const travelRequestSchema = z
   .strictObject({
     hotelId: objectIdSchema,
@@ -86,12 +119,17 @@ export const travelRequestSchema = z
     rooms: z.number().int().min(1).max(5).default(1),
     purpose: z.string().trim().min(5).max(500),
   })
-  .refine((r) => r.checkOut > r.checkIn, { message: 'Check-out must be after check-in', path: ['checkOut'] });
+  .refine((r) => r.checkOut > r.checkIn, {
+    message: 'Check-out must be after check-in',
+    path: ['checkOut'],
+  });
 export const travelDecisionSchema = z.discriminatedUnion('decision', [
   z.strictObject({ decision: z.literal('APPROVE'), note: z.string().trim().max(500).default('') }),
   z.strictObject({ decision: z.literal('REJECT'), note: z.string().trim().min(3).max(500) }),
 ]);
-export const linkBookingSchema = z.strictObject({ bookingReference: z.string().regex(/^SS-[A-Z0-9]{8}$/) });
+export const linkBookingSchema = z.strictObject({
+  bookingReference: z.string().regex(/^SS-[A-Z0-9]{8}$/),
+});
 export const orgDecisionSchema = z.discriminatedUnion('decision', [
   z.strictObject({ decision: z.literal('APPROVE') }),
   z.strictObject({ decision: z.literal('SUSPEND'), reason: z.string().trim().min(3).max(500) }),

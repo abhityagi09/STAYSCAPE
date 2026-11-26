@@ -443,8 +443,20 @@ export interface PartnerBookingDetailDto extends PartnerBookingDto {
   items: BookingItemDto[];
   guestDetails: GuestDetailsDto;
   price: PriceSnapshotDto;
-  payments: Array<{ status: PaymentStatus; amountMinor: number; refundedMinor: number; currency: CurrencyCode; createdAt: string }>;
-  refunds: Array<{ status: RefundStatus; amountMinor: number; currency: CurrencyCode; reason: string; requestedAt: string }>;
+  payments: Array<{
+    status: PaymentStatus;
+    amountMinor: number;
+    refundedMinor: number;
+    currency: CurrencyCode;
+    createdAt: string;
+  }>;
+  refunds: Array<{
+    status: RefundStatus;
+    amountMinor: number;
+    currency: CurrencyCode;
+    reason: string;
+    requestedAt: string;
+  }>;
   cancellation: CancellationDto | null;
   roomAssignments: Array<{ roomTypeId: string; roomNumbers: string[] }>;
   notes: Array<{ id: string; authorName: string; body: string; createdAt: string }>;

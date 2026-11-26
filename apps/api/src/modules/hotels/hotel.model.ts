@@ -277,7 +277,10 @@ const hotelSchema = new Schema<HotelAttrs>(
   { timestamps: true, versionKey: false, minimize: false },
 );
 
-hotelSchema.index({ 'accessibilityFeatures.code': 1, publicationStatus: 1 }, { name: 'accessibility' });
+hotelSchema.index(
+  { 'accessibilityFeatures.code': 1, publicationStatus: 1 },
+  { name: 'accessibility' },
+);
 hotelSchema.index({ slug: 1 }, { unique: true, name: 'uniq_slug' });
 hotelSchema.index({ location: '2dsphere' }, { name: 'geo' });
 hotelSchema.index({ partnerId: 1, publicationStatus: 1 }, { name: 'partner_status' });

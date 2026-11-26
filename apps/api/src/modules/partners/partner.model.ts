@@ -10,7 +10,6 @@ import {
   type PartnerDocumentType,
   type PartnerVerificationStatus,
   type StaffInvitationStatus,
-  type StaffPermission,
 } from '@stayscape/shared';
 
 export interface PartnerDocument {
@@ -143,7 +142,12 @@ const partnerStaffSchema = new Schema<PartnerStaffAttrs>(
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     assignedProperties: { type: [{ type: Schema.Types.ObjectId, ref: 'Hotel' }], default: [] },
     // New codes plus legacy Phase 2–3 codes (normalised on read).
-    permissions: { type: [{ type: String, enum: [...STAFF_PERMISSIONS, ...Object.keys(LEGACY_STAFF_PERMISSIONS)] }], default: [] },
+    permissions: {
+      type: [
+        { type: String, enum: [...STAFF_PERMISSIONS, ...Object.keys(LEGACY_STAFF_PERMISSIONS)] },
+      ],
+      default: [],
+    },
     invitationStatus: { type: String, enum: STAFF_INVITATION_STATUSES, default: 'PENDING' },
     invitedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   },

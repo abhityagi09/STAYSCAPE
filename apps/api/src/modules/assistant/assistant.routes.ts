@@ -12,8 +12,18 @@ export function createAssistantRouter(container: Container): Router {
   router.use(container.authenticate);
   router.post('/messages', validate({ body: assistantRequestSchema }), async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
-    const body = req.body as { message: string; history: Array<{ role: 'user' | 'assistant'; content: string }> };
-    sendSuccess(res, await assistant.reply({ userId: requireAuth(req).userId, message: body.message, history: body.history }));
+    const body = req.body as {
+      message: string;
+      history: Array<{ role: 'user' | 'assistant'; content: string }>;
+    };
+    sendSuccess(
+      res,
+      await assistant.reply({
+        userId: requireAuth(req).userId,
+        message: body.message,
+        history: body.history,
+      }),
+    );
   });
   return router;
 }

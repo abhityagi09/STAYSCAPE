@@ -149,7 +149,12 @@ export class InventoryService {
             ...filter,
             $expr: {
               $lt: [
-                { $subtract: ['$totalRooms', { $add: ['$heldRooms', '$bookedRooms', { $ifNull: ['$maintenanceRooms', 0] }] }] },
+                {
+                  $subtract: [
+                    '$totalRooms',
+                    { $add: ['$heldRooms', '$bookedRooms', { $ifNull: ['$maintenanceRooms', 0] }] },
+                  ],
+                },
                 set.blockedRooms,
               ],
             },
@@ -165,7 +170,12 @@ export class InventoryService {
         }
         filter.$expr = {
           $gte: [
-            { $subtract: ['$totalRooms', { $add: ['$heldRooms', '$bookedRooms', { $ifNull: ['$maintenanceRooms', 0] }] }] },
+            {
+              $subtract: [
+                '$totalRooms',
+                { $add: ['$heldRooms', '$bookedRooms', { $ifNull: ['$maintenanceRooms', 0] }] },
+              ],
+            },
             set.blockedRooms,
           ],
         };
@@ -284,7 +294,9 @@ export class InventoryService {
         maximumStay: row.maximumStay,
         occupancyBp:
           row.totalRooms - row.blockedRooms > 0
-            ? Math.round(((row.heldRooms + row.bookedRooms) * 10_000) / (row.totalRooms - row.blockedRooms))
+            ? Math.round(
+                ((row.heldRooms + row.bookedRooms) * 10_000) / (row.totalRooms - row.blockedRooms),
+              )
             : 0,
       });
     }

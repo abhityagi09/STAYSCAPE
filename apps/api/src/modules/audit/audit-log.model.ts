@@ -36,6 +36,9 @@ auditLogSchema.index({ timestamp: -1 }, { name: 'timestamp' });
 auditLogSchema.index({ actorId: 1, timestamp: -1 }, { name: 'actor_timestamp' });
 auditLogSchema.index({ entityType: 1, entityId: 1, timestamp: -1 }, { name: 'entity_timestamp' });
 auditLogSchema.index({ action: 1, timestamp: -1 }, { name: 'action_timestamp' });
-auditLogSchema.index({ partnerId: 1, actorId: 1, timestamp: -1 }, { name: 'partner_actor_timestamp' });
+auditLogSchema.index(
+  { partnerId: 1, actorId: 1, timestamp: -1 },
+  { name: 'partner_actor_timestamp' },
+);
 
 export const AuditLogModel = model<AuditLogAttrs>('AuditLog', auditLogSchema);

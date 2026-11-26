@@ -50,26 +50,53 @@ export function createAdminAnalyticsRouter(container: Container): Router {
   const router = Router();
   const { analytics } = container.services;
   router.use(container.authenticate);
-  router.get('/dashboard', requirePermission('reports:view'), validate({ query: analyticsQuerySchema }), async (req, res) => {
-    sendSuccess(res, await analytics.adminDashboard(validatedQuery<AnalyticsQueryDto>(req)));
-  });
-  router.get('/analytics', requirePermission('analytics:platform'), validate({ query: analyticsQuerySchema }), async (req, res) => {
-    const q = validatedQuery<AnalyticsQueryDto>(req);
-    const data = await analytics.adminAnalytics(q);
-    if (q.format === 'csv') {
-      const byDate = new Map<string, Record<string, string | number | null>>();
-      const row = (date: string) => {
-        if (!byDate.has(date)) byDate.set(date, { date, bookings: 0, gross_booking_value_minor: 0, commission_minor: 0, refunds_minor: 0, new_customers: 0, approved_partners: 0 });
-        return byDate.get(date)!;
-      };
-      for (const b of data.bookingVolume) Object.assign(row(b.date), { bookings: b.bookings, gross_booking_value_minor: b.grossBookingValueMinor });
-      for (const c of data.commissionRevenue) row(c.date).commission_minor = c.amountMinor;
-      for (const r of data.refunds) row(r.date).refunds_minor = r.amountMinor;
-      for (const c of data.customerGrowth) row(c.date).new_customers = c.newCustomers;
-      for (const p of data.partnerGrowth) row(p.date).approved_partners = p.approvedPartners;
-      return sendCsv(res, `stayscape-platform-analytics-${data.period.from}-${data.period.to}`, [...byDate.values()].sort((a, b) => String(a.date).localeCompare(String(b.date))));
-    }
-    sendSuccess(res, data);
-  });
+  router.get(
+    '/dashboard',
+    requirePermission('reports:view'),
+    validate({ query: analyticsQuerySchema }),
+    async (req, res) => {
+      sendSuccess(res, await analytics.adminDashboard(validatedQuery<AnalyticsQueryDto>(req)));
+    },
+  );
+  router.get(
+    '/analytics',
+    requirePermission('analytics:platform'),
+    validate({ query: analyticsQuerySchema }),
+    async (req, res) => {
+      const q = validatedQuery<AnalyticsQueryDto>(req);
+      const data = await analytics.adminAnalytics(q);
+      if (q.format === 'csv') {
+        const byDate = new Map<string, Record<string, string | number | null>>();
+        const row = (date: string) => {
+          if (!byDate.has(date))
+            byDate.set(date, {
+              date,
+              bookings: 0,
+              gross_booking_value_minor: 0,
+              commission_minor: 0,
+              refunds_minor: 0,
+              new_customers: 0,
+              approved_partners: 0,
+            });
+          return byDate.get(date)!;
+        };
+        for (const b of data.bookingVolume)
+          Object.assign(row(b.date), {
+            bookings: b.bookings,
+            gross_booking_value_minor: b.grossBookingValueMinor,
+          });
+        for (const c of data.commissionRevenue) row(c.date).commission_minor = c.amountMinor;
+        for (const r of data.refunds) row(r.date).refunds_minor = r.amountMinor;
+        for (const c of data.customerGrowth) row(c.date).new_customers = c.newCustomers;
+        for (const p of data.partnerGrowth) row(p.date).approved_partners = p.approvedPartners;
+        return sendCsv(
+          res,
+          `stayscape-platform-analytics-${data.period.from}-${data.period.to}`,
+          [...byDate.values()].sort((a, b) => String(a.date).localeCompare(String(b.date))),
+        );
+      }
+      sendSuccess(res, data);
+    },
+  );
   return router;
 }

@@ -73,9 +73,18 @@ export const routes: RouteObject[] = [
           { path: 'wishlists/shared/:token', lazy: lazy(extras, (m) => m.SharedWishlistPage) },
           { path: 'trips/shared/:token', lazy: lazy(customerOps, (m) => m.SharedTripPage) },
           { path: 'guides', lazy: lazy(contentPages, (m) => m.GuidesIndexPage) },
-          { path: 'guides/:slug', lazy: lazy(contentPages, (m) => () => <m.ContentEntryPage type="GUIDE" />) },
-          { path: 'blog/:slug', lazy: lazy(contentPages, (m) => () => <m.ContentEntryPage type="BLOG" />) },
-          { path: 'legal/:slug', lazy: lazy(contentPages, (m) => () => <m.ContentEntryPage type="LEGAL" />) },
+          {
+            path: 'guides/:slug',
+            lazy: lazy(contentPages, (m) => () => <m.ContentEntryPage type="GUIDE" />),
+          },
+          {
+            path: 'blog/:slug',
+            lazy: lazy(contentPages, (m) => () => <m.ContentEntryPage type="BLOG" />),
+          },
+          {
+            path: 'legal/:slug',
+            lazy: lazy(contentPages, (m) => () => <m.ContentEntryPage type="LEGAL" />),
+          },
           { path: 'help/faq', lazy: lazy(contentPages, (m) => m.FaqPage) },
           { path: 'content/preview/:token', lazy: lazy(contentPages, (m) => m.ContentPreviewPage) },
           { path: 'partners', lazy: lazy(legal, (m) => m.PartnersLandingPage) },

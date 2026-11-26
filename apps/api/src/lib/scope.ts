@@ -12,7 +12,8 @@ export interface RequestScope {
 
 export const requestScope = new AsyncLocalStorage<RequestScope>();
 
-export const scopeMiddleware: RequestHandler = (_req, _res, next) => requestScope.run({}, () => next());
+export const scopeMiddleware: RequestHandler = (_req, _res, next) =>
+  requestScope.run({}, () => next());
 
 export function setScope(values: RequestScope): void {
   const store = requestScope.getStore();

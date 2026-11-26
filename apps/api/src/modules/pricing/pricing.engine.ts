@@ -133,14 +133,23 @@ export interface EngineResult {
   };
 }
 
-const ADJUSTMENT_TYPES: PricingRuleType[] = ['WEEKDAY', 'WEEKEND', 'SEASONAL', 'EVENT', 'OCCUPANCY'];
+const ADJUSTMENT_TYPES: PricingRuleType[] = [
+  'WEEKDAY',
+  'WEEKEND',
+  'SEASONAL',
+  'EVENT',
+  'OCCUPANCY',
+];
 const DISCOUNT_TYPES: PricingRuleType[] = ['LONG_STAY', 'EARLY_BIRD', 'LAST_MINUTE', 'PROMOTIONAL'];
 
 function occupancyMatches(rule: EngineRule, occupancy: number | undefined): boolean {
   if (rule.ruleType !== 'OCCUPANCY') return true;
   if (occupancy === undefined) return false;
   const c = rule.conditions ?? {};
-  return (c.minOccupancyBp === undefined || occupancy >= c.minOccupancyBp) && (c.maxOccupancyBp === undefined || occupancy <= c.maxOccupancyBp);
+  return (
+    (c.minOccupancyBp === undefined || occupancy >= c.minOccupancyBp) &&
+    (c.maxOccupancyBp === undefined || occupancy <= c.maxOccupancyBp)
+  );
 }
 
 function assertInt(value: number, label: string) {
@@ -194,7 +203,12 @@ function adjust(amount: number, rule: EngineRule): number {
   return 0;
 }
 
-function stayEligible(rule: EngineRule, nights: number, daysBeforeArrival: number, bookingDate: string): boolean {
+function stayEligible(
+  rule: EngineRule,
+  nights: number,
+  daysBeforeArrival: number,
+  bookingDate: string,
+): boolean {
   const c = rule.conditions ?? {};
   if (c.bookFrom && bookingDate < c.bookFrom) return false;
   if (c.bookTo && bookingDate > c.bookTo) return false;
@@ -234,7 +248,9 @@ export function calculatePrice(input: EngineInput): EngineResult {
   const overrides = rules.filter((r) => r.ruleType === 'DATE_OVERRIDE');
   const adjustments = rules.filter((r) => ADJUSTMENT_TYPES.includes(r.ruleType));
   const discounts = rules.filter(
-    (r) => DISCOUNT_TYPES.includes(r.ruleType) && stayEligible(r, nights.length, daysBeforeArrival, input.bookingDate),
+    (r) =>
+      DISCOUNT_TYPES.includes(r.ruleType) &&
+      stayEligible(r, nights.length, daysBeforeArrival, input.bookingDate),
   );
 
   const adultsPerRoom = distribute(input.adults, rooms);
@@ -252,7 +268,9 @@ export function calculatePrice(input: EngineInput): EngineResult {
       base = override.adjustmentValue;
     } else {
       for (const rule of selectRules(
-        adjustments.filter((r) => coversDate(r, date) && occupancyMatches(r, input.occupancyBp?.[date])),
+        adjustments.filter(
+          (r) => coversDate(r, date) && occupancyMatches(r, input.occupancyBp?.[date]),
+        ),
       )) {
         const delta = Math.max(adjust(base, rule), -base);
         base += delta;

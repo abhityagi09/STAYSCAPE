@@ -99,8 +99,14 @@ describe('responsive navigation', () => {
       },
     );
     const sidebar = (await screen.findAllByRole('navigation', { name: 'Workspace' }))[0]!;
-    expect(within(sidebar).getByRole('link', { name: /Settlements/ })).toHaveAttribute('href', '/partner/settlements');
-    expect(within(sidebar).getByRole('link', { name: /Performance/ })).toHaveAttribute('href', '/partner/dashboard');
+    expect(within(sidebar).getByRole('link', { name: /Settlements/ })).toHaveAttribute(
+      'href',
+      '/partner/settlements',
+    );
+    expect(within(sidebar).getByRole('link', { name: /Performance/ })).toHaveAttribute(
+      'href',
+      '/partner/dashboard',
+    );
     expect(sidebar.querySelector('[aria-disabled="true"]')).toBeNull();
   });
 });

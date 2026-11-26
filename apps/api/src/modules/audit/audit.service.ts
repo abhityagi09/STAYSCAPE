@@ -28,7 +28,8 @@ export function sanitizeMetadata(value: unknown, depth = 0): unknown {
   return out;
 }
 
-const toId = (v: string | null | undefined) => (v && Types.ObjectId.isValid(v) ? new Types.ObjectId(v) : null);
+const toId = (v: string | null | undefined) =>
+  v && Types.ObjectId.isValid(v) ? new Types.ObjectId(v) : null;
 
 export interface AuditEntry {
   actorId: string | null;

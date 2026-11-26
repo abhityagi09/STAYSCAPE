@@ -616,13 +616,26 @@ export class PartnersService {
     context: RequestContext,
   ): Promise<StaffDto> {
     if (!Types.ObjectId.isValid(staffId)) throw Errors.notFound('Team member');
-    const owned = await HotelModel.countDocuments({ _id: { $in: input.assignedProperties }, partnerId: partner._id });
-    if (owned !== new Set(input.assignedProperties).size) throw Errors.badRequest('Assigned properties must belong to your partner account.');
-    const before = await PartnerStaffModel.findOne({ _id: staffId, partnerId: partner._id, invitationStatus: { $ne: 'REVOKED' } }).lean<PartnerStaffRecord>();
+    const owned = await HotelModel.countDocuments({
+      _id: { $in: input.assignedProperties },
+      partnerId: partner._id,
+    });
+    if (owned !== new Set(input.assignedProperties).size)
+      throw Errors.badRequest('Assigned properties must belong to your partner account.');
+    const before = await PartnerStaffModel.findOne({
+      _id: staffId,
+      partnerId: partner._id,
+      invitationStatus: { $ne: 'REVOKED' },
+    }).lean<PartnerStaffRecord>();
     if (!before) throw Errors.notFound('Team member');
     const after = await PartnerStaffModel.findOneAndUpdate(
       { _id: before._id },
-      { $set: { assignedProperties: input.assignedProperties.map((id) => new Types.ObjectId(id)), permissions: input.permissions } },
+      {
+        $set: {
+          assignedProperties: input.assignedProperties.map((id) => new Types.ObjectId(id)),
+          permissions: input.permissions,
+        },
+      },
       { new: true },
     ).lean<PartnerStaffRecord>();
     await this.deps.audit.record({
@@ -632,7 +645,10 @@ export class PartnersService {
       entityId: staffId,
       partnerId: partner._id.toString(),
       metadata: {
-        before: { permissions: before.permissions, assignedProperties: before.assignedProperties.map(String) },
+        before: {
+          permissions: before.permissions,
+          assignedProperties: before.assignedProperties.map(String),
+        },
         after: { permissions: input.permissions, assignedProperties: input.assignedProperties },
       },
       context,
@@ -641,7 +657,13 @@ export class PartnersService {
   }
 
   /** Suspend (access stops immediately) or reactivate an accepted team member. */
-  async setStaffSuspended(partner: PartnerRecord, staffId: string, actorId: string, suspended: boolean, context: RequestContext): Promise<StaffDto> {
+  async setStaffSuspended(
+    partner: PartnerRecord,
+    staffId: string,
+    actorId: string,
+    suspended: boolean,
+    context: RequestContext,
+  ): Promise<StaffDto> {
     if (!Types.ObjectId.isValid(staffId)) throw Errors.notFound('Team member');
     const from = suspended ? 'ACCEPTED' : 'SUSPENDED';
     const record = await PartnerStaffModel.findOneAndUpdate(
@@ -649,23 +671,51 @@ export class PartnersService {
       { $set: { invitationStatus: suspended ? 'SUSPENDED' : 'ACCEPTED' } },
       { new: true },
     ).lean<PartnerStaffRecord>();
-    if (!record) throw new AppError(409, 'INVALID_STATE', suspended ? 'Only active team members can be suspended.' : 'Only suspended team members can be reactivated.');
-    await this.deps.audit.record({ actorId, action: suspended ? 'partner.staff_suspended' : 'partner.staff_reactivated', entityType: 'PartnerStaff', entityId: staffId, partnerId: partner._id.toString(), context });
+    if (!record)
+      throw new AppError(
+        409,
+        'INVALID_STATE',
+        suspended
+          ? 'Only active team members can be suspended.'
+          : 'Only suspended team members can be reactivated.',
+      );
+    await this.deps.audit.record({
+      actorId,
+      action: suspended ? 'partner.staff_suspended' : 'partner.staff_reactivated',
+      entityType: 'PartnerStaff',
+      entityId: staffId,
+      partnerId: partner._id.toString(),
+      context,
+    });
     return (await this.toStaffDtos([record]))[0]!;
   }
 
   /** What a team member did on this partner's properties (partner-scoped audit trail). */
   async staffActivity(partner: PartnerRecord, staffId: string, page: number, limit: number) {
     if (!Types.ObjectId.isValid(staffId)) throw Errors.notFound('Team member');
-    const staff = await PartnerStaffModel.findOne({ _id: staffId, partnerId: partner._id }).lean<PartnerStaffRecord>();
+    const staff = await PartnerStaffModel.findOne({
+      _id: staffId,
+      partnerId: partner._id,
+    }).lean<PartnerStaffRecord>();
     if (!staff) throw Errors.notFound('Team member');
     const filter = { actorId: staff.userId, partnerId: partner._id };
     const [items, total] = await Promise.all([
-      AuditLogModel.find(filter).sort({ timestamp: -1 }).skip((page - 1) * limit).limit(limit).lean<AuditLogRecord[]>(),
+      AuditLogModel.find(filter)
+        .sort({ timestamp: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean<AuditLogRecord[]>(),
       AuditLogModel.countDocuments(filter),
     ]);
     return paginated(
-      items.map((a) => ({ id: a._id.toString(), action: a.action, entityType: a.entityType, entityId: a.entityId, hotelId: a.hotelId?.toString() ?? null, timestamp: a.timestamp.toISOString() })),
+      items.map((a) => ({
+        id: a._id.toString(),
+        action: a.action,
+        entityType: a.entityType,
+        entityId: a.entityId,
+        hotelId: a.hotelId?.toString() ?? null,
+        timestamp: a.timestamp.toISOString(),
+      })),
       page,
       limit,
       total,

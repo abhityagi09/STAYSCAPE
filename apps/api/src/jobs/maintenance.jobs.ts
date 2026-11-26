@@ -111,14 +111,17 @@ export function createMaintenanceHandlers(deps: MaintenanceDeps): {
       log(await deps.lifecycle.completeStays(), 'Stays completed'),
     'bookings.checkin-reminders': async () =>
       log(await deps.lifecycle.remindCheckins(), 'Check-in reminders queued'),
-    'finance.backfill': async () => log(await deps.finance.backfillConfirmedBookings(), 'Ledger postings backfilled'),
-    'prices.observe': async () => log(await deps.intelligence.observePrices(), 'Price observations recorded'),
+    'finance.backfill': async () =>
+      log(await deps.finance.backfillConfirmedBookings(), 'Ledger postings backfilled'),
+    'prices.observe': async () =>
+      log(await deps.intelligence.observePrices(), 'Price observations recorded'),
     'prices.alerts': async () => log(await deps.intelligence.checkAlerts(), 'Price alerts checked'),
     'currency.refresh': async () => {
       const r = await deps.currency.refresh();
       if (r.stored) deps.logger.info(r, 'Exchange reference rates stored');
     },
-    'channels.sync': async () => log(await deps.channels.runScheduled(), 'Channel retries and availability sync'),
+    'channels.sync': async () =>
+      log(await deps.channels.runScheduled(), 'Channel retries and availability sync'),
     'rewards.accrue': async () => {
       log(await deps.rewards.accrue(), 'Loyalty points posted');
       log(await deps.rewards.releaseExpiredRedemptions(), 'Expired points coupons released');
@@ -164,13 +167,37 @@ export async function scheduleMaintenance(connection: Redis): Promise<Queue> {
     { every: 60 * 60_000 },
     { name: 'bookings.checkin-reminders', data: {} },
   );
-  await queue.upsertJobScheduler('finance-backfill', { every: 60 * 60_000 }, { name: 'finance.backfill', data: {} });
+  await queue.upsertJobScheduler(
+    'finance-backfill',
+    { every: 60 * 60_000 },
+    { name: 'finance.backfill', data: {} },
+  );
   // Once a day is enough: observations are keyed per property-local day (repeat runs are no-ops).
-  await queue.upsertJobScheduler('prices-observe', { every: 6 * 60 * 60_000 }, { name: 'prices.observe', data: {} });
-  await queue.upsertJobScheduler('prices-alerts', { every: 60 * 60_000 }, { name: 'prices.alerts', data: {} });
-  await queue.upsertJobScheduler('currency-refresh', { every: 6 * 60 * 60_000 }, { name: 'currency.refresh', data: {} });
-  await queue.upsertJobScheduler('channels-sync', { every: 5 * 60_000 }, { name: 'channels.sync', data: {} });
-  await queue.upsertJobScheduler('rewards-accrue', { every: 60 * 60_000 }, { name: 'rewards.accrue', data: {} });
+  await queue.upsertJobScheduler(
+    'prices-observe',
+    { every: 6 * 60 * 60_000 },
+    { name: 'prices.observe', data: {} },
+  );
+  await queue.upsertJobScheduler(
+    'prices-alerts',
+    { every: 60 * 60_000 },
+    { name: 'prices.alerts', data: {} },
+  );
+  await queue.upsertJobScheduler(
+    'currency-refresh',
+    { every: 6 * 60 * 60_000 },
+    { name: 'currency.refresh', data: {} },
+  );
+  await queue.upsertJobScheduler(
+    'channels-sync',
+    { every: 5 * 60_000 },
+    { name: 'channels.sync', data: {} },
+  );
+  await queue.upsertJobScheduler(
+    'rewards-accrue',
+    { every: 60 * 60_000 },
+    { name: 'rewards.accrue', data: {} },
+  );
   // Remove the Phase 2 scheduler that this one replaces.
   await queue.removeJobScheduler('inventory-expire-holds').catch(() => undefined);
   return queue;
