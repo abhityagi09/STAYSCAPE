@@ -1,4 +1,11 @@
 import { Types, type Model } from 'mongoose';
+import {
+  DISCOUNT_RULE_TYPES,
+  todayInTimeZone,
+  type AdminPromotionDto,
+  type AdminPromotionSummaryDto,
+  type PromotionState,
+} from '@stayscape/shared';
 import { AppError, Errors, isMongoDuplicateKey } from '@/lib/errors';
 import { paginated } from '@/lib/http';
 import type { RequestContext } from '@/lib/request-context';
@@ -7,6 +14,8 @@ import { BookingModel, type BookingRecord } from '@/modules/bookings/booking.mod
 import type { CacheService } from '@/modules/catalog/cache.service';
 import { AmenityModel, DestinationModel } from '@/modules/catalog/catalog.models';
 import { HotelModel } from '@/modules/hotels/hotel.model';
+import { PartnerModel } from '@/modules/partners/partner.model';
+import { PricingRuleModel, type PricingRuleRecord } from '@/modules/rooms/room.models';
 import {
   PaymentModel,
   RefundModel,
@@ -21,6 +30,9 @@ import {
   PropertyCategoryModel,
   type BookingEscalationRecord,
 } from './admin.models';
+
+/** Upper bound on discount rules evaluated per request (state depends on each property's local date). */
+const PROMOTION_SCAN_LIMIT = 2000;
 
 const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const utc = (d: string) => new Date(`${d}T00:00:00.000Z`);
@@ -415,6 +427,93 @@ export class AdminManagementService {
       q.limit,
       total,
     );
+  }
+
+  /**
+   * Marketplace-wide oversight of partner discounts. A rule's state depends on the property's
+   * local "today", so states are computed per rule and filtered in memory (bounded scan).
+   */
+  async listPromotions(q: {
+    page: number;
+    limit: number;
+    q?: string | undefined;
+    type?: (typeof DISCOUNT_RULE_TYPES)[number] | undefined;
+    state?: PromotionState | undefined;
+  }) {
+    const hotelFilter: Record<string, unknown> = {};
+    if (q.q) hotelFilter.name = { $regex: escapeRegex(q.q), $options: 'i' };
+    const hotels = await HotelModel.find(hotelFilter, {
+      name: 1,
+      city: 1,
+      partnerId: 1,
+      timeZone: 1,
+      currency: 1,
+    }).lean<
+      Array<{
+        _id: Types.ObjectId;
+        name: string;
+        city: string;
+        partnerId: Types.ObjectId;
+        timeZone: string;
+        currency: string;
+      }>
+    >();
+    const rules = await PricingRuleModel.find({
+      hotelId: { $in: hotels.map((h) => h._id) },
+      ruleType: q.type ? q.type : { $in: [...DISCOUNT_RULE_TYPES] },
+    })
+      .sort({ updatedAt: -1 })
+      .limit(PROMOTION_SCAN_LIMIT + 1)
+      .lean<PricingRuleRecord[]>();
+    const truncated = rules.length > PROMOTION_SCAN_LIMIT;
+    const partners = await PartnerModel.find(
+      { _id: { $in: [...new Set(hotels.map((h) => h.partnerId.toString()))] } },
+      { businessName: 1 },
+    ).lean<Array<{ _id: Types.ObjectId; businessName: string | null }>>();
+    const hotelById = new Map(hotels.map((h) => [h._id.toString(), h]));
+    const partnerName = new Map(partners.map((p) => [p._id.toString(), p.businessName]));
+    const summary: AdminPromotionSummaryDto = { ACTIVE: 0, UPCOMING: 0, ENDED: 0, PAUSED: 0 };
+    const items: AdminPromotionDto[] = [];
+    for (const r of rules.slice(0, PROMOTION_SCAN_LIMIT)) {
+      const h = hotelById.get(r.hotelId.toString());
+      if (!h) continue;
+      const booking = r.ruleType === 'PROMOTIONAL';
+      const from = (booking ? r.conditions?.bookFrom : r.startDate) ?? null;
+      const to = (booking ? r.conditions?.bookTo : r.endDate) ?? null;
+      const today = todayInTimeZone(h.timeZone);
+      const state: PromotionState = !r.active
+        ? 'PAUSED'
+        : from && today < from
+          ? 'UPCOMING'
+          : to && today > to
+            ? 'ENDED'
+            : 'ACTIVE';
+      summary[state] += 1;
+      if (q.state && q.state !== state) continue;
+      items.push({
+        id: r._id.toString(),
+        name: r.name,
+        ruleType: r.ruleType as AdminPromotionDto['ruleType'],
+        hotelId: h._id.toString(),
+        hotelName: h.name,
+        hotelCity: h.city,
+        partnerName: partnerName.get(h.partnerId.toString()) ?? null,
+        adjustmentType: r.adjustmentType,
+        adjustmentValue: r.adjustmentValue,
+        currency: h.currency,
+        windowFrom: from,
+        windowTo: to,
+        windowKind: booking ? 'BOOKING' : 'STAY',
+        state,
+        updatedAt: r.updatedAt.toISOString(),
+      });
+    }
+    const start = (q.page - 1) * q.limit;
+    return {
+      ...paginated(items.slice(start, start + q.limit), q.page, q.limit, items.length),
+      summary,
+      truncated,
+    };
   }
 
   async listRefunds(q: ListBase & { status?: string | undefined }) {

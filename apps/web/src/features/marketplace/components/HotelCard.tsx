@@ -12,6 +12,7 @@ import { Badge, PriceDisplay, RatingDisplay, Skeleton, useToast } from '@/compon
 import { cn } from '@/lib/cn';
 import { useWishlist } from '../api';
 import { toggleCompare } from '../compare-slice';
+import { tr, trf } from '@/lib/tr';
 
 /** Responsive, lazily-loaded image with AVIF + WebP sources and a dominant-colour placeholder. */
 export function ResponsiveImage({
@@ -52,7 +53,7 @@ export function ResponsiveImage({
 
 export function RatingBadge({ rating }: { rating: HotelCardDto['ratingSummary'] }) {
   if (rating.count === 0)
-    return <span className="text-xs text-fg-subtle">New — no ratings yet</span>;
+    return <span className="text-xs text-fg-subtle">{tr('New — no ratings yet')}</span>;
   return (
     <span className="inline-flex items-center gap-1.5">
       <RatingDisplay value={rating.average} count={rating.count} size="sm" />
@@ -60,9 +61,9 @@ export function RatingBadge({ rating }: { rating: HotelCardDto['ratingSummary'] 
         <Badge
           tone="outline"
           className="text-[10px]"
-          title="Sample rating generated for development — not real guest reviews"
+          title={tr('Sample rating generated for development — not real guest reviews')}
         >
-          Sample data
+          {tr('Sample data')}
         </Badge>
       )}
     </span>
@@ -93,8 +94,8 @@ export function HotelCard({
   const onSave = () => {
     if (!isAuthenticated) {
       toast({
-        title: 'Sign in to save stays',
-        description: 'Saved stays sync across your devices.',
+        title: tr('Sign in to save stays'),
+        description: tr('Saved stays sync across your devices.'),
       });
       navigate(
         `/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`,
@@ -106,8 +107,8 @@ export function HotelCard({
   const onCompare = () => {
     if (!inCompare && compare.length >= MAX_COMPARE_HOTELS) {
       toast({
-        title: `Compare up to ${MAX_COMPARE_HOTELS} stays`,
-        description: 'Remove one to add another.',
+        title: trf('Compare up to {0} stays', [MAX_COMPARE_HOTELS]),
+        description: tr('Remove one to add another.'),
         variant: 'warning',
       });
       return;
@@ -139,7 +140,7 @@ export function HotelCard({
         />
         {hotel.featured && (
           <Badge tone="accent" className="absolute top-3 left-3 shadow-sm">
-            Featured
+            {tr('Featured')}
           </Badge>
         )}
         <div className="absolute top-3 right-3 flex gap-2">
@@ -147,7 +148,11 @@ export function HotelCard({
             type="button"
             onClick={onSave}
             aria-pressed={saved}
-            aria-label={saved ? `Remove ${hotel.name} from saved stays` : `Save ${hotel.name}`}
+            aria-label={
+              saved
+                ? trf('Remove {0} from saved stays', [hotel.name])
+                : trf('Save {0}', [hotel.name])
+            }
             className="inline-flex size-9 items-center justify-center rounded-full bg-surface/90 text-fg shadow-sm backdrop-blur hover:bg-surface"
           >
             <Heart
@@ -160,15 +165,15 @@ export function HotelCard({
       {/* min-w-0 lets long names wrap instead of overflowing the narrow map-view column. */}
       <div className="flex min-w-0 flex-1 flex-col gap-2 p-4">
         <div className="flex flex-wrap items-center gap-1.5 text-xs text-fg-subtle">
-          <span>{PROPERTY_TYPE_LABELS[hotel.propertyType]}</span>
+          <span>{tr(PROPERTY_TYPE_LABELS[hotel.propertyType])}</span>
           {hotel.starCategory > 0 && (
-            <span aria-label={`${hotel.starCategory}-star property`}>
+            <span aria-label={trf('{0}-star property', [hotel.starCategory])}>
               · {'★'.repeat(hotel.starCategory)}
             </span>
           )}
           {hotel.instantConfirmation && (
             <span className="inline-flex items-center gap-0.5 text-success">
-              · <Zap className="size-3" aria-hidden="true" /> Instant
+              · <Zap className="size-3" aria-hidden="true" /> {tr('Instant')}
             </span>
           )}
         </div>
@@ -184,7 +189,10 @@ export function HotelCard({
           <MapPin className="size-3.5 shrink-0" aria-hidden="true" />
           {hotel.city}, {hotel.state}
           {hotel.distanceKm !== null && (
-            <span className="text-fg-subtle"> · {hotel.distanceKm} km</span>
+            <span className="text-fg-subtle">
+              {' '}
+              · {hotel.distanceKm} {tr('km')}
+            </span>
           )}
         </p>
         <RatingBadge rating={hotel.ratingSummary} />
@@ -198,7 +206,8 @@ export function HotelCard({
                 size="md"
               />
               <span className="text-xs text-fg-subtle">
-                {hotel.price.nights} night{hotel.price.nights === 1 ? '' : 's'} total incl. taxes:{' '}
+                {hotel.price.nights} {tr('night')}
+                {hotel.price.nights === 1 ? '' : 's'} {tr('total incl. taxes:')}{' '}
                 <PriceDisplay
                   amountMinor={hotel.price.totalMinor}
                   currency={hotel.price.currency}
@@ -207,17 +216,20 @@ export function HotelCard({
                 />
               </span>
               <span className="text-xs text-fg-subtle">
-                {MEAL_PLAN_LABELS[hotel.price.mealPlan]}
+                {tr(MEAL_PLAN_LABELS[hotel.price.mealPlan])}
                 {hotel.price.freeCancellation && (
-                  <span className="text-success"> · Free cancellation</span>
+                  <span className="text-success"> {tr('· Free cancellation')}</span>
                 )}
                 {hotel.price.roomsLeft <= 3 && (
-                  <span className="text-warning"> · {hotel.price.roomsLeft} left</span>
+                  <span className="text-warning">
+                    {' '}
+                    · {hotel.price.roomsLeft} {tr('left')}
+                  </span>
                 )}
               </span>
             </div>
           ) : (
-            <span className="text-xs text-fg-subtle">Add dates to see prices</span>
+            <span className="text-xs text-fg-subtle">{tr('Add dates to see prices')}</span>
           )}
           <button
             type="button"
@@ -231,7 +243,7 @@ export function HotelCard({
             )}
           >
             <GitCompareArrows className="size-3.5" aria-hidden="true" />
-            {inCompare ? 'Comparing' : 'Compare'}
+            {inCompare ? tr('Comparing') : tr('Compare')}
           </button>
         </div>
       </div>

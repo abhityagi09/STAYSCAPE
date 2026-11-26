@@ -1,5 +1,6 @@
 import { useId, type ReactNode } from 'react';
 import { cn } from '@/lib/cn';
+import { tr } from '@/lib/tr';
 
 export interface FieldRenderProps {
   id: string;
@@ -48,7 +49,7 @@ export function Field({
           </span>
         )}
         {optionalLabel && !required && (
-          <span className="ml-1.5 text-xs font-normal text-fg-subtle">(optional)</span>
+          <span className="ml-1.5 text-xs font-normal text-fg-subtle">{tr('(optional)')}</span>
         )}
       </label>
       {children({

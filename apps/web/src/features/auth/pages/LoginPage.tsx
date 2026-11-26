@@ -9,10 +9,21 @@ import { ApiClientError } from '@/lib/api/errors';
 import { applyServerErrors, safeRedirect } from '@/lib/forms';
 import { authApi } from '../api';
 import { homeFor, useEstablishSession } from '../use-auth';
+import { tr } from '@/lib/tr';
 
 const notices: Record<string, { tone: 'info' | 'success' | 'warning'; text: string }> = {
-  expired: { tone: 'warning', text: 'Your session has ended. Please sign in again to continue.' },
-  reset: { tone: 'success', text: 'Your password has been reset. Sign in with your new password.' },
+  expired: {
+    tone: 'warning',
+    get text() {
+      return tr('Your session has ended. Please sign in again to continue.');
+    },
+  },
+  reset: {
+    tone: 'success',
+    get text() {
+      return tr('Your password has been reset. Sign in with your new password.');
+    },
+  },
 };
 
 export default function LoginPage() {
@@ -50,14 +61,14 @@ export default function LoginPage() {
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <h1 className="font-display text-3xl font-semibold tracking-tight">Welcome back</h1>
-        <p className="mt-2 text-fg-muted">Sign in to manage your stays and account.</p>
+        <h1 className="font-display text-3xl font-semibold tracking-tight">{tr('Welcome back')}</h1>
+        <p className="mt-2 text-fg-muted">{tr('Sign in to manage your stays and account.')}</p>
       </div>
       {notice && <Alert tone={notice.tone}>{notice.text}</Alert>}
       {formError && <Alert tone="danger">{formError}</Alert>}
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
         <Input
-          label="Email"
+          label={tr('Email')}
           type="email"
           autoComplete="email"
           leadingIcon={<Mail />}
@@ -67,7 +78,7 @@ export default function LoginPage() {
         />
         <div className="flex flex-col gap-2">
           <PasswordInput
-            label="Password"
+            label={tr('Password')}
             autoComplete="current-password"
             required
             error={errors.password?.message}
@@ -77,20 +88,20 @@ export default function LoginPage() {
             to="/forgot-password"
             className="self-end text-sm font-medium text-primary hover:underline"
           >
-            Forgot password?
+            {tr('Forgot password?')}
           </Link>
         </div>
         <Button type="submit" size="lg" fullWidth loading={isSubmitting} loadingText="Signing in…">
-          Sign in
+          {tr('Sign in')}
         </Button>
       </form>
       <p className="text-center text-sm text-fg-muted">
-        New to STAYSCAPE?{' '}
+        {tr('New to STAYSCAPE?')}{' '}
         <Link
           to={`/register${params.get('redirect') ? `?redirect=${encodeURIComponent(params.get('redirect') ?? '')}` : ''}`}
           className="font-semibold text-primary hover:underline"
         >
-          Create an account
+          {tr('Create an account')}
         </Link>
       </p>
     </div>

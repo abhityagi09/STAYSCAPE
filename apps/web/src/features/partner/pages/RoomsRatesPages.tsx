@@ -52,6 +52,7 @@ import { errorMessage, normalizeApiError } from '@/lib/api/errors';
 import { applyServerErrors } from '@/lib/forms';
 import { partnerApi, partnerKeys, usePricingRules, useRatePlans, useRoomTypes } from '../api';
 import { usePropertyContext } from './PropertyPages';
+import { tr, trf } from '@/lib/tr';
 
 const money = (minor: number) => formatMinorUnits(minor, 'INR');
 const rupees = (minor: number) => (minor / 100).toFixed(2);
@@ -81,14 +82,16 @@ export function RoomsPage() {
     <div className="flex flex-col gap-4">
       <div className="flex justify-end">
         <ButtonLink to="new" leftIcon={<Plus className="size-4" aria-hidden="true" />}>
-          Add room category
+          {tr('Add room category')}
         </ButtonLink>
       </div>
       {rooms.data.length === 0 ? (
         <EmptyState
           icon={<BedDouble />}
-          title="No room categories yet"
-          description="Add at least one room category with rooms and a rate plan before submitting the listing."
+          title={tr('No room categories yet')}
+          description={tr(
+            'Add at least one room category with rooms and a rate plan before submitting the listing.',
+          )}
         />
       ) : (
         <ul className="grid gap-4 md:grid-cols-2">
@@ -108,15 +111,15 @@ export function RoomsPage() {
                     </Badge>
                   </div>
                   <p className="text-sm text-fg-muted">
-                    {r.totalInventory} rooms · sleeps {r.maximumOccupancy} · {r.roomSize}{' '}
-                    {r.roomSizeUnit === 'SQM' ? 'm²' : 'sq ft'}
+                    {r.totalInventory} {tr('rooms · sleeps')} {r.maximumOccupancy} · {r.roomSize}{' '}
+                    {r.roomSizeUnit === 'SQM' ? 'm²' : tr('sq ft')}
                   </p>
                   <div className="mt-auto flex gap-2 pt-2">
                     <ButtonLink to={`${r.id}/edit`} size="sm" variant="outline">
-                      Edit
+                      {tr('Edit')}
                     </ButtonLink>
                     <Button size="sm" variant="ghost" onClick={() => setTarget(r)}>
-                      Remove
+                      {tr('Remove')}
                     </Button>
                   </div>
                 </div>
@@ -127,10 +130,12 @@ export function RoomsPage() {
       )}
       <ConfirmationDialog
         open={target !== null}
-        title={`Remove ${target?.name}?`}
-        description="Categories that have ever had reservations or holds are archived instead of deleted, so booking history is preserved."
+        title={trf('Remove {0}?', [target?.name])}
+        description={tr(
+          'Categories that have ever had reservations or holds are archived instead of deleted, so booking history is preserved.',
+        )}
         tone="danger"
-        confirmLabel="Remove"
+        confirmLabel={tr('Remove')}
         loading={busy}
         onCancel={() => setTarget(null)}
         onConfirm={async () => {
@@ -145,7 +150,7 @@ export function RoomsPage() {
             await qc.invalidateQueries({ queryKey: ['partner', 'hotel', hotel.id] });
           } catch (error) {
             toast({
-              title: 'Could not remove',
+              title: tr('Could not remove'),
               description: errorMessage(error),
               variant: 'error',
             });
@@ -165,7 +170,7 @@ export function RoomFormPage() {
   const rooms = useRoomTypes(hotel.id);
   const existing = rooms.data?.find((r) => r.id === roomId);
   if (roomId && rooms.isPending) return <PageSpinner />;
-  if (roomId && !existing) return <EmptyState title="Room category not found" />;
+  if (roomId && !existing) return <EmptyState title={tr('Room category not found')} />;
   return <RoomForm key={existing?.id ?? 'new'} existing={existing} />;
 }
 
@@ -239,73 +244,80 @@ function RoomForm({ existing }: { existing?: PartnerRoomTypeDto | undefined }) {
         <Alert tone="danger">
           {formError.text}
           {formError.dates?.length
-            ? ` Affected dates: ${formError.dates.slice(0, 8).join(', ')}${formError.dates.length > 8 ? '…' : ''}`
+            ? trf(' Affected dates: {0}{1}', [
+                formError.dates.slice(0, 8).join(', '),
+                formError.dates.length > 8 ? '…' : '',
+              ])
             : ''}
         </Alert>
       )}
       <Card>
         <CardHeader>
-          <CardTitle as="h2">{existing ? `Edit ${existing.name}` : 'New room category'}</CardTitle>
+          <CardTitle as="h2">
+            {existing ? trf('Edit {0}', [existing.name]) : tr('New room category')}
+          </CardTitle>
         </CardHeader>
         <CardContent className="grid gap-5 sm:grid-cols-2">
           <Input
-            label="Name"
+            label={tr('Name')}
             required
             containerClassName="sm:col-span-2"
             error={e.name?.message}
             {...register('name')}
           />
           <Textarea
-            label="Description"
+            label={tr('Description')}
             required
             error={e.description?.message}
             {...register('description')}
           />
           <Input
-            label="Room size"
+            label={tr('Room size')}
             type="number"
             step="0.1"
             error={e.roomSize?.message}
             {...register('roomSize', { valueAsNumber: true })}
           />
           <Select
-            label="Size unit"
+            label={tr('Size unit')}
             options={[
-              { value: 'SQM', label: 'Square metres' },
-              { value: 'SQFT', label: 'Square feet' },
+              { value: 'SQM', label: tr('Square metres') },
+              { value: 'SQFT', label: tr('Square feet') },
             ]}
             {...register('roomSizeUnit')}
           />
           <Input
-            label="Max adults"
+            label={tr('Max adults')}
             type="number"
             error={e.maximumAdults?.message}
             {...register('maximumAdults', { valueAsNumber: true })}
           />
           <Input
-            label="Max children"
+            label={tr('Max children')}
             type="number"
             error={e.maximumChildren?.message}
             {...register('maximumChildren', { valueAsNumber: true })}
           />
           <Input
-            label="Max occupancy"
+            label={tr('Max occupancy')}
             type="number"
             error={e.maximumOccupancy?.message}
             {...register('maximumOccupancy', { valueAsNumber: true })}
           />
           <Input
-            label="Number of rooms"
+            label={tr('Number of rooms')}
             type="number"
-            hint="Reductions are refused if they'd fall below reserved or blocked rooms on any future date."
+            hint={tr(
+              "Reductions are refused if they'd fall below reserved or blocked rooms on any future date.",
+            )}
             error={e.totalInventory?.message}
             {...register('totalInventory', { valueAsNumber: true })}
           />
           <Select
-            label="Status"
+            label={tr('Status')}
             options={[
-              { value: 'ACTIVE', label: 'Active — bookable' },
-              { value: 'INACTIVE', label: 'Inactive — hidden' },
+              { value: 'ACTIVE', label: tr('Active — bookable') },
+              { value: 'INACTIVE', label: tr('Inactive — hidden') },
             ]}
             {...register('status')}
           />
@@ -313,13 +325,13 @@ function RoomForm({ existing }: { existing?: PartnerRoomTypeDto | undefined }) {
       </Card>
       <Card>
         <CardHeader>
-          <CardTitle as="h2">Beds</CardTitle>
+          <CardTitle as="h2">{tr('Beds')}</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           {beds.fields.map((f, i) => (
             <div key={f.id} className="grid items-end gap-3 sm:grid-cols-[1fr_8rem_auto]">
               <Select
-                label="Bed type"
+                label={tr('Bed type')}
                 options={BED_TYPES.map((b) => ({
                   value: b,
                   label: b.charAt(0) + b.slice(1).toLowerCase().replace('_', ' '),
@@ -327,7 +339,7 @@ function RoomForm({ existing }: { existing?: PartnerRoomTypeDto | undefined }) {
                 {...register(`bedConfiguration.${i}.type`)}
               />
               <Input
-                label="Count"
+                label={tr('Count')}
                 type="number"
                 {...register(`bedConfiguration.${i}.count`, { valueAsNumber: true })}
               />
@@ -335,7 +347,7 @@ function RoomForm({ existing }: { existing?: PartnerRoomTypeDto | undefined }) {
                 variant="ghost"
                 disabled={beds.fields.length === 1}
                 onClick={() => beds.remove(i)}
-                aria-label={`Remove bed ${i + 1}`}
+                aria-label={trf('Remove bed {0}', [i + 1])}
               >
                 <Trash2 className="size-4" aria-hidden="true" />
               </Button>
@@ -351,15 +363,15 @@ function RoomForm({ existing }: { existing?: PartnerRoomTypeDto | undefined }) {
             onClick={() => beds.append({ type: 'SINGLE', count: 1 })}
             disabled={beds.fields.length >= 6}
           >
-            Add bed
+            {tr('Add bed')}
           </Button>
         </CardContent>
       </Card>
       <Card>
         <CardHeader>
-          <CardTitle as="h2">Photos & amenities</CardTitle>
+          <CardTitle as="h2">{tr('Photos & amenities')}</CardTitle>
           <CardDescription>
-            Choose from the property photo library (upload under Photos & videos).
+            {tr('Choose from the property photo library (upload under Photos & videos).')}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
@@ -368,9 +380,11 @@ function RoomForm({ existing }: { existing?: PartnerRoomTypeDto | undefined }) {
             name="images"
             render={({ field }) => (
               <fieldset className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <legend className="sr-only">Room photos</legend>
+                <legend className="sr-only">{tr('Room photos')}</legend>
                 {hotel.images.length === 0 && (
-                  <p className="col-span-full text-sm text-fg-muted">No property photos yet.</p>
+                  <p className="col-span-full text-sm text-fg-muted">
+                    {tr('No property photos yet.')}
+                  </p>
                 )}
                 {hotel.images.map((img) => {
                   const selected = (field.value ?? []).some((v) => v.mediaId === img.id);
@@ -391,7 +405,7 @@ function RoomForm({ existing }: { existing?: PartnerRoomTypeDto | undefined }) {
                               : [...(field.value ?? []), { mediaId: img.id, alt: img.alt }],
                           )
                         }
-                        aria-label={`Use photo ${img.alt || img.id} for this room`}
+                        aria-label={trf('Use photo {0} for this room', [img.alt || img.id])}
                       />
                     </label>
                   );
@@ -404,7 +418,7 @@ function RoomForm({ existing }: { existing?: PartnerRoomTypeDto | undefined }) {
             name="amenities"
             render={({ field }) => (
               <fieldset className="grid gap-3 sm:grid-cols-3">
-                <legend className="mb-2 text-sm font-medium">Room amenities</legend>
+                <legend className="mb-2 text-sm font-medium">{tr('Room amenities')}</legend>
                 {(amenities.data ?? [])
                   .filter((a) => ['ROOM', 'BATHROOM', 'GENERAL'].includes(a.category))
                   .map((a) => (
@@ -428,10 +442,10 @@ function RoomForm({ existing }: { existing?: PartnerRoomTypeDto | undefined }) {
       </Card>
       <div className="flex justify-end gap-2">
         <ButtonLink to={`/partner/properties/${hotel.id}/rooms`} variant="ghost">
-          Cancel
+          {tr('Cancel')}
         </ButtonLink>
         <Button type="submit" loading={formState.isSubmitting}>
-          {existing ? 'Save room category' : 'Add room category'}
+          {existing ? tr('Save room category') : tr('Add room category')}
         </Button>
       </div>
     </form>
@@ -514,11 +528,11 @@ function RatePlanModal({
         active: v.active,
       });
       await qc.invalidateQueries({ queryKey: ['partner', 'hotel', hotelId] });
-      toast({ title: 'Rate plan saved', variant: 'success' });
+      toast({ title: tr('Rate plan saved'), variant: 'success' });
       onClose();
     } catch (error) {
       toast({
-        title: 'Could not save rate plan',
+        title: tr('Could not save rate plan'),
         description: errorMessage(error),
         variant: 'error',
       });
@@ -529,89 +543,91 @@ function RatePlanModal({
       open
       onClose={onClose}
       size="lg"
-      title={p ? `Edit ${p.name}` : 'New rate plan'}
-      description="All amounts are in rupees per room per night unless stated; they are stored as exact paise."
+      title={p ? trf('Edit {0}', [p.name]) : tr('New rate plan')}
+      description={tr(
+        'All amounts are in rupees per room per night unless stated; they are stored as exact paise.',
+      )}
       footer={
         <>
           <Button variant="outline" onClick={onClose}>
-            Cancel
+            {tr('Cancel')}
           </Button>
           <Button loading={formState.isSubmitting} onClick={() => void onSubmit()}>
-            Save rate plan
+            {tr('Save rate plan')}
           </Button>
         </>
       }
     >
       <form noValidate onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
         <Select
-          label="Room category"
+          label={tr('Room category')}
           options={rooms.map((r) => ({ value: r.id, label: r.name }))}
           error={e.roomTypeId?.message}
           {...register('roomTypeId')}
         />
-        <Input label="Rate name" error={e.name?.message} {...register('name')} />
+        <Input label={tr('Rate name')} error={e.name?.message} {...register('name')} />
         <Select
-          label="Meal plan"
-          options={MEAL_PLANS.map((m) => ({ value: m, label: MEAL_PLAN_LABELS[m] }))}
+          label={tr('Meal plan')}
+          options={MEAL_PLANS.map((m) => ({ value: m, label: tr(MEAL_PLAN_LABELS[m]) }))}
           {...register('mealPlan')}
         />
         <Select
-          label="Cancellation"
+          label={tr('Cancellation')}
           options={[
-            { value: 'FREE_CANCELLATION', label: 'Free cancellation' },
-            { value: 'PARTIALLY_REFUNDABLE', label: 'Partially refundable' },
-            { value: 'NON_REFUNDABLE', label: 'Non-refundable' },
+            { value: 'FREE_CANCELLATION', label: tr('Free cancellation') },
+            { value: 'PARTIALLY_REFUNDABLE', label: tr('Partially refundable') },
+            { value: 'NON_REFUNDABLE', label: tr('Non-refundable') },
           ]}
           {...register('cancellationType')}
         />
         <Input
-          label="Base price (₹ / night)"
+          label={tr('Base price (₹ / night)')}
           inputMode="decimal"
           error={e.basePrice?.message}
           {...register('basePrice')}
         />
         <Input
-          label="Free cancellation until (hours before)"
+          label={tr('Free cancellation until (hours before)')}
           type="number"
           {...register('freeCancellationHours', { valueAsNumber: true })}
         />
         <Input
-          label="Adults included in base"
+          label={tr('Adults included in base')}
           type="number"
           {...register('includedAdults', { valueAsNumber: true })}
         />
         <Input
-          label="Each extra adult (₹)"
+          label={tr('Each extra adult (₹)')}
           inputMode="decimal"
           error={e.additionalAdultPrice?.message}
           {...register('additionalAdultPrice')}
         />
         <Input
-          label="Each child (₹)"
+          label={tr('Each child (₹)')}
           inputMode="decimal"
           error={e.additionalChildPrice?.message}
           {...register('additionalChildPrice')}
         />
         <Input
-          label="Extra bed (₹)"
+          label={tr('Extra bed (₹)')}
           inputMode="decimal"
           error={e.extraBedPrice?.message}
           {...register('extraBedPrice')}
         />
         <Input
-          label="Meal supplement per guest (₹)"
+          label={tr('Meal supplement per guest (₹)')}
           inputMode="decimal"
           error={e.mealSupplement?.message}
           {...register('mealSupplement')}
         />
         <div className="grid grid-cols-2 gap-3">
           <Input
-            label="Min stay"
+            label={tr('Min stay')}
             type="number"
             {...register('minimumStay', { valueAsNumber: true })}
           />
           <Input
-            label="Max stay"
+            label={tr('Max stay')}
             type="number"
             {...register('maximumStay', { valueAsNumber: true })}
           />
@@ -621,7 +637,7 @@ function RatePlanModal({
           name="active"
           render={({ field }) => (
             <Checkbox
-              label="Active"
+              label={tr('Active')}
               checked={field.value}
               onChange={(ev) => field.onChange(ev.target.checked)}
             />
@@ -735,10 +751,14 @@ function RuleModal({
         active: true,
       });
       await qc.invalidateQueries({ queryKey: partnerKeys.rules(hotelId) });
-      toast({ title: 'Pricing rule saved', variant: 'success' });
+      toast({ title: tr('Pricing rule saved'), variant: 'success' });
       onClose();
     } catch (error) {
-      toast({ title: 'Could not save rule', description: errorMessage(error), variant: 'error' });
+      toast({
+        title: tr('Could not save rule'),
+        description: errorMessage(error),
+        variant: 'error',
+      });
     }
   });
   return (
@@ -746,23 +766,25 @@ function RuleModal({
       open
       onClose={onClose}
       size="lg"
-      title={r ? `Edit ${r.name}` : 'New pricing rule'}
-      description="Higher priority rules are applied first. An exclusive rule at the top prevents others of its kind from stacking."
+      title={r ? trf('Edit {0}', [r.name]) : tr('New pricing rule')}
+      description={tr(
+        'Higher priority rules are applied first. An exclusive rule at the top prevents others of its kind from stacking.',
+      )}
       footer={
         <>
           <Button variant="outline" onClick={onClose}>
-            Cancel
+            {tr('Cancel')}
           </Button>
           <Button loading={formState.isSubmitting} onClick={() => void onSubmit()}>
-            Save rule
+            {tr('Save rule')}
           </Button>
         </>
       }
     >
       <form noValidate onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
-        <Input label="Name" {...register('name')} />
+        <Input label={tr('Name')} {...register('name')} />
         <Select
-          label="Type"
+          label={tr('Type')}
           options={PRICING_RULE_TYPES.map((t) => ({
             value: t,
             label: t.replace('_', ' ').toLowerCase(),
@@ -770,42 +792,42 @@ function RuleModal({
           {...register('ruleType')}
         />
         <Select
-          label="Applies to"
+          label={tr('Applies to')}
           options={[
-            { value: '', label: 'All rooms' },
+            { value: '', label: tr('All rooms') },
             ...rooms.map((rm) => ({ value: rm.id, label: rm.name })),
           ]}
           {...register('scopeRoomTypeId')}
         />
         {type === 'DATE_OVERRIDE' ? (
-          <Input label="Fixed nightly price (₹)" inputMode="decimal" {...register('value')} />
+          <Input label={tr('Fixed nightly price (₹)')} inputMode="decimal" {...register('value')} />
         ) : (
           <div className="grid grid-cols-2 gap-3">
             <Select
-              label="Adjustment"
+              label={tr('Adjustment')}
               options={[
                 { value: 'PERCENT', label: '%' },
-                { value: 'AMOUNT', label: '₹ amount' },
+                { value: 'AMOUNT', label: tr('₹ amount') },
               ]}
               {...register('mode')}
             />
             <Input
-              label={isDiscount ? 'Discount' : 'Change (+/−)'}
+              label={isDiscount ? tr('Discount') : tr('Change (+/−)')}
               inputMode="decimal"
               error={formState.errors.value?.message}
               {...register('value')}
             />
           </div>
         )}
-        <DatePicker label="Start date" {...register('startDate')} />
-        <DatePicker label="End date" {...register('endDate')} />
+        <DatePicker label={tr('Start date')} {...register('startDate')} />
+        <DatePicker label={tr('End date')} {...register('endDate')} />
         {(type === 'WEEKDAY' || type === 'WEEKEND' || type === 'SEASONAL' || type === 'EVENT') && (
           <Controller
             control={control}
             name="daysOfWeek"
             render={({ field }) => (
               <fieldset className="sm:col-span-2">
-                <legend className="mb-2 text-sm font-medium">Nights of the week</legend>
+                <legend className="mb-2 text-sm font-medium">{tr('Nights of the week')}</legend>
                 <div className="flex flex-wrap gap-3">
                   {DOW.map((d, i) => (
                     <Checkbox
@@ -827,23 +849,23 @@ function RuleModal({
           />
         )}
         {type === 'LONG_STAY' && (
-          <Input label="Minimum nights" type="number" {...register('minNights')} />
+          <Input label={tr('Minimum nights')} type="number" {...register('minNights')} />
         )}
         {type === 'EARLY_BIRD' && (
-          <Input label="Book at least N days ahead" type="number" {...register('minDays')} />
+          <Input label={tr('Book at least N days ahead')} type="number" {...register('minDays')} />
         )}
         {type === 'OCCUPANCY' && (
           <>
             <Input
-              label="When occupancy is at least (%)"
+              label={tr('When occupancy is at least (%)')}
               type="number"
               min={0}
               max={100}
               {...register('minOccupancy')}
-              hint="Rooms held or booked ÷ rooms on sale that night"
+              hint={tr('Rooms held or booked ÷ rooms on sale that night')}
             />
             <Input
-              label="…and at most (%) — optional"
+              label={tr('…and at most (%) — optional')}
               type="number"
               min={0}
               max={100}
@@ -853,15 +875,19 @@ function RuleModal({
         )}
         {type === 'PROMOTIONAL' && (
           <>
-            <DatePicker label="Bookable from" {...register('bookFrom')} />
-            <DatePicker label="Bookable until" {...register('bookTo')} />
+            <DatePicker label={tr('Bookable from')} {...register('bookFrom')} />
+            <DatePicker label={tr('Bookable until')} {...register('bookTo')} />
           </>
         )}
         {type === 'LAST_MINUTE' && (
-          <Input label="Book within N days of arrival" type="number" {...register('maxDays')} />
+          <Input
+            label={tr('Book within N days of arrival')}
+            type="number"
+            {...register('maxDays')}
+          />
         )}
         <Input
-          label="Priority (0–1000)"
+          label={tr('Priority (0–1000)')}
           type="number"
           {...register('priority', { valueAsNumber: true })}
         />
@@ -870,7 +896,7 @@ function RuleModal({
           name="exclusive"
           render={({ field }) => (
             <Checkbox
-              label="Exclusive (don't stack)"
+              label={tr("Exclusive (don't stack)")}
               checked={field.value}
               onChange={(ev) => field.onChange(ev.target.checked)}
             />
@@ -904,7 +930,7 @@ export function RatesPage() {
   if (rooms.isError || plans.isError || rules.isError)
     return (
       <ErrorState
-        description="Could not load rates."
+        description={tr('Could not load rates.')}
         onRetry={() => void qc.invalidateQueries({ queryKey: ['partner', 'hotel', hotel.id] })}
       />
     );
@@ -914,7 +940,7 @@ export function RatesPage() {
   const planColumns: Column<RatePlanDto>[] = [
     {
       id: 'name',
-      header: 'Rate plan',
+      header: tr('Rate plan'),
       cell: (p) => (
         <>
           <p className="font-medium">{p.name}</p>
@@ -922,28 +948,35 @@ export function RatesPage() {
         </>
       ),
     },
-    { id: 'meal', header: 'Meals', cell: (p) => MEAL_PLAN_LABELS[p.mealPlan] },
+    { id: 'meal', header: tr('Meals'), cell: (p) => MEAL_PLAN_LABELS[p.mealPlan] },
     {
       id: 'cancel',
-      header: 'Cancellation',
+      header: tr('Cancellation'),
       cell: (p) => p.cancellationPolicy.type.replace('_', ' ').toLowerCase(),
     },
-    { id: 'price', header: 'Base / night', align: 'right', cell: (p) => money(p.basePriceMinor) },
+    {
+      id: 'price',
+      header: tr('Base / night'),
+      align: 'right',
+      cell: (p) => money(p.basePriceMinor),
+    },
     {
       id: 'status',
-      header: 'Status',
+      header: tr('Status'),
       cell: (p) => (
-        <Badge tone={p.active ? 'success' : 'neutral'}>{p.active ? 'Active' : 'Inactive'}</Badge>
+        <Badge tone={p.active ? 'success' : 'neutral'}>
+          {p.active ? tr('Active') : tr('Inactive')}
+        </Badge>
       ),
     },
     {
       id: 'actions',
-      header: <span className="sr-only">Actions</span>,
+      header: <span className="sr-only">{tr('Actions')}</span>,
       align: 'right',
       cell: (p) => (
         <div className="flex justify-end gap-1">
           <Button size="sm" variant="ghost" onClick={() => setPlanModal(p)}>
-            Edit
+            {tr('Edit')}
           </Button>
           <Button
             size="sm"
@@ -954,14 +987,14 @@ export function RatesPage() {
                 await qc.invalidateQueries({ queryKey: ['partner', 'hotel', hotel.id] });
               } catch (err) {
                 toast({
-                  title: 'Could not delete',
+                  title: tr('Could not delete'),
                   description: errorMessage(err),
                   variant: 'error',
                 });
               }
             }}
           >
-            Delete
+            {tr('Delete')}
           </Button>
         </div>
       ),
@@ -970,7 +1003,7 @@ export function RatesPage() {
   const ruleColumns: Column<PricingRuleDto>[] = [
     {
       id: 'name',
-      header: 'Rule',
+      header: tr('Rule'),
       cell: (r) => (
         <>
           <p className="font-medium">{r.name}</p>
@@ -982,7 +1015,7 @@ export function RatesPage() {
     },
     {
       id: 'adj',
-      header: 'Adjustment',
+      header: tr('Adjustment'),
       cell: (r) =>
         r.adjustmentType === 'PERCENT'
           ? `${r.adjustmentValue > 0 ? '+' : ''}${r.adjustmentValue / 100}%`
@@ -992,27 +1025,27 @@ export function RatesPage() {
     },
     {
       id: 'when',
-      header: 'When',
+      header: tr('When'),
       cell: (r) => (
         <span className="text-xs">
-          {r.startDate ? `${r.startDate} → ${r.endDate}` : 'Always'}
+          {r.startDate ? `${r.startDate} → ${r.endDate}` : tr('Always')}
           {r.daysOfWeek.length ? ` · ${r.daysOfWeek.map((d) => DOW[d]).join(', ')}` : ''}
         </span>
       ),
     },
     {
       id: 'prio',
-      header: 'Priority',
+      header: tr('Priority'),
       cell: (r) => `${r.priority}${r.stackingPolicy === 'EXCLUSIVE' ? ' · exclusive' : ''}`,
     },
     {
       id: 'actions',
-      header: <span className="sr-only">Actions</span>,
+      header: <span className="sr-only">{tr('Actions')}</span>,
       align: 'right',
       cell: (r) => (
         <div className="flex justify-end gap-1">
           <Button size="sm" variant="ghost" onClick={() => setRuleModal(r)}>
-            Edit
+            {tr('Edit')}
           </Button>
           <Button
             size="sm"
@@ -1022,7 +1055,7 @@ export function RatesPage() {
               await qc.invalidateQueries({ queryKey: partnerKeys.rules(hotel.id) });
             }}
           >
-            Delete
+            {tr('Delete')}
           </Button>
         </div>
       ),
@@ -1054,24 +1087,24 @@ export function RatesPage() {
       <Card>
         <CardHeader className="flex-row items-start justify-between">
           <div>
-            <CardTitle as="h2">Rate plans</CardTitle>
+            <CardTitle as="h2">{tr('Rate plans')}</CardTitle>
             <CardDescription>
-              Base prices per room per night. Taxes are added on top for guests.
+              {tr('Base prices per room per night. Taxes are added on top for guests.')}
             </CardDescription>
           </div>
           <Button size="sm" disabled={rooms.data.length === 0} onClick={() => setPlanModal('new')}>
-            Add rate plan
+            {tr('Add rate plan')}
           </Button>
         </CardHeader>
         <CardContent>
           <DataTable
-            caption="Rate plans"
+            caption={tr('Rate plans')}
             columns={planColumns}
             rows={plans.data}
             getRowId={(p) => p.id}
             empty={
               <p className="text-center text-sm text-fg-muted">
-                {rooms.data.length ? 'No rate plans yet.' : 'Add a room category first.'}
+                {rooms.data.length ? tr('No rate plans yet.') : tr('Add a room category first.')}
               </p>
             }
           />
@@ -1080,25 +1113,26 @@ export function RatesPage() {
       <Card>
         <CardHeader className="flex-row items-start justify-between">
           <div>
-            <CardTitle as="h2">Pricing rules</CardTitle>
+            <CardTitle as="h2">{tr('Pricing rules')}</CardTitle>
             <CardDescription>
-              Weekend, seasonal and event rates, date overrides and discounts. See the precedence
-              explained in the help text when editing.
+              {tr(
+                'Weekend, seasonal and event rates, date overrides and discounts. See the precedence explained in the help text when editing.',
+              )}
             </CardDescription>
           </div>
           <Button size="sm" onClick={() => setRuleModal('new')}>
-            Add rule
+            {tr('Add rule')}
           </Button>
         </CardHeader>
         <CardContent>
           <DataTable
-            caption="Pricing rules"
+            caption={tr('Pricing rules')}
             columns={ruleColumns}
             rows={rules.data}
             getRowId={(r) => r.id}
             empty={
               <p className="text-center text-sm text-fg-muted">
-                No rules — the base rate applies every night.
+                {tr('No rules — the base rate applies every night.')}
               </p>
             }
           />
@@ -1106,15 +1140,15 @@ export function RatesPage() {
       </Card>
       <Card>
         <CardHeader>
-          <CardTitle as="h2">Price preview</CardTitle>
+          <CardTitle as="h2">{tr('Price preview')}</CardTitle>
           <CardDescription>
-            Uses the same engine as public quotes, including availability and restrictions.
+            {tr('Uses the same engine as public quotes, including availability and restrictions.')}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <div className="grid items-end gap-3 sm:grid-cols-[1.5fr_1fr_6rem_6rem_auto]">
             <Select
-              label="Rate plan"
+              label={tr('Rate plan')}
               value={previewInput.planId}
               onChange={(ev) => setPreviewInput((p) => ({ ...p, planId: ev.target.value }))}
               options={plans.data.map((p) => ({
@@ -1123,12 +1157,12 @@ export function RatesPage() {
               }))}
             />
             <DatePicker
-              label="Check-in"
+              label={tr('Check-in')}
               value={previewInput.checkIn}
               onChange={(ev) => setPreviewInput((p) => ({ ...p, checkIn: ev.target.value }))}
             />
             <Input
-              label="Nights"
+              label={tr('Nights')}
               type="number"
               min={1}
               max={30}
@@ -1138,7 +1172,7 @@ export function RatesPage() {
               }
             />
             <Input
-              label="Adults"
+              label={tr('Adults')}
               type="number"
               min={1}
               value={previewInput.adults}
@@ -1151,7 +1185,7 @@ export function RatesPage() {
               disabled={plans.data.length === 0}
               onClick={() => void runPreview()}
             >
-              Calculate
+              {tr('Calculate')}
             </Button>
           </div>
           {preview.error && <Alert tone="warning">{preview.error}</Alert>}

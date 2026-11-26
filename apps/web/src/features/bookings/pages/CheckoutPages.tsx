@@ -52,6 +52,7 @@ import {
   breakdownSource,
   money,
 } from '../components';
+import { tr, trf } from '@/lib/tr';
 
 const GUEST_DRAFT_KEY = 'stayscape.checkout.guest';
 
@@ -94,13 +95,15 @@ function SignInPrompt() {
     <div className="container-page max-w-xl py-16">
       <EmptyState
         icon={<Lock />}
-        title="Sign in to book"
-        description="Your selection is saved. Sign in or create an account to hold the rooms and pay securely."
+        title={tr('Sign in to book')}
+        description={tr(
+          'Your selection is saved. Sign in or create an account to hold the rooms and pay securely.',
+        )}
         action={
           <ButtonLink
             to={`/login?redirect=${encodeURIComponent(location.pathname + location.search)}`}
           >
-            Sign in to continue
+            {tr('Sign in to continue')}
           </ButtonLink>
         }
       />
@@ -116,13 +119,13 @@ function ExpiredHold({
   stay: { checkIn: string; checkOut: string };
 }) {
   return (
-    <Alert tone="warning" title="Your hold has expired">
-      The rooms were released so other travellers can book them. Nothing was charged.{' '}
+    <Alert tone="warning" title={tr('Your hold has expired')}>
+      {tr('The rooms were released so other travellers can book them. Nothing was charged.')}{' '}
       <Link
         className="font-semibold underline"
         to={`/hotels/${slug}?checkIn=${stay.checkIn}&checkOut=${stay.checkOut}`}
       >
-        Check availability again
+        {tr('Check availability again')}
       </Link>
     </Alert>
   );
@@ -150,7 +153,7 @@ export function CouponField({ hold, onChange }: { hold: HoldDto; onChange: (h: H
     return (
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-success-soft p-3 text-sm">
         <span>
-          Coupon <strong className="font-mono">{applied.code}</strong> saves{' '}
+          {tr('Coupon')} <strong className="font-mono">{applied.code}</strong> {tr('saves')}{' '}
           {money(applied.discountMinor, hold.price.currency)}
         </span>
         <Button
@@ -159,7 +162,7 @@ export function CouponField({ hold, onChange }: { hold: HoldDto; onChange: (h: H
           loading={busy}
           onClick={() => void run(() => bookingsApi.removeHoldCoupon(hold.reference))}
         >
-          Remove
+          {tr('Remove')}
         </Button>
       </div>
     );
@@ -172,7 +175,7 @@ export function CouponField({ hold, onChange }: { hold: HoldDto; onChange: (h: H
       }}
     >
       <Input
-        label="Coupon code"
+        label={tr('Coupon code')}
         value={code}
         onChange={(e) => setCode(e.target.value.toUpperCase())}
         error={error ?? undefined}
@@ -185,7 +188,7 @@ export function CouponField({ hold, onChange }: { hold: HoldDto; onChange: (h: H
         loading={busy}
         disabled={code.trim().length < 3}
       >
-        Apply
+        {tr('Apply')}
       </Button>
     </form>
   );
@@ -281,9 +284,9 @@ export function CheckoutPage() {
     return (
       <div className="container-page py-16">
         <EmptyState
-          title="No stay selected"
-          description="Choose a room and rate on a property page first."
-          action={<ButtonLink to="/hotels">Find a stay</ButtonLink>}
+          title={tr('No stay selected')}
+          description={tr('Choose a room and rate on a property page first.')}
+          action={<ButtonLink to="/hotels">{tr('Find a stay')}</ButtonLink>}
         />
       </div>
     );
@@ -324,18 +327,18 @@ export function CheckoutPage() {
     <div className="container-page grid gap-8 py-10 lg:grid-cols-[minmax(0,1fr)_24rem]">
       <div className="flex flex-col gap-6">
         <PageHeader
-          eyebrow="Step 1 of 2"
-          title="Your details"
-          description="We hold your rooms while you complete the booking."
+          eyebrow={tr('Step 1 of 2')}
+          title={tr('Your details')}
+          description={tr('We hold your rooms while you complete the booking.')}
         />
         {holdError && (
-          <Alert tone="danger" title="We couldn’t hold these rooms">
+          <Alert tone="danger" title={tr('We couldn’t hold these rooms')}>
             {holdError}{' '}
             <Link
               className="font-semibold underline"
               to={`/hotels/${selection.hotel.slug}?checkIn=${stay.checkIn}&checkOut=${stay.checkOut}`}
             >
-              Choose another room
+              {tr('Choose another room')}
             </Link>
           </Alert>
         )}
@@ -344,29 +347,29 @@ export function CheckoutPage() {
           onSubmit={onSubmit}
           noValidate
           className="flex flex-col gap-6"
-          aria-label="Guest details"
+          aria-label={tr('Guest details')}
         >
           <Card>
             <CardHeader>
-              <CardTitle as="h2">Primary guest</CardTitle>
+              <CardTitle as="h2">{tr('Primary guest')}</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
               <Input
-                label="First name"
+                label={tr('First name')}
                 autoComplete="given-name"
                 required
                 {...register('firstName')}
                 error={formState.errors.firstName?.message}
               />
               <Input
-                label="Last name"
+                label={tr('Last name')}
                 autoComplete="family-name"
                 required
                 {...register('lastName')}
                 error={formState.errors.lastName?.message}
               />
               <Input
-                label="Email"
+                label={tr('Email')}
                 type="email"
                 autoComplete="email"
                 required
@@ -374,7 +377,7 @@ export function CheckoutPage() {
                 error={formState.errors.email?.message}
               />
               <Input
-                label="Mobile number"
+                label={tr('Mobile number')}
                 type="tel"
                 autoComplete="tel"
                 placeholder="+919812345678"
@@ -386,25 +389,25 @@ export function CheckoutPage() {
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle as="h2">Other travellers</CardTitle>
+              <CardTitle as="h2">{tr('Other travellers')}</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
               {guests.fields.map((field, i) => (
                 <div key={field.id} className="grid items-end gap-3 sm:grid-cols-[1fr_1fr_auto]">
                   <Input
-                    label={`Traveller ${i + 2} first name`}
+                    label={trf('Traveller {0} first name', [i + 2])}
                     {...register(`additionalGuests.${i}.firstName`)}
                     error={formState.errors.additionalGuests?.[i]?.firstName?.message}
                   />
                   <Input
-                    label={`Traveller ${i + 2} last name`}
+                    label={trf('Traveller {0} last name', [i + 2])}
                     {...register(`additionalGuests.${i}.lastName`)}
                     error={formState.errors.additionalGuests?.[i]?.lastName?.message}
                   />
                   <Button
                     type="button"
                     variant="ghost"
-                    aria-label={`Remove traveller ${i + 2}`}
+                    aria-label={trf('Remove traveller {0}', [i + 2])}
                     onClick={() => guests.remove(i)}
                   >
                     <Trash2 className="size-4" aria-hidden="true" />
@@ -419,24 +422,24 @@ export function CheckoutPage() {
                 leftIcon={<Plus className="size-4" aria-hidden="true" />}
                 onClick={() => guests.append({ firstName: '', lastName: '' })}
               >
-                Add traveller
+                {tr('Add traveller')}
               </Button>
             </CardContent>
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle as="h2">Requests for the property</CardTitle>
+              <CardTitle as="h2">{tr('Requests for the property')}</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4">
               <Textarea
-                label="Special requests"
-                hint="Not guaranteed — the property will do its best."
+                label={tr('Special requests')}
+                hint={tr('Not guaranteed — the property will do its best.')}
                 rows={3}
                 {...register('specialRequests')}
                 error={formState.errors.specialRequests?.message}
               />
               <Input
-                label="Estimated arrival time"
+                label={tr('Estimated arrival time')}
                 type="time"
                 optionalLabel
                 containerClassName="sm:max-w-48"
@@ -447,20 +450,21 @@ export function CheckoutPage() {
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle as="h2">Cancellation policy</CardTitle>
+              <CardTitle as="h2">{tr('Cancellation policy')}</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-3 text-sm">
               <p>
-                {hold?.items[0]?.cancellationPolicy.summary ?? 'Loading the policy for this rate…'}
+                {hold?.items[0]?.cancellationPolicy.summary ??
+                  tr('Loading the policy for this rate…')}
               </p>
               <Checkbox
                 label={
                   <>
-                    I accept the{' '}
+                    {tr('I accept the')}{' '}
                     <Link className="underline" to="/terms" target="_blank">
-                      booking terms
+                      {tr('booking terms')}
                     </Link>{' '}
-                    and this cancellation policy.
+                    {tr('and this cancellation policy.')}
                   </>
                 }
                 {...register('acceptTerms')}
@@ -476,17 +480,17 @@ export function CheckoutPage() {
             disabled={!hold || expired}
             className="self-start"
           >
-            Continue to payment
+            {tr('Continue to payment')}
           </Button>
         </form>
       </div>
 
-      <aside aria-label="Booking summary" className="lg:sticky lg:top-24 lg:self-start">
+      <aside aria-label={tr('Booking summary')} className="lg:sticky lg:top-24 lg:self-start">
         <Card>
           <CardHeader className="gap-3">
-            <CardTitle as="h2">Your stay</CardTitle>
+            <CardTitle as="h2">{tr('Your stay')}</CardTitle>
             {hold && !expired && <HoldCountdown expiresAt={hold.expiresAt} onExpire={onExpire} />}
-            {!hold && !holdError && <Spinner label="Holding your rooms" />}
+            {!hold && !holdError && <Spinner label={tr('Holding your rooms')} />}
           </CardHeader>
           <CardContent className="flex flex-col gap-5">
             <StaySummary
@@ -505,7 +509,7 @@ export function CheckoutPage() {
               <>
                 <PriceBreakdown
                   quote={breakdownSource(hold.price, hold.items, hold.nights)}
-                  note="Price confirmed by the server for this hold."
+                  note={tr('Price confirmed by the server for this hold.')}
                 />
                 {!expired && <CouponField hold={hold} onChange={setHold} />}
               </>
@@ -533,12 +537,13 @@ function SandboxCheckout({
       aria-labelledby="sandbox-title"
     >
       <p id="sandbox-title" className="flex items-center gap-2 font-semibold text-warning">
-        <FlaskConical className="size-5" aria-hidden="true" /> Test payment sandbox — no real money
-        moves
+        <FlaskConical className="size-5" aria-hidden="true" />{' '}
+        {tr('Test payment sandbox — no real money moves')}
       </p>
       <p className="mt-1 text-sm text-fg-muted">
-        This development environment uses a simulated gateway with the same verification flow as
-        Razorpay. Choose an outcome:
+        {tr(
+          'This development environment uses a simulated gateway with the same verification flow as Razorpay. Choose an outcome:',
+        )}
       </p>
       <div className="mt-4 flex flex-wrap gap-3">
         <Button
@@ -546,7 +551,7 @@ function SandboxCheckout({
           loading={busy}
           leftIcon={<CircleCheck className="size-4" aria-hidden="true" />}
         >
-          Simulate successful payment
+          {tr('Simulate successful payment')}
         </Button>
         <Button
           variant="outline"
@@ -554,7 +559,7 @@ function SandboxCheckout({
           disabled={busy}
           leftIcon={<CircleX className="size-4" aria-hidden="true" />}
         >
-          Simulate declined card
+          {tr('Simulate declined card')}
         </Button>
       </div>
     </div>
@@ -593,7 +598,7 @@ export function CheckoutPaymentPage() {
       } catch (e) {
         // The webhook/reconciliation may still confirm a genuine payment: show the status page.
         toast({
-          title: 'We are confirming your payment',
+          title: tr('We are confirming your payment'),
           description: normalizeApiError(e).message,
         });
         navigate(`/checkout/confirmation?booking=${reference}`);
@@ -609,19 +614,19 @@ export function CheckoutPaymentPage() {
     return (
       <div className="container-page py-16">
         <EmptyState
-          title="No booking selected"
-          action={<ButtonLink to="/account/bookings">Your bookings</ButtonLink>}
+          title={tr('No booking selected')}
+          action={<ButtonLink to="/account/bookings">{tr('Your bookings')}</ButtonLink>}
         />
       </div>
     );
-  if (query.isPending) return <PageSpinner label="Loading your booking" />;
+  if (query.isPending) return <PageSpinner label={tr('Loading your booking')} />;
   if (query.error || !booking)
     return (
       <div className="container-page py-16">
         <EmptyState
-          title="Booking not found"
+          title={tr('Booking not found')}
           description={normalizeApiError(query.error).message}
-          action={<ButtonLink to="/account/bookings">Your bookings</ButtonLink>}
+          action={<ButtonLink to="/account/bookings">{tr('Your bookings')}</ButtonLink>}
         />
       </div>
     );
@@ -667,13 +672,13 @@ export function CheckoutPaymentPage() {
     <div className="container-page grid gap-8 py-10 lg:grid-cols-[minmax(0,1fr)_24rem]">
       <div className="flex flex-col gap-6">
         <PageHeader
-          eyebrow="Step 2 of 2"
-          title="Payment"
-          description={`Booking ${booking.reference}`}
+          eyebrow={tr('Step 2 of 2')}
+          title={tr('Payment')}
+          description={trf('Booking {0}', [booking.reference])}
         />
         {booking.paymentStatus === 'FAILED' && !error && (
-          <Alert tone="warning" title="Your last payment did not go through">
-            No money was taken. You can try again while your rooms are held.
+          <Alert tone="warning" title={tr('Your last payment did not go through')}>
+            {tr('No money was taken. You can try again while your rooms are held.')}
           </Alert>
         )}
         {(expired || booking.status === 'EXPIRED') && (
@@ -682,13 +687,14 @@ export function CheckoutPaymentPage() {
         {error && <Alert tone="danger">{error}</Alert>}
         <Card>
           <CardHeader>
-            <CardTitle as="h2">Payment method</CardTitle>
+            <CardTitle as="h2">{tr('Payment method')}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-4 text-sm">
             <p className="flex items-start gap-2 text-fg-muted">
               <ShieldCheck className="mt-0.5 size-4 shrink-0 text-success" aria-hidden="true" />
-              Cards, UPI, net banking and wallets are handled by our payment partner. STAYSCAPE
-              never sees or stores your card details.
+              {tr(
+                'Cards, UPI, net banking and wallets are handled by our payment partner. STAYSCAPE never sees or stores your card details.',
+              )}
             </p>
             {canPay ? (
               config?.sandbox ? (
@@ -700,24 +706,24 @@ export function CheckoutPaymentPage() {
                   loading={busy}
                   onClick={() => void start()}
                 >
-                  Pay {money(booking.totalMinor, booking.currency)}
+                  {tr('Pay')} {money(booking.totalMinor, booking.currency)}
                 </Button>
               )
             ) : booking.status === 'PAYMENT_PROCESSING' ? (
               <p className="flex items-center gap-2">
-                <Spinner size="sm" label="" /> We are waiting for confirmation from the payment
-                provider.
+                <Spinner size="sm" label="" />{' '}
+                {tr('We are waiting for confirmation from the payment provider.')}
               </p>
             ) : (
-              <p>This booking cannot be paid for right now.</p>
+              <p>{tr('This booking cannot be paid for right now.')}</p>
             )}
           </CardContent>
         </Card>
       </div>
-      <aside aria-label="Booking summary" className="lg:sticky lg:top-24 lg:self-start">
+      <aside aria-label={tr('Booking summary')} className="lg:sticky lg:top-24 lg:self-start">
         <Card>
           <CardHeader className="gap-3">
-            <CardTitle as="h2">Your stay</CardTitle>
+            <CardTitle as="h2">{tr('Your stay')}</CardTitle>
             {booking.holdExpiresAt && !expired && (
               <HoldCountdown expiresAt={booking.holdExpiresAt} onExpire={() => setExpired(true)} />
             )}
@@ -750,7 +756,7 @@ function Downloads({ booking }: { booking: BookingDetailDto }) {
       `${booking.reference}-${kind}.pdf`,
     ).catch((e: unknown) =>
       toast({
-        title: 'Download failed',
+        title: tr('Download failed'),
         description: normalizeApiError(e).message,
         variant: 'error',
       }),
@@ -763,7 +769,7 @@ function Downloads({ booking }: { booking: BookingDetailDto }) {
           leftIcon={<Download className="size-4" aria-hidden="true" />}
           onClick={() => void get('confirmation')}
         >
-          Confirmation (PDF)
+          {tr('Confirmation (PDF)')}
         </Button>
       )}
       {booking.actions.canDownloadInvoice && (
@@ -772,7 +778,7 @@ function Downloads({ booking }: { booking: BookingDetailDto }) {
           leftIcon={<Download className="size-4" aria-hidden="true" />}
           onClick={() => void get('invoice')}
         >
-          Invoice (PDF)
+          {tr('Invoice (PDF)')}
         </Button>
       )}
     </div>
@@ -801,12 +807,12 @@ export function CheckoutConfirmationPage() {
     return (
       <div className="container-page py-16">
         <EmptyState
-          title="Booking not found"
-          action={<ButtonLink to="/account/bookings">Your bookings</ButtonLink>}
+          title={tr('Booking not found')}
+          action={<ButtonLink to="/account/bookings">{tr('Your bookings')}</ButtonLink>}
         />
       </div>
     );
-  if (!booking) return <PageSpinner label="Loading your booking" />;
+  if (!booking) return <PageSpinner label={tr('Loading your booking')} />;
 
   const reconciled =
     booking.status === 'RECONCILIATION_REQUIRED' ||
@@ -817,23 +823,24 @@ export function CheckoutConfirmationPage() {
         {booking.status === 'CONFIRMED' ? (
           <div className="rounded-2xl bg-success-soft p-6" role="status">
             <p className="flex items-center gap-2 font-display text-2xl font-semibold text-success">
-              <CircleCheck className="size-7" aria-hidden="true" /> Your stay is confirmed
+              <CircleCheck className="size-7" aria-hidden="true" /> {tr('Your stay is confirmed')}
             </p>
             <p className="mt-2 text-sm">
-              Booking reference <strong>{booking.reference}</strong>. A confirmation email is on its
-              way.
+              {tr('Booking reference')} <strong>{booking.reference}</strong>
+              {tr('. A confirmation email is on its way.')}
             </p>
           </div>
         ) : reconciled ? (
-          <Alert tone="warning" title="We could not complete this booking">
-            Your payment arrived after the room hold expired and the rooms had been taken. A full
-            refund has been started automatically — you can track it below.
+          <Alert tone="warning" title={tr('We could not complete this booking')}>
+            {tr(
+              'Your payment arrived after the room hold expired and the rooms had been taken. A full refund has been started automatically — you can track it below.',
+            )}
           </Alert>
         ) : booking.paymentStatus === 'FAILED' ? (
-          <Alert tone="danger" title="Payment failed">
-            No money was taken.{' '}
+          <Alert tone="danger" title={tr('Payment failed')}>
+            {tr('No money was taken.')}{' '}
             <Link className="underline" to={`/checkout/payment?booking=${booking.reference}`}>
-              Try again
+              {tr('Try again')}
             </Link>
           </Alert>
         ) : (
@@ -844,14 +851,17 @@ export function CheckoutConfirmationPage() {
           >
             <Spinner label="" />{' '}
             <p>
-              Confirming your payment with the provider. This usually takes a few seconds — you can
-              safely leave this page; we will email you.
+              {tr(
+                'Confirming your payment with the provider. This usually takes a few seconds — you can safely leave this page; we will email you.',
+              )}
             </p>
           </div>
         )}
         <Card>
           <CardHeader className="flex-row items-center justify-between gap-3">
-            <CardTitle as="h2">Booking {booking.reference}</CardTitle>
+            <CardTitle as="h2">
+              {tr('Booking')} {booking.reference}
+            </CardTitle>
             <BookingStatusBadge status={booking.status} />
           </CardHeader>
           <CardContent className="flex flex-col gap-5">
@@ -871,7 +881,7 @@ export function CheckoutConfirmationPage() {
               <ul className="text-sm">
                 {booking.refunds.map((r) => (
                   <li key={r.id}>
-                    Refund {money(r.amountMinor, r.currency)} — {r.status.toLowerCase()}
+                    {tr('Refund')} {money(r.amountMinor, r.currency)} — {r.status.toLowerCase()}
                   </li>
                 ))}
               </ul>
@@ -880,9 +890,11 @@ export function CheckoutConfirmationPage() {
           </CardContent>
         </Card>
         <div className="flex flex-wrap gap-3">
-          <ButtonLink to={`/account/bookings/${booking.reference}`}>View booking</ButtonLink>
+          <ButtonLink to={`/account/bookings/${booking.reference}`}>
+            {tr('View booking')}
+          </ButtonLink>
           <ButtonLink variant="outline" to="/hotels">
-            Keep exploring
+            {tr('Keep exploring')}
           </ButtonLink>
         </div>
       </div>
@@ -904,8 +916,8 @@ export function CheckoutFailurePage() {
     ) : (
       <div className="container-page py-16">
         <EmptyState
-          title="Booking not found"
-          action={<ButtonLink to="/hotels">Find a stay</ButtonLink>}
+          title={tr('Booking not found')}
+          action={<ButtonLink to="/hotels">{tr('Find a stay')}</ButtonLink>}
         />
       </div>
     );
@@ -913,13 +925,13 @@ export function CheckoutFailurePage() {
   return (
     <div className="container-page max-w-2xl py-12">
       <PageHeader
-        eyebrow={`Booking ${booking.reference}`}
-        title="Your payment didn’t go through"
-        description="No money was taken from your account."
+        eyebrow={trf('Booking {0}', [booking.reference])}
+        title={tr('Your payment didn’t go through')}
+        description={tr('No money was taken from your account.')}
       />
       <div className="mt-6 flex flex-col gap-4">
         {failed?.failureReason && (
-          <Alert tone="danger" title="Reason from the payment provider">
+          <Alert tone="danger" title={tr('Reason from the payment provider')}>
             {failed.failureReason}
           </Alert>
         )}
@@ -930,10 +942,10 @@ export function CheckoutFailurePage() {
             )}
             <div className="flex flex-wrap gap-3">
               <ButtonLink to={`/checkout/payment?booking=${booking.reference}`}>
-                Try again
+                {tr('Try again')}
               </ButtonLink>
               <ButtonLink variant="outline" to={`/account/bookings/${booking.reference}`}>
-                View booking
+                {tr('View booking')}
               </ButtonLink>
             </div>
           </>

@@ -19,6 +19,7 @@ import { usePartnerHotels } from '@/features/partner/api';
 import { normalizeApiError } from '@/lib/api/errors';
 import { api, useApiMutation, useApiQuery } from './api';
 import { QueryState, SectionCard, fmtDate } from './components';
+import { tr, trf } from '@/lib/tr';
 
 /** /partner/accessibility — the property states its features; Stayscape may verify them. */
 export function PartnerAccessibilityPage() {
@@ -47,21 +48,24 @@ export function PartnerAccessibilityPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Accessibility"
-        description="Tell guests what your property offers. Guests see that you stated it; features checked by Stayscape are marked as verified."
+        title={tr('Accessibility')}
+        description={tr(
+          'Tell guests what your property offers. Guests see that you stated it; features checked by Stayscape are marked as verified.',
+        )}
       />
       {hotels.data && hotels.data.length > 1 && (
         <Select
-          label="Property"
+          label={tr('Property')}
           value={hotelId}
           onChange={(e) => setPicked(e.target.value)}
           options={hotels.data.map((h) => ({ value: h.id, label: h.name }))}
           containerClassName="w-64"
         />
       )}
-      <Alert tone="info" title="Be precise">
-        Changing the description of a verified feature returns it to “stated by the property” until
-        Stayscape checks it again.
+      <Alert tone="info" title={tr('Be precise')}>
+        {tr(
+          'Changing the description of a verified feature returns it to “stated by the property” until Stayscape checks it again.',
+        )}
       </Alert>
       <QueryState query={current}>
         <form
@@ -69,10 +73,10 @@ export function PartnerAccessibilityPage() {
           onSubmit={(e) => {
             e.preventDefault();
             save.mutate(undefined, {
-              onSuccess: () => toast({ title: 'Accessibility saved', variant: 'success' }),
+              onSuccess: () => toast({ title: tr('Accessibility saved'), variant: 'success' }),
               onError: (err) =>
                 toast({
-                  title: 'Could not save',
+                  title: tr('Could not save'),
                   description: normalizeApiError(err).message,
                   variant: 'error',
                 }),
@@ -88,7 +92,7 @@ export function PartnerAccessibilityPage() {
                 className="flex flex-wrap items-end gap-3 rounded-xl border border-border p-3"
               >
                 <Checkbox
-                  label={ACCESSIBILITY_FEATURE_LABELS[code]}
+                  label={tr(ACCESSIBILITY_FEATURE_LABELS[code])}
                   checked={on}
                   onChange={(e) =>
                     setDraft({
@@ -99,7 +103,7 @@ export function PartnerAccessibilityPage() {
                 />
                 {on && (
                   <Input
-                    label={`Details for ${ACCESSIBILITY_FEATURE_LABELS[code]} (optional)`}
+                    label={trf('Details for {0} (optional)', [ACCESSIBILITY_FEATURE_LABELS[code]])}
                     value={draft[code] ?? ''}
                     maxLength={200}
                     onChange={(e) => setDraft({ ...draft, [code]: e.target.value })}
@@ -109,15 +113,15 @@ export function PartnerAccessibilityPage() {
                 {saved && (
                   <Badge tone={saved.source === 'ADMIN_VERIFIED' ? 'success' : 'outline'}>
                     {saved.source === 'ADMIN_VERIFIED'
-                      ? `Verified ${fmtDate(saved.verifiedAt)}`
-                      : 'Stated by you'}
+                      ? trf('Verified {0}', [fmtDate(saved.verifiedAt)])
+                      : tr('Stated by you')}
                   </Badge>
                 )}
               </div>
             );
           })}
           <Button type="submit" className="self-start" loading={save.isPending} disabled={!hotelId}>
-            Save accessibility
+            {tr('Save accessibility')}
           </Button>
         </form>
       </QueryState>
@@ -155,15 +159,17 @@ export function AdminAccessibilityPanel({ hotelId }: { hotelId: string }) {
       },
       onError: (e) =>
         toast({
-          title: 'Could not update',
+          title: tr('Could not update'),
           description: normalizeApiError(e).message,
           variant: 'error',
         }),
     });
   return (
     <SectionCard
-      title="Accessibility verification"
-      description="Verify only what you have checked (site visit, photos, documents). Evidence stays internal."
+      title={tr('Accessibility verification')}
+      description={tr(
+        'Verify only what you have checked (site visit, photos, documents). Evidence stays internal.',
+      )}
     >
       <QueryState query={list}>
         {list.data?.length ? (
@@ -184,19 +190,21 @@ export function AdminAccessibilityPanel({ hotelId }: { hotelId: string }) {
                   />
                   <Badge tone={f.source === 'ADMIN_VERIFIED' ? 'success' : 'outline'}>
                     {f.source === 'ADMIN_VERIFIED'
-                      ? `Verified ${fmtDate(f.verifiedAt)}`
-                      : 'Stated by the property'}
+                      ? trf('Verified {0}', [fmtDate(f.verifiedAt)])
+                      : tr('Stated by the property')}
                   </Badge>
                   {f.note && <span className="text-fg-muted">— {f.note}</span>}
                   {f.evidence && (
-                    <span className="text-xs text-fg-subtle">Evidence: {f.evidence}</span>
+                    <span className="text-xs text-fg-subtle">
+                      {tr('Evidence:')} {f.evidence}
+                    </span>
                   )}
                 </li>
               ))}
             </ul>
             <div className="flex flex-wrap items-end gap-2">
               <Input
-                label="Evidence"
+                label={tr('Evidence')}
                 value={evidence}
                 onChange={(e) => setEvidence(e.target.value)}
                 containerClassName="w-96"
@@ -207,7 +215,7 @@ export function AdminAccessibilityPanel({ hotelId }: { hotelId: string }) {
                 loading={verify.isPending}
                 onClick={() => run(true)}
               >
-                Mark verified
+                {tr('Mark verified')}
               </Button>
               <Button
                 size="sm"
@@ -215,13 +223,13 @@ export function AdminAccessibilityPanel({ hotelId }: { hotelId: string }) {
                 disabled={!selected.length || evidence.trim().length < 5}
                 onClick={() => run(false)}
               >
-                Remove verification
+                {tr('Remove verification')}
               </Button>
             </div>
           </>
         ) : (
           <p className="text-sm text-fg-muted">
-            The property has not declared any accessibility features.
+            {tr('The property has not declared any accessibility features.')}
           </p>
         )}
       </QueryState>

@@ -3,6 +3,7 @@ import { Compass, Lock, TriangleAlert } from 'lucide-react';
 import { Logo } from '@/components/brand/Logo';
 import { Button, ButtonLink } from '@/components/ui';
 import { useAuth } from '@/features/auth/use-auth';
+import { tr } from '@/lib/tr';
 
 function StatusLayout({
   code,
@@ -38,13 +39,13 @@ export default function NotFoundPage() {
     <StatusLayout
       code="404"
       icon={<Compass />}
-      title="This page has wandered off"
+      title={tr('This page has wandered off')}
       body="The link may be broken or the page may have moved."
       actions={
         <>
-          <ButtonLink to="/">Back to home</ButtonLink>
+          <ButtonLink to="/">{tr('Back to home')}</ButtonLink>
           <ButtonLink to="/search" variant="outline">
-            Find a stay
+            {tr('Find a stay')}
           </ButtonLink>
         </>
       }
@@ -58,15 +59,15 @@ export function ForbiddenPage() {
     <StatusLayout
       code="403"
       icon={<Lock />}
-      title="You don't have access to this area"
+      title={tr("You don't have access to this area")}
       body="Your account doesn't include the permissions this page requires. If you think that's a mistake, contact your administrator."
       actions={
         <>
           <ButtonLink to={isAuthenticated ? '/account' : '/login'}>
-            {isAuthenticated ? 'Go to my account' : 'Sign in'}
+            {isAuthenticated ? tr('Go to my account') : tr('Sign in')}
           </ButtonLink>
           <ButtonLink to="/" variant="outline">
-            Home
+            {tr('Home')}
           </ButtonLink>
         </>
       }
@@ -87,13 +88,13 @@ export function RouteErrorPage() {
       <StatusLayout
         code="ERROR"
         icon={<TriangleAlert />}
-        title="Something went wrong"
+        title={tr('Something went wrong')}
         body="An unexpected error interrupted this page. Reloading usually fixes it — if not, please try again later."
         actions={
           <>
-            <Button onClick={() => window.location.reload()}>Reload page</Button>
+            <Button onClick={() => window.location.reload()}>{tr('Reload page')}</Button>
             <ButtonLink to="/" variant="outline" reloadDocument>
-              Back to home
+              {tr('Back to home')}
             </ButtonLink>
           </>
         }

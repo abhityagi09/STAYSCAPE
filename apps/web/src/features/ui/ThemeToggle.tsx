@@ -3,6 +3,7 @@ import { Monitor, Moon, Sun } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/app/store';
 import { Dropdown, IconButton } from '@/components/ui';
 import { THEME_STORAGE_KEY, themeChanged, type ThemePreference } from './ui-slice';
+import { tr, trf } from '@/lib/tr';
 
 /** Applies the theme preference to <html> and persists it (a per-device UI preference). */
 export function ThemeSync() {
@@ -27,9 +28,27 @@ export function ThemeSync() {
 }
 
 const options: Array<{ value: ThemePreference; label: string; icon: typeof Sun }> = [
-  { value: 'light', label: 'Light', icon: Sun },
-  { value: 'dark', label: 'Dark', icon: Moon },
-  { value: 'system', label: 'System', icon: Monitor },
+  {
+    value: 'light',
+    get label() {
+      return tr('Light');
+    },
+    icon: Sun,
+  },
+  {
+    value: 'dark',
+    get label() {
+      return tr('Dark');
+    },
+    icon: Moon,
+  },
+  {
+    value: 'system',
+    get label() {
+      return tr('System');
+    },
+    icon: Monitor,
+  },
 ];
 
 export function ThemeToggle({ variant = 'ghost' }: { variant?: 'ghost' | 'inverse' }) {
@@ -39,7 +58,12 @@ export function ThemeToggle({ variant = 'ghost' }: { variant?: 'ghost' | 'invers
   return (
     <Dropdown
       trigger={(props) => (
-        <IconButton {...props} label={`Theme: ${theme}`} icon={<Current />} variant={variant} />
+        <IconButton
+          {...props}
+          label={trf('Theme: {0}', [theme])}
+          icon={<Current />}
+          variant={variant}
+        />
       )}
       items={options.map((option) => ({
         id: option.value,

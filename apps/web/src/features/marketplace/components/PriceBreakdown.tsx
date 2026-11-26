@@ -1,6 +1,7 @@
 import type { QuoteDto } from '@stayscape/shared';
 import { formatMinorUnits } from '@stayscape/shared';
 import { Accordion } from '@/components/ui';
+import { tr } from '@/lib/tr';
 
 const dateFmt = new Intl.DateTimeFormat(undefined, {
   weekday: 'short',
@@ -27,14 +28,15 @@ export function PriceBreakdown({ quote, note }: { quote: PriceBreakdownSource; n
       <dl className="flex flex-col gap-1.5">
         <div className="flex justify-between">
           <dt>
-            {quote.rooms} room{quote.rooms === 1 ? '' : 's'} × {quote.nights} night
+            {quote.rooms} {tr('room')}
+            {quote.rooms === 1 ? '' : 's'} × {quote.nights} {tr('night')}
             {quote.nights === 1 ? '' : 's'}
           </dt>
           <dd className="tabular-nums">{money(totals.roomChargesMinor)}</dd>
         </div>
         {totals.discountsMinor !== 0 && (
           <div className="flex justify-between text-success">
-            <dt>Discounts</dt>
+            <dt>{tr('Discounts')}</dt>
             <dd className="tabular-nums">{money(totals.discountsMinor)}</dd>
           </div>
         )}
@@ -51,7 +53,7 @@ export function PriceBreakdown({ quote, note }: { quote: PriceBreakdownSource; n
           </div>
         ))}
         <div className="mt-1 flex justify-between border-t border-border pt-2 text-base font-semibold">
-          <dt>Total</dt>
+          <dt>{tr('Total')}</dt>
           <dd className="tabular-nums">{money(totals.totalMinor)}</dd>
         </div>
       </dl>
@@ -60,20 +62,20 @@ export function PriceBreakdown({ quote, note }: { quote: PriceBreakdownSource; n
         items={[
           {
             id: 'nightly',
-            title: 'Night-by-night breakdown',
+            title: tr('Night-by-night breakdown'),
             content: (
               <table className="w-full text-left text-xs">
-                <caption className="sr-only">Nightly prices</caption>
+                <caption className="sr-only">{tr('Nightly prices')}</caption>
                 <thead>
                   <tr className="text-fg-subtle">
                     <th scope="col" className="py-1 font-medium">
-                      Night
+                      {tr('Night')}
                     </th>
                     <th scope="col" className="py-1 font-medium">
-                      Room rate
+                      {tr('Room rate')}
                     </th>
                     <th scope="col" className="py-1 text-right font-medium">
-                      All rooms
+                      {tr('All rooms')}
                     </th>
                   </tr>
                 </thead>
@@ -91,7 +93,8 @@ export function PriceBreakdown({ quote, note }: { quote: PriceBreakdownSource; n
                         ))}
                         {n.supplementsMinor > 0 && (
                           <span className="block text-fg-subtle">
-                            Guests & meals: +{money(n.supplementsMinor)}
+                            {tr('Guests & meals: +')}
+                            {money(n.supplementsMinor)}
                           </span>
                         )}
                         {n.discounts.map((d) => (
@@ -113,9 +116,9 @@ export function PriceBreakdown({ quote, note }: { quote: PriceBreakdownSource; n
         <p className="text-xs text-fg-subtle">{note}</p>
       ) : quote.expiresAt ? (
         <p className="text-xs text-fg-subtle">
-          Quote valid until{' '}
+          {tr('Quote valid until')}{' '}
           {new Date(quote.expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-          . Prices are rechecked before booking.
+          {tr('. Prices are rechecked before booking.')}
         </p>
       ) : null}
     </div>

@@ -283,7 +283,7 @@ export const routes: RouteObject[] = [
                   ['commissions', 'payments:read', 'AdminCommissionsPage'],
                   ['settlements', 'payments:read', 'AdminSettlementsPage'],
                   ['coupons', 'coupons:manage', 'AdminCouponsPage'],
-                  ['promotions', 'coupons:manage', 'AdminCouponsPage'],
+                  ['promotions', 'coupons:manage', 'AdminPromotionsPage'],
                   ['support', 'support:manage', 'AdminSupportPage'],
                   ['reviews', 'reviews:moderate', 'AdminReviewsPage'],
                   ['organizations', 'users:manage', 'AdminOrganizationsPage'],

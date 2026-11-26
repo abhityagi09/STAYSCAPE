@@ -7,6 +7,7 @@ import { forgotPasswordSchema, type ForgotPasswordInput } from '@stayscape/share
 import { Alert, Button, ButtonLink, Input } from '@/components/ui';
 import { applyServerErrors } from '@/lib/forms';
 import { authApi } from '../api';
+import { tr } from '@/lib/tr';
 
 export default function ForgotPasswordPage() {
   const [sentTo, setSentTo] = useState<string | null>(null);
@@ -40,21 +41,24 @@ export default function ForgotPasswordPage() {
           <MailCheck className="size-6" aria-hidden="true" />
         </span>
         <div>
-          <h1 className="font-display text-3xl font-semibold tracking-tight">Check your inbox</h1>
+          <h1 className="font-display text-3xl font-semibold tracking-tight">
+            {tr('Check your inbox')}
+          </h1>
           <p className="mt-3 text-fg-muted" role="status">
             {message}
           </p>
           <p className="mt-2 text-sm text-fg-subtle">
-            The link expires soon and can be used once. Didn&apos;t get it? Check spam or try again
-            in a minute.
+            {tr(
+              "The link expires soon and can be used once. Didn't get it? Check spam or try again in a minute.",
+            )}
           </p>
         </div>
         <div className="flex gap-3">
           <ButtonLink to="/login" variant="primary">
-            Back to sign in
+            {tr('Back to sign in')}
           </ButtonLink>
           <Button variant="ghost" onClick={() => setSentTo(null)}>
-            Use a different email
+            {tr('Use a different email')}
           </Button>
         </div>
       </div>
@@ -67,18 +71,20 @@ export default function ForgotPasswordPage() {
         to="/login"
         className="inline-flex w-fit items-center gap-1.5 text-sm text-fg-muted hover:text-fg"
       >
-        <ArrowLeft className="size-4" aria-hidden="true" /> Back to sign in
+        <ArrowLeft className="size-4" aria-hidden="true" /> {tr('Back to sign in')}
       </Link>
       <div>
-        <h1 className="font-display text-3xl font-semibold tracking-tight">Reset your password</h1>
+        <h1 className="font-display text-3xl font-semibold tracking-tight">
+          {tr('Reset your password')}
+        </h1>
         <p className="mt-2 text-fg-muted">
-          Enter the email for your account and we&apos;ll send you a secure reset link.
+          {tr("Enter the email for your account and we'll send you a secure reset link.")}
         </p>
       </div>
       {formError && <Alert tone="danger">{formError}</Alert>}
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
         <Input
-          label="Email"
+          label={tr('Email')}
           type="email"
           autoComplete="email"
           required
@@ -92,7 +98,7 @@ export default function ForgotPasswordPage() {
           loading={isSubmitting}
           loadingText="Sending link…"
         >
-          Send reset link
+          {tr('Send reset link')}
         </Button>
       </form>
     </div>

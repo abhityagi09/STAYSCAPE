@@ -52,6 +52,7 @@ import {
   usePartnerHotels,
 } from '../api';
 import { useQueryClient } from '@tanstack/react-query';
+import { tr, trf } from '@/lib/tr';
 
 export const STATUS_TONE: Record<PublicationStatus, BadgeTone> = {
   DRAFT: 'neutral',
@@ -72,15 +73,15 @@ export function PropertiesPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Properties"
-        description="Your listings and their review status."
+        title={tr('Properties')}
+        description={tr('Your listings and their review status.')}
         actions={
           can('hotels:create') && (
             <ButtonLink
               to="/partner/properties/new"
               leftIcon={<Plus className="size-4" aria-hidden="true" />}
             >
-              Add property
+              {tr('Add property')}
             </ButtonLink>
           )
         }
@@ -95,11 +96,13 @@ export function PropertiesPage() {
       ) : hotels.data.length === 0 ? (
         <EmptyState
           icon={<Building2 />}
-          title="No properties yet"
-          description="Add your first property. It stays private until our team approves it and you publish it."
+          title={tr('No properties yet')}
+          description={tr(
+            'Add your first property. It stays private until our team approves it and you publish it.',
+          )}
           action={
             can('hotels:create') && (
-              <ButtonLink to="/partner/properties/new">Add property</ButtonLink>
+              <ButtonLink to="/partner/properties/new">{tr('Add property')}</ButtonLink>
             )
           }
         />
@@ -119,13 +122,15 @@ export function PropertiesPage() {
                       {statusLabel(h.publicationStatus)}
                     </Badge>
                     {h.revisionStatus !== 'NONE' && (
-                      <Badge tone="warning">Changes {h.revisionStatus.toLowerCase()}</Badge>
+                      <Badge tone="warning">
+                        {tr('Changes')} {h.revisionStatus.toLowerCase()}
+                      </Badge>
                     )}
                   </div>
                   <h2 className="font-display text-lg font-semibold">{h.name}</h2>
                   <p className="text-sm text-fg-muted">
-                    {h.city} · {PROPERTY_TYPE_LABELS[h.propertyType]} · {h.roomTypeCount} room
-                    categor{h.roomTypeCount === 1 ? 'y' : 'ies'}
+                    {h.city} · {tr(PROPERTY_TYPE_LABELS[h.propertyType])} · {h.roomTypeCount}{' '}
+                    {h.roomTypeCount === 1 ? tr('room category') : tr('room categories')}
                   </p>
                   <ButtonLink
                     to={`/partner/properties/${h.id}`}
@@ -133,7 +138,7 @@ export function PropertiesPage() {
                     size="sm"
                     className="mt-auto w-fit"
                   >
-                    Manage
+                    {tr('Manage')}
                   </ButtonLink>
                 </div>
               </Card>
@@ -154,29 +159,29 @@ export const usePropertyContext = () => useOutletContext<PropertyContext>();
 export function PropertyLayout() {
   const { id = '' } = useParams();
   const hotel = usePartnerHotel(id);
-  if (hotel.isPending) return <PageSpinner label="Loading property" />;
+  if (hotel.isPending) return <PageSpinner label={tr('Loading property')} />;
   if (hotel.isError)
     return normalizeApiError(hotel.error).status === 404 ? (
       <EmptyState
-        title="Property not found"
-        action={<ButtonLink to="/partner/properties">Back to properties</ButtonLink>}
+        title={tr('Property not found')}
+        action={<ButtonLink to="/partner/properties">{tr('Back to properties')}</ButtonLink>}
       />
     ) : (
       <ErrorState description={errorMessage(hotel.error)} onRetry={() => void hotel.refetch()} />
     );
   const tabs = [
-    { to: '', label: 'Overview', end: true },
-    { to: 'edit', label: 'Details' },
-    { to: 'media', label: 'Photos & videos' },
-    { to: 'policies', label: 'Policies & fees' },
-    { to: 'rooms', label: 'Rooms' },
-    { to: 'rates', label: 'Rates & pricing' },
+    { to: '', label: tr('Overview'), end: true },
+    { to: 'edit', label: tr('Details') },
+    { to: 'media', label: tr('Photos & videos') },
+    { to: 'policies', label: tr('Policies & fees') },
+    { to: 'rooms', label: tr('Rooms') },
+    { to: 'rates', label: tr('Rates & pricing') },
   ];
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
         breadcrumb={[
-          { label: 'Properties', to: '/partner/properties' },
+          { label: tr('Properties'), to: '/partner/properties' },
           { label: hotel.data.working.name },
         ]}
         title={hotel.data.working.name}
@@ -188,7 +193,7 @@ export function PropertyLayout() {
         }
       />
       <nav
-        aria-label="Property sections"
+        aria-label={tr('Property sections')}
         className="-mt-2 flex gap-1 overflow-x-auto border-b border-border"
       >
         {tabs.map((t) => (
@@ -227,7 +232,7 @@ export function PropertyOverviewPage() {
       onSuccess: () => toast({ title: success, variant: 'success' }),
       onError: (e) =>
         toast({
-          title: 'Action failed',
+          title: tr('Action failed'),
           description: normalizeApiError(e).message,
           variant: 'error',
         }),
@@ -245,41 +250,43 @@ export function PropertyOverviewPage() {
   return (
     <div className="flex flex-col gap-6">
       {s === 'REJECTED' && (
-        <Alert tone="danger" title="Changes requested">
-          {hotel.rejectionReason} Edit the listing and submit it again.
+        <Alert tone="danger" title={tr('Changes requested')}>
+          {hotel.rejectionReason} {tr('Edit the listing and submit it again.')}
         </Alert>
       )}
       {s === 'SUSPENDED' && (
-        <Alert tone="danger" title="Listing suspended">
-          {hotel.rejectionReason ?? 'Contact support for details.'}
+        <Alert tone="danger" title={tr('Listing suspended')}>
+          {hotel.rejectionReason ?? tr('Contact support for details.')}
         </Alert>
       )}
       {revision.status === 'DRAFT' && (
-        <Alert tone="warning" title="Unsubmitted changes">
-          You have edited {revision.changedFields.join(', ')}. Travellers still see the approved
-          version until you submit and we approve the changes.
+        <Alert tone="warning" title={tr('Unsubmitted changes')}>
+          {tr('You have edited')} {revision.changedFields.join(', ')}
+          {tr(
+            '. Travellers still see the approved version until you submit and we approve the changes.',
+          )}
         </Alert>
       )}
       {revision.status === 'SUBMITTED' && (
-        <Alert tone="info" title="Changes under review">
-          Your edits are awaiting approval; the live listing is unchanged.
+        <Alert tone="info" title={tr('Changes under review')}>
+          {tr('Your edits are awaiting approval; the live listing is unchanged.')}
         </Alert>
       )}
       {revision.status === 'REJECTED' && (
-        <Alert tone="danger" title="Changes not approved">
+        <Alert tone="danger" title={tr('Changes not approved')}>
           {revision.rejectionReason}
         </Alert>
       )}
 
       <Card>
         <CardHeader>
-          <CardTitle as="h2">Publication</CardTitle>
+          <CardTitle as="h2">{tr('Publication')}</CardTitle>
           <CardDescription>
-            Listings must be approved by STAYSCAPE before you can publish them to search.
+            {tr('Listings must be approved by STAYSCAPE before you can publish them to search.')}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
-          <ol className="flex flex-wrap gap-2" aria-label="Publication workflow">
+          <ol className="flex flex-wrap gap-2" aria-label={tr('Publication workflow')}>
             {steps.map((step, i) => {
               const reached = steps.indexOf(s) >= i || (s === 'REJECTED' && i <= 1);
               return (
@@ -295,7 +302,7 @@ export function PropertyOverviewPage() {
             })}
           </ol>
           {!hotel.completeness.ready && (
-            <Alert tone="warning" title="Complete these before submitting">
+            <Alert tone="warning" title={tr('Complete these before submitting')}>
               <ul className="list-disc pl-5">
                 {hotel.completeness.missing.map((m) => (
                   <li key={m}>{m}</li>
@@ -310,7 +317,7 @@ export function PropertyOverviewPage() {
                 loading={act.isPending}
                 onClick={() => run('submit', 'Submitted for review')}
               >
-                Submit for review
+                {tr('Submit for review')}
               </Button>
             )}
             {hotel.everApproved &&
@@ -319,12 +326,12 @@ export function PropertyOverviewPage() {
                   loading={act.isPending}
                   onClick={() => run('submit', 'Changes submitted for review')}
                 >
-                  Submit changes for review
+                  {tr('Submit changes for review')}
                 </Button>
               )}
             {s === 'APPROVED' && (
               <Button loading={act.isPending} onClick={() => run('publish', 'Listing published')}>
-                Publish to search
+                {tr('Publish to search')}
               </Button>
             )}
             {s === 'PUBLISHED' && (
@@ -333,17 +340,17 @@ export function PropertyOverviewPage() {
                 loading={act.isPending}
                 onClick={() => run('unpublish', 'Listing unpublished')}
               >
-                Unpublish
+                {tr('Unpublish')}
               </Button>
             )}
             {s === 'PUBLISHED' && (
               <ButtonLink to={`/hotels/${hotel.slug}`} variant="ghost" target="_blank">
-                View public page
+                {tr('View public page')}
               </ButtonLink>
             )}
             {s !== 'ARCHIVED' && s !== 'SUSPENDED' && (
               <Button variant="ghost" onClick={() => setConfirmArchive(true)}>
-                Archive
+                {tr('Archive')}
               </Button>
             )}
           </div>
@@ -351,28 +358,30 @@ export function PropertyOverviewPage() {
       </Card>
       <div className="grid gap-4 sm:grid-cols-3">
         <Card className="p-5">
-          <p className="text-sm text-fg-muted">Photos</p>
+          <p className="text-sm text-fg-muted">{tr('Photos')}</p>
           <p className="mt-1 font-display text-2xl font-semibold">{hotel.images.length}</p>
         </Card>
         <Card className="p-5">
-          <p className="text-sm text-fg-muted">Verification</p>
+          <p className="text-sm text-fg-muted">{tr('Verification')}</p>
           <p className="mt-1 font-display text-2xl font-semibold">
             {statusLabel(hotel.verificationStatus)}
           </p>
         </Card>
         <Card className="p-5">
-          <p className="text-sm text-fg-muted">Featured</p>
+          <p className="text-sm text-fg-muted">{tr('Featured')}</p>
           <p className="mt-1 font-display text-2xl font-semibold">
-            {hotel.featured ? 'Yes' : 'No'}
+            {hotel.featured ? tr('Yes') : tr('No')}
           </p>
         </Card>
       </div>
       <ConfirmationDialog
         open={confirmArchive}
-        title="Archive this property?"
-        description="It will be removed from search and can no longer be edited. Properties with upcoming reservations cannot be archived."
+        title={tr('Archive this property?')}
+        description={tr(
+          'It will be removed from search and can no longer be edited. Properties with upcoming reservations cannot be archived.',
+        )}
         tone="danger"
-        confirmLabel="Archive"
+        confirmLabel={tr('Archive')}
         loading={act.isPending}
         onCancel={() => setConfirmArchive(false)}
         onConfirm={() => {
@@ -482,8 +491,8 @@ export function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
         const created = await partnerApi.createHotel(body);
         void qc.invalidateQueries({ queryKey: partnerKeys.hotels });
         toast({
-          title: 'Property created',
-          description: 'Add photos, rooms and rates next.',
+          title: tr('Property created'),
+          description: tr('Add photos, rooms and rates next.'),
           variant: 'success',
         });
         navigate(`/partner/properties/${created.id}/media`);
@@ -508,35 +517,40 @@ export function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
       {formError && <Alert tone="danger">{formError}</Alert>}
       {locked && (
         <Alert tone="info">
-          This listing is {statusLabel(hotel.publicationStatus)} and can't be edited right now.
+          {tr('This listing is')} {statusLabel(hotel.publicationStatus)}{' '}
+          {tr("and can't be edited right now.")}
         </Alert>
       )}
       {hotel?.everApproved && (
         <Alert tone="info">
-          This listing has been approved. Your edits are saved as a revision and go live only after
-          review.
+          {tr(
+            'This listing has been approved. Your edits are saved as a revision and go live only after review.',
+          )}
         </Alert>
       )}
       <fieldset disabled={locked} className="flex flex-col gap-6">
         <Card>
           <CardHeader>
-            <CardTitle as="h2">Basics</CardTitle>
+            <CardTitle as="h2">{tr('Basics')}</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-5 sm:grid-cols-2">
             <Input
-              label="Property name"
+              label={tr('Property name')}
               required
               containerClassName="sm:col-span-2"
               error={e.name?.message}
               {...register('name')}
             />
             <Select
-              label="Property type"
-              options={PROPERTY_TYPES.map((t) => ({ value: t, label: PROPERTY_TYPE_LABELS[t] }))}
+              label={tr('Property type')}
+              options={PROPERTY_TYPES.map((t) => ({
+                value: t,
+                label: tr(PROPERTY_TYPE_LABELS[t]),
+              }))}
               {...register('propertyType')}
             />
             <Select
-              label="Star category"
+              label={tr('Star category')}
               options={[0, 1, 2, 3, 4, 5].map((n) => ({
                 value: String(n),
                 label: n === 0 ? 'Unrated' : `${n} star`,
@@ -544,15 +558,15 @@ export function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
               {...register('starCategory', { valueAsNumber: true })}
             />
             <Input
-              label="Short description"
+              label={tr('Short description')}
               required
               containerClassName="sm:col-span-2"
-              hint="Shown on search results (max 240 characters)"
+              hint={tr('Shown on search results (max 240 characters)')}
               error={e.shortDescription?.message}
               {...register('shortDescription')}
             />
             <Textarea
-              label="Full description"
+              label={tr('Full description')}
               required
               className="min-h-40"
               error={e.description?.message}
@@ -562,41 +576,41 @@ export function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle as="h2">Location</CardTitle>
+            <CardTitle as="h2">{tr('Location')}</CardTitle>
             <CardDescription>
-              Click the map to place the pin precisely, or enter coordinates.
+              {tr('Click the map to place the pin precisely, or enter coordinates.')}
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-5 sm:grid-cols-2">
             <Input
-              label="Address line 1"
+              label={tr('Address line 1')}
               required
               containerClassName="sm:col-span-2"
               error={e.address?.line1?.message}
               {...register('address.line1')}
             />
             <Input
-              label="Address line 2"
+              label={tr('Address line 2')}
               optionalLabel
               containerClassName="sm:col-span-2"
               {...register('address.line2')}
             />
-            <Input label="City" required error={e.city?.message} {...register('city')} />
-            <Input label="State" required error={e.state?.message} {...register('state')} />
+            <Input label={tr('City')} required error={e.city?.message} {...register('city')} />
+            <Input label={tr('State')} required error={e.state?.message} {...register('state')} />
             <Input
-              label="Postal code"
+              label={tr('Postal code')}
               required
               error={e.postalCode?.message}
               {...register('postalCode')}
             />
             <Input
-              label="Country code"
+              label={tr('Country code')}
               required
               error={e.country?.message}
               {...register('country')}
             />
             <Input
-              label="Latitude"
+              label={tr('Latitude')}
               type="number"
               step="any"
               required
@@ -604,7 +618,7 @@ export function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
               {...register('location.lat', { valueAsNumber: true })}
             />
             <Input
-              label="Longitude"
+              label={tr('Longitude')}
               type="number"
               step="any"
               required
@@ -612,7 +626,7 @@ export function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
               {...register('location.lng', { valueAsNumber: true })}
             />
             <MapView
-              label="Choose the property location"
+              label={tr('Choose the property location')}
               className="h-72 sm:col-span-2"
               markers={
                 Number.isFinite(location?.lat) && Number.isFinite(location?.lng)
@@ -622,7 +636,7 @@ export function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
                         lat: location.lat,
                         lng: location.lng,
                         label: '●',
-                        title: 'Property',
+                        title: tr('Property'),
                       },
                     ]
                   : []
@@ -635,8 +649,8 @@ export function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
               }}
             />
             <Input
-              label="Time zone"
-              hint="IANA name, used for check-in dates and booking windows"
+              label={tr('Time zone')}
+              hint={tr('IANA name, used for check-in dates and booking windows')}
               error={e.timeZone?.message}
               {...register('timeZone')}
             />
@@ -644,45 +658,45 @@ export function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle as="h2">Contact & arrival</CardTitle>
+            <CardTitle as="h2">{tr('Contact & arrival')}</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-5 sm:grid-cols-2">
             <Input
-              label="Reservations phone"
+              label={tr('Reservations phone')}
               type="tel"
               required
               error={e.contactDetails?.phone?.message}
               {...register('contactDetails.phone')}
             />
             <Input
-              label="Reservations email"
+              label={tr('Reservations email')}
               type="email"
               required
               error={e.contactDetails?.email?.message}
               {...register('contactDetails.email')}
             />
             <Input
-              label="Website"
+              label={tr('Website')}
               optionalLabel
               containerClassName="sm:col-span-2"
               error={e.contactDetails?.website?.message}
               {...register('contactDetails.website')}
             />
             <Input
-              label="Check-in from"
+              label={tr('Check-in from')}
               type="time"
               error={e.checkInTime?.message}
               {...register('checkInTime')}
             />
             <Input
-              label="Check-out until"
+              label={tr('Check-out until')}
               type="time"
               error={e.checkOutTime?.message}
               {...register('checkOutTime')}
             />
             <Input
-              label="Languages spoken"
-              hint="Comma separated"
+              label={tr('Languages spoken')}
+              hint={tr('Comma separated')}
               containerClassName="sm:col-span-2"
               {...register('languages')}
             />
@@ -691,8 +705,8 @@ export function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
               name="instantConfirmation"
               render={({ field }) => (
                 <Checkbox
-                  label="Instant confirmation"
-                  description="Bookings are confirmed without manual approval."
+                  label={tr('Instant confirmation')}
+                  description={tr('Bookings are confirmed without manual approval.')}
                   checked={Boolean(field.value)}
                   onChange={(ev) => field.onChange(ev.target.checked)}
                 />
@@ -702,7 +716,7 @@ export function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle as="h2">Amenities</CardTitle>
+            <CardTitle as="h2">{tr('Amenities')}</CardTitle>
           </CardHeader>
           <CardContent>
             <Controller
@@ -710,7 +724,7 @@ export function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
               name="amenities"
               render={({ field }) => (
                 <fieldset className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  <legend className="sr-only">Amenities</legend>
+                  <legend className="sr-only">{tr('Amenities')}</legend>
                   {(amenities.data ?? []).map((a) => (
                     <Checkbox
                       key={a.code}
@@ -732,27 +746,27 @@ export function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle as="h2">Nearby attractions</CardTitle>
+            <CardTitle as="h2">{tr('Nearby attractions')}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
             {attractions.fields.map((f, i) => (
               <div key={f.id} className="grid items-end gap-3 sm:grid-cols-[1fr_8rem_10rem_auto]">
                 <Input
-                  label="Name"
+                  label={tr('Name')}
                   {...register(`nearbyAttractions.${i}.name`)}
                   error={e.nearbyAttractions?.[i]?.name?.message}
                 />
                 <Input
-                  label="Distance (km)"
+                  label={tr('Distance (km)')}
                   type="number"
                   step="0.1"
                   {...register(`nearbyAttractions.${i}.distanceKm`, { valueAsNumber: true })}
                 />
-                <Input label="Category" {...register(`nearbyAttractions.${i}.category`)} />
+                <Input label={tr('Category')} {...register(`nearbyAttractions.${i}.category`)} />
                 <Button
                   variant="ghost"
                   onClick={() => attractions.remove(i)}
-                  aria-label={`Remove attraction ${i + 1}`}
+                  aria-label={trf('Remove attraction {0}', [i + 1])}
                 >
                   <Trash2 className="size-4" aria-hidden="true" />
                 </Button>
@@ -766,14 +780,14 @@ export function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
               onClick={() => attractions.append({ name: '', distanceKm: 1, category: 'Sight' })}
               disabled={attractions.fields.length >= 15}
             >
-              Add attraction
+              {tr('Add attraction')}
             </Button>
           </CardContent>
         </Card>
       </fieldset>
       <div className="flex justify-end gap-2">
         <Button type="submit" loading={formState.isSubmitting} disabled={locked}>
-          {mode === 'create' ? 'Create property' : 'Save details'}
+          {mode === 'create' ? tr('Create property') : tr('Save details')}
         </Button>
       </div>
     </form>
@@ -782,9 +796,14 @@ export function PropertyFormPage({ mode }: { mode: 'create' | 'edit' }) {
     return (
       <div className="flex flex-col gap-6">
         <PageHeader
-          breadcrumb={[{ label: 'Properties', to: '/partner/properties' }, { label: 'New' }]}
-          title="Add a property"
-          description="Start with the essentials — you can save and come back. Nothing is public until approved and published."
+          breadcrumb={[
+            { label: tr('Properties'), to: '/partner/properties' },
+            { label: tr('New') },
+          ]}
+          title={tr('Add a property')}
+          description={tr(
+            'Start with the essentials — you can save and come back. Nothing is public until approved and published.',
+          )}
         />
         {form}
       </div>
@@ -829,8 +848,8 @@ export function PropertyMediaPage() {
     for (const file of Array.from(files ?? [])) {
       if (file.size > IMAGE_MAX_BYTES) {
         toast({
-          title: `${file.name} is too large`,
-          description: 'Images must be 10 MB or smaller.',
+          title: trf('{0} is too large', [file.name]),
+          description: tr('Images must be 10 MB or smaller.'),
           variant: 'error',
         });
         continue;
@@ -842,7 +861,7 @@ export function PropertyMediaPage() {
         setImages((list) => [...list, { mediaId: image.id, alt: '' }]);
       } catch (error) {
         toast({
-          title: `Could not upload ${file.name}`,
+          title: trf('Could not upload {0}', [file.name]),
           description: errorMessage(error),
           variant: 'error',
         });
@@ -856,18 +875,18 @@ export function PropertyMediaPage() {
     <div className="flex flex-col gap-6">
       <Card>
         <CardHeader>
-          <CardTitle as="h2">Photos</CardTitle>
+          <CardTitle as="h2">{tr('Photos')}</CardTitle>
           <CardDescription>
-            JPEG, PNG, WebP or AVIF, at least 400 × 300 px, up to 10 MB. We create optimised
-            WebP/AVIF versions and remove location metadata. The first photo is used if no cover is
-            chosen.
+            {tr(
+              'JPEG, PNG, WebP or AVIF, at least 400 × 300 px, up to 10 MB. We create optimised WebP/AVIF versions and remove location metadata. The first photo is used if no cover is chosen.',
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <label className="flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-border-strong p-8 text-center hover:bg-surface-muted">
             <ImagePlus className="size-7 text-fg-subtle" aria-hidden="true" />
             <span className="text-sm font-medium">
-              {uploading ? `Uploading ${uploading}…` : 'Choose photos to upload'}
+              {uploading ? trf('Uploading {0}…', [uploading]) : tr('Choose photos to upload')}
             </span>
             <input
               type="file"
@@ -881,11 +900,11 @@ export function PropertyMediaPage() {
             />
           </label>
           {images.length === 0 ? (
-            <p className="text-sm text-fg-muted">No photos in the listing yet.</p>
+            <p className="text-sm text-fg-muted">{tr('No photos in the listing yet.')}</p>
           ) : (
             <ol
               className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
-              aria-label="Listing photos in display order"
+              aria-label={tr('Listing photos in display order')}
             >
               {images.map((img, i) => {
                 const asset = library.get(img.mediaId);
@@ -903,9 +922,9 @@ export function PropertyMediaPage() {
                       className="aspect-[4/3] w-full rounded-lg"
                     />
                     <Input
-                      label={`Alt text for photo ${i + 1}`}
+                      label={trf('Alt text for photo {0}', [i + 1])}
                       hideLabel
-                      placeholder="Describe the photo"
+                      placeholder={tr('Describe the photo')}
                       value={img.alt}
                       onChange={(ev) =>
                         setImages((list) =>
@@ -921,14 +940,14 @@ export function PropertyMediaPage() {
                         onClick={() => setCover(img.mediaId)}
                         aria-pressed={cover === img.mediaId}
                       >
-                        Cover
+                        {tr('Cover')}
                       </Button>
                       <Button
                         size="sm"
                         variant="ghost"
                         disabled={i === 0}
                         onClick={() => move(i, -1)}
-                        aria-label={`Move photo ${i + 1} earlier`}
+                        aria-label={trf('Move photo {0} earlier', [i + 1])}
                       >
                         <ArrowUp className="size-3.5" aria-hidden="true" />
                       </Button>
@@ -937,7 +956,7 @@ export function PropertyMediaPage() {
                         variant="ghost"
                         disabled={i === images.length - 1}
                         onClick={() => move(i, 1)}
-                        aria-label={`Move photo ${i + 1} later`}
+                        aria-label={trf('Move photo {0} later', [i + 1])}
                       >
                         <ArrowDown className="size-3.5" aria-hidden="true" />
                       </Button>
@@ -945,7 +964,7 @@ export function PropertyMediaPage() {
                         size="sm"
                         variant="ghost"
                         onClick={() => setImages((list) => list.filter((_, j) => j !== i))}
-                        aria-label={`Remove photo ${i + 1} from listing`}
+                        aria-label={trf('Remove photo {0} from listing', [i + 1])}
                       >
                         <Trash2 className="size-3.5" aria-hidden="true" />
                       </Button>
@@ -959,8 +978,8 @@ export function PropertyMediaPage() {
       </Card>
       <Card>
         <CardHeader>
-          <CardTitle as="h2">Videos</CardTitle>
-          <CardDescription>YouTube or Vimeo links.</CardDescription>
+          <CardTitle as="h2">{tr('Videos')}</CardTitle>
+          <CardDescription>{tr('YouTube or Vimeo links.')}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           {videos.map((v, i) => (
@@ -971,13 +990,13 @@ export function PropertyMediaPage() {
                 variant="ghost"
                 onClick={() => setVideos((list) => list.filter((_, j) => j !== i))}
               >
-                Remove
+                {tr('Remove')}
               </Button>
             </div>
           ))}
           <div className="flex items-end gap-2">
             <Input
-              label="Video URL"
+              label={tr('Video URL')}
               containerClassName="flex-1"
               value={videoUrl}
               onChange={(ev) => setVideoUrl(ev.target.value)}
@@ -989,7 +1008,7 @@ export function PropertyMediaPage() {
                 const parsed = hotelVideoSchema.safeParse({ url: videoUrl });
                 if (!parsed.success)
                   return toast({
-                    title: 'Invalid video link',
+                    title: tr('Invalid video link'),
                     description: parsed.error.issues[0]?.message,
                     variant: 'error',
                   });
@@ -997,7 +1016,7 @@ export function PropertyMediaPage() {
                 setVideoUrl('');
               }}
             >
-              Add
+              {tr('Add')}
             </Button>
           </div>
         </CardContent>
@@ -1019,14 +1038,14 @@ export function PropertyMediaPage() {
               },
               onError: (err) =>
                 toast({
-                  title: 'Could not save',
+                  title: tr('Could not save'),
                   description: errorMessage(err),
                   variant: 'error',
                 }),
             })
           }
         >
-          Save photos & videos
+          {tr('Save photos & videos')}
         </Button>
       </div>
     </div>
@@ -1093,16 +1112,20 @@ export function PropertyPoliciesPage() {
       noValidate
       onSubmit={handleSubmit((v) =>
         save.mutate(v, {
-          onSuccess: () => toast({ title: 'Policies saved', variant: 'success' }),
+          onSuccess: () => toast({ title: tr('Policies saved'), variant: 'success' }),
           onError: (err) =>
-            toast({ title: 'Could not save', description: errorMessage(err), variant: 'error' }),
+            toast({
+              title: tr('Could not save'),
+              description: errorMessage(err),
+              variant: 'error',
+            }),
         }),
       )}
       className="flex flex-col gap-6"
     >
       <Card>
         <CardHeader>
-          <CardTitle as="h2">House policies</CardTitle>
+          <CardTitle as="h2">{tr('House policies')}</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-5 sm:grid-cols-2">
           <Controller
@@ -1110,7 +1133,7 @@ export function PropertyPoliciesPage() {
             name="policies.petsAllowed"
             render={({ field }) => (
               <Checkbox
-                label="Pets allowed"
+                label={tr('Pets allowed')}
                 checked={Boolean(field.value)}
                 onChange={(ev) => field.onChange(ev.target.checked)}
               />
@@ -1121,7 +1144,7 @@ export function PropertyPoliciesPage() {
             name="policies.smokingAllowed"
             render={({ field }) => (
               <Checkbox
-                label="Smoking allowed (designated areas)"
+                label={tr('Smoking allowed (designated areas)')}
                 checked={Boolean(field.value)}
                 onChange={(ev) => field.onChange(ev.target.checked)}
               />
@@ -1132,71 +1155,74 @@ export function PropertyPoliciesPage() {
             name="policies.coupleFriendly"
             render={({ field }) => (
               <Checkbox
-                label="Couple friendly"
+                label={tr('Couple friendly')}
                 checked={Boolean(field.value)}
                 onChange={(ev) => field.onChange(ev.target.checked)}
               />
             )}
           />
           <Input
-            label="Minimum check-in age"
+            label={tr('Minimum check-in age')}
             type="number"
             error={e.policies?.minimumCheckInAge?.message}
             {...register('policies.minimumCheckInAge', { valueAsNumber: true })}
           />
-          <Textarea label="Cancellation summary" {...register('policies.cancellationSummary')} />
-          <Textarea label="Child policy" {...register('policies.childPolicy')} />
-          <Textarea label="Pet policy" {...register('policies.petPolicy')} />
-          <Textarea label="Extra bed policy" {...register('policies.extraBedPolicy')} />
+          <Textarea
+            label={tr('Cancellation summary')}
+            {...register('policies.cancellationSummary')}
+          />
+          <Textarea label={tr('Child policy')} {...register('policies.childPolicy')} />
+          <Textarea label={tr('Pet policy')} {...register('policies.petPolicy')} />
+          <Textarea label={tr('Extra bed policy')} {...register('policies.extraBedPolicy')} />
           <Input
-            label="ID requirement"
+            label={tr('ID requirement')}
             containerClassName="sm:col-span-2"
             {...register('policies.idRequirement')}
           />
-          <Textarea label="House rules (one per line)" {...register('rules')} />
+          <Textarea label={tr('House rules (one per line)')} {...register('rules')} />
         </CardContent>
       </Card>
       <Card>
         <CardHeader>
-          <CardTitle as="h2">Taxes & fees</CardTitle>
+          <CardTitle as="h2">{tr('Taxes & fees')}</CardTitle>
           <CardDescription>
-            Taxes:{' '}
+            {tr('Taxes:')}{' '}
             {hotel.working.taxConfig.taxes
               .map(
                 (t) =>
                   `${t.label} (${t.slabs.map((s) => `${s.basisPoints / 100}%${s.upToMinor !== null ? ` up to ₹${s.upToMinor / 100} per room-night` : ' above'}`).join(', ')})`,
               )
               .join('; ')}
-            . Fees below are added to every quote and are shown to guests before payment.
+            {tr('. Fees below are added to every quote and are shown to guests before payment.')}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           {fees.fields.map((f, i) => (
             <div key={f.id} className="grid items-end gap-3 sm:grid-cols-[1fr_9rem_12rem_auto]">
               <Input
-                label="Fee label"
+                label={tr('Fee label')}
                 error={e.fees?.[i]?.label?.message}
                 {...register(`fees.${i}.label`)}
               />
               <Input
-                label="Amount (₹)"
+                label={tr('Amount (₹)')}
                 inputMode="decimal"
                 error={e.fees?.[i]?.amount?.message}
                 {...register(`fees.${i}.amount`)}
               />
               <Select
-                label="Charged"
+                label={tr('Charged')}
                 options={[
-                  { value: 'PER_STAY', label: 'Per stay' },
-                  { value: 'PER_NIGHT', label: 'Per night' },
-                  { value: 'PER_ROOM_NIGHT', label: 'Per room per night' },
+                  { value: 'PER_STAY', label: tr('Per stay') },
+                  { value: 'PER_NIGHT', label: tr('Per night') },
+                  { value: 'PER_ROOM_NIGHT', label: tr('Per room per night') },
                 ]}
                 {...register(`fees.${i}.chargeBasis`)}
               />
               <Button
                 variant="ghost"
                 onClick={() => fees.remove(i)}
-                aria-label={`Remove fee ${i + 1}`}
+                aria-label={trf('Remove fee {0}', [i + 1])}
               >
                 <Trash2 className="size-4" aria-hidden="true" />
               </Button>
@@ -1209,13 +1235,13 @@ export function PropertyPoliciesPage() {
             leftIcon={<Plus className="size-4" aria-hidden="true" />}
             onClick={() => fees.append({ label: '', amount: '0', chargeBasis: 'PER_STAY' })}
           >
-            Add fee
+            {tr('Add fee')}
           </Button>
         </CardContent>
       </Card>
       <div className="flex justify-end">
         <Button type="submit" loading={save.isPending}>
-          Save policies
+          {tr('Save policies')}
         </Button>
       </div>
     </form>

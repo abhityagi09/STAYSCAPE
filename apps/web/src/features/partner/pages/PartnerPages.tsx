@@ -3,6 +3,7 @@ import { Building2, CalendarRange, CheckCircle2, Clock, Plus } from 'lucide-reac
 import { Alert, ButtonLink, Card, EmptyState, PageHeader, SkeletonText } from '@/components/ui';
 import { useAuth } from '@/features/auth/use-auth';
 import { usePartnerHotels } from '../api';
+import { tr } from '@/lib/tr';
 
 export { PartnerOnboardingPage } from './OnboardingPage';
 export {
@@ -24,16 +25,16 @@ export function PartnerDashboardPage() {
   const count = (pred: (s: string) => boolean) =>
     list.filter((h) => pred(h.publicationStatus)).length;
   const stats = [
-    { label: 'Published', value: count((s) => s === 'PUBLISHED'), icon: CheckCircle2 },
+    { label: tr('Published'), value: count((s) => s === 'PUBLISHED'), icon: CheckCircle2 },
     {
-      label: 'In review',
+      label: tr('In review'),
       value:
         count((s) => s === 'SUBMITTED' || s === 'UNDER_REVIEW') +
         list.filter((h) => h.revisionStatus === 'SUBMITTED').length,
       icon: Clock,
     },
     {
-      label: 'Drafts & changes requested',
+      label: tr('Drafts & changes requested'),
       value: count((s) => s === 'DRAFT' || s === 'REJECTED'),
       icon: Building2,
     },
@@ -41,16 +42,18 @@ export function PartnerDashboardPage() {
   return (
     <div className="flex flex-col gap-8">
       <PageHeader
-        eyebrow="Partner workspace"
-        title="Overview"
-        description="Your properties at a glance. Reservations and payouts arrive with online booking."
+        eyebrow={tr('Partner workspace')}
+        title={tr('Overview')}
+        description={tr(
+          'Your properties at a glance. Reservations and payouts arrive with online booking.',
+        )}
         actions={
           can('hotels:create') && (
             <ButtonLink
               to="/partner/properties/new"
               leftIcon={<Plus className="size-4" aria-hidden="true" />}
             >
-              Add property
+              {tr('Add property')}
             </ButtonLink>
           )
         }
@@ -60,11 +63,11 @@ export function PartnerDashboardPage() {
       ) : list.length === 0 ? (
         <EmptyState
           icon={<Building2 />}
-          title="Add your first property"
-          description="Create a listing, add rooms and rates, then submit it for review."
+          title={tr('Add your first property')}
+          description={tr('Create a listing, add rooms and rates, then submit it for review.')}
           action={
             can('hotels:create') && (
-              <ButtonLink to="/partner/properties/new">Add property</ButtonLink>
+              <ButtonLink to="/partner/properties/new">{tr('Add property')}</ButtonLink>
             )
           }
         />
@@ -87,20 +90,21 @@ export function PartnerDashboardPage() {
               variant="outline"
               leftIcon={<Building2 className="size-4" aria-hidden="true" />}
             >
-              Manage properties
+              {tr('Manage properties')}
             </ButtonLink>
             <ButtonLink
               to="/partner/inventory"
               variant="outline"
               leftIcon={<CalendarRange className="size-4" aria-hidden="true" />}
             >
-              Inventory calendar
+              {tr('Inventory calendar')}
             </ButtonLink>
           </div>
           {list.some((h) => h.publicationStatus === 'APPROVED') && (
             <Alert tone="success">
-              Some approved listings are not yet published. Open them and choose “Publish to
-              search”.
+              {tr(
+                'Some approved listings are not yet published. Open them and choose “Publish to search”.',
+              )}
             </Alert>
           )}
         </>

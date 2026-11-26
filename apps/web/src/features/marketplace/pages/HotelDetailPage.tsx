@@ -45,6 +45,7 @@ import { PriceBreakdown } from '../components/PriceBreakdown';
 import { HotelReviews } from '@/features/bookings/HotelReviews';
 import { ApproxPrice, HotelInsights } from '@/features/ops/HotelInsights';
 import { parseSearch, toSearchParams } from '../search-state';
+import { tr, trf } from '@/lib/tr';
 
 export const SELECTION_STORAGE_KEY = 'stayscape.selection';
 export const LAST_SEARCH_KEY = 'stayscape.lastSearch';
@@ -73,7 +74,7 @@ function AvailabilityForm({
   return (
     <form
       noValidate
-      aria-label="Check availability"
+      aria-label={tr('Check availability')}
       className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_0.7fr_0.7fr_0.7fr_auto] lg:items-end"
       onSubmit={(e) => {
         e.preventDefault();
@@ -85,7 +86,7 @@ function AvailabilityForm({
       }}
     >
       <DatePicker
-        label="Check-in"
+        label={tr('Check-in')}
         min={today}
         value={checkIn}
         onChange={(e) => {
@@ -94,13 +95,13 @@ function AvailabilityForm({
         }}
       />
       <DatePicker
-        label="Check-out"
+        label={tr('Check-out')}
         min={addDays(checkIn, 1)}
         value={checkOut}
         onChange={(e) => setCheckOut(e.target.value)}
       />
       <Select
-        label="Adults"
+        label={tr('Adults')}
         value={String(adults)}
         onChange={(e) => setAdults(Number(e.target.value))}
         options={Array.from({ length: 12 }, (_, i) => ({
@@ -109,7 +110,7 @@ function AvailabilityForm({
         }))}
       />
       <Select
-        label="Children"
+        label={tr('Children')}
         value={String(childrenAges.length)}
         onChange={(e) =>
           setChildrenAges(
@@ -119,7 +120,7 @@ function AvailabilityForm({
         options={Array.from({ length: 7 }, (_, i) => ({ value: String(i), label: String(i) }))}
       />
       <Select
-        label="Rooms"
+        label={tr('Rooms')}
         value={String(rooms)}
         onChange={(e) => setRooms(Number(e.target.value))}
         options={Array.from({ length: 8 }, (_, i) => ({
@@ -127,13 +128,13 @@ function AvailabilityForm({
           label: String(i + 1),
         }))}
       />
-      <Button type="submit">Check availability</Button>
+      <Button type="submit">{tr('Check availability')}</Button>
       {childrenAges.length > 0 && (
         <div className="flex flex-wrap gap-3 sm:col-span-2 lg:col-span-6">
           {childrenAges.map((age, i) => (
             <Select
               key={i}
-              label={`Child ${i + 1} age`}
+              label={trf('Child {0} age', [i + 1])}
               value={String(age)}
               onChange={(e) =>
                 setChildrenAges(childrenAges.map((a, j) => (j === i ? Number(e.target.value) : a)))
@@ -174,7 +175,7 @@ function RoomOfferCard({
           type="button"
           className="relative aspect-[4/3] bg-surface-muted md:aspect-auto"
           onClick={() => room.images.length && setGallery(0)}
-          aria-label={`View photos of ${room.name}`}
+          aria-label={trf('View photos of {0}', [room.name])}
           disabled={!room.images.length}
         >
           <ResponsiveImage
@@ -190,7 +191,7 @@ function RoomOfferCard({
             <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-fg-muted">
               <li className="flex items-center gap-1">
                 <Ruler className="size-3.5" aria-hidden="true" />
-                {room.roomSize} {room.roomSizeUnit === 'SQM' ? 'm²' : 'sq ft'}
+                {room.roomSize} {room.roomSizeUnit === 'SQM' ? 'm²' : tr('sq ft')}
               </li>
               <li className="flex items-center gap-1">
                 <BedDouble className="size-3.5" aria-hidden="true" />
@@ -200,13 +201,14 @@ function RoomOfferCard({
               </li>
               <li className="flex items-center gap-1">
                 <Users className="size-3.5" aria-hidden="true" />
-                Sleeps {room.maximumOccupancy} (max {room.maximumAdults} adults)
+                {tr('Sleeps')} {room.maximumOccupancy} {tr('(max')} {room.maximumAdults}{' '}
+                {tr('adults)')}
               </li>
             </ul>
           </div>
           {offer.offers.length === 0 ? (
             <Alert tone="warning">
-              {offer.unavailableReason ?? 'Not available for these dates.'}
+              {offer.unavailableReason ?? tr('Not available for these dates.')}
             </Alert>
           ) : (
             <ul className="flex flex-col divide-y divide-border rounded-xl border border-border">
@@ -223,7 +225,7 @@ function RoomOfferCard({
                   >
                     <div className="text-sm">
                       <p className="font-medium">{q.ratePlan.name}</p>
-                      <p className="text-fg-muted">{MEAL_PLAN_LABELS[q.ratePlan.mealPlan]}</p>
+                      <p className="text-fg-muted">{tr(MEAL_PLAN_LABELS[q.ratePlan.mealPlan])}</p>
                       <p
                         className={
                           q.ratePlan.cancellationPolicy.type === 'FREE_CANCELLATION'
@@ -233,7 +235,11 @@ function RoomOfferCard({
                       >
                         {cancellationText(q)}
                       </p>
-                      {q.roomsLeft <= 3 && <p className="text-warning">Only {q.roomsLeft} left</p>}
+                      {q.roomsLeft <= 3 && (
+                        <p className="text-warning">
+                          {tr('Only')} {q.roomsLeft} {tr('left')}
+                        </p>
+                      )}
                     </div>
                     <div className="flex items-center gap-4 sm:flex-col sm:items-end sm:gap-1">
                       <span className="text-lg font-semibold tabular-nums">
@@ -243,7 +249,9 @@ function RoomOfferCard({
                         }).format(q.totals.totalMinor / 100)}
                       </span>
                       <span className="text-xs text-fg-subtle">
-                        {q.nights} night{q.nights === 1 ? '' : 's'}, incl. taxes
+                        {q.nights} {tr('night')}
+                        {q.nights === 1 ? '' : 's'}
+                        {tr(', incl. taxes')}
                       </span>
                       <ApproxPrice amountMinor={q.totals.totalMinor} currency={q.currency} />
                       <Button
@@ -252,7 +260,7 @@ function RoomOfferCard({
                         onClick={() => onSelect(q)}
                         aria-pressed={isSelected}
                       >
-                        {isSelected ? 'Selected' : 'Select'}
+                        {isSelected ? tr('Selected') : tr('Select')}
                       </Button>
                     </div>
                   </li>
@@ -280,13 +288,13 @@ function Overview({ hotel }: { hotel: HotelDetailDto }) {
     <div className="flex flex-col gap-10">
       <section aria-labelledby="about">
         <h2 id="about" className="font-display text-2xl font-semibold">
-          About this stay
+          {tr('About this stay')}
         </h2>
         <p className="mt-3 leading-relaxed whitespace-pre-line text-fg-muted">
           {hotel.description}
         </p>
         {hotel.amenityDetails.length > 0 && (
-          <ul className="mt-5 flex flex-wrap gap-2" aria-label="Highlights">
+          <ul className="mt-5 flex flex-wrap gap-2" aria-label={tr('Highlights')}>
             {hotel.amenityDetails.slice(0, 6).map((a) => (
               <li key={a.code}>
                 <Badge tone="primary" className="py-1 text-sm">
@@ -299,7 +307,7 @@ function Overview({ hotel }: { hotel: HotelDetailDto }) {
       </section>
       <section aria-labelledby="amenities">
         <h2 id="amenities" className="font-display text-2xl font-semibold">
-          Amenities
+          {tr('Amenities')}
         </h2>
         <ul className="mt-4 grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-3">
           {hotel.amenityDetails.map((a) => (
@@ -312,7 +320,7 @@ function Overview({ hotel }: { hotel: HotelDetailDto }) {
       </section>
       <section aria-labelledby="location" className="flex flex-col gap-4">
         <h2 id="location" className="font-display text-2xl font-semibold">
-          Location
+          {tr('Location')}
         </h2>
         <p className="flex items-center gap-1.5 text-sm text-fg-muted">
           <MapPin className="size-4" aria-hidden="true" />
@@ -321,7 +329,7 @@ function Overview({ hotel }: { hotel: HotelDetailDto }) {
           {hotel.postalCode}
         </p>
         <MapView
-          label={`Map showing ${hotel.name}`}
+          label={trf('Map showing {0}', [hotel.name])}
           className="h-72"
           markers={[
             {
@@ -337,11 +345,11 @@ function Overview({ hotel }: { hotel: HotelDetailDto }) {
         />
         {hotel.nearbyAttractions.length > 0 && (
           <div>
-            <h3 className="text-sm font-semibold">Nearby</h3>
+            <h3 className="text-sm font-semibold">{tr('Nearby')}</h3>
             <ul className="mt-2 grid gap-1.5 text-sm text-fg-muted sm:grid-cols-2">
               {hotel.nearbyAttractions.map((a) => (
                 <li key={a.name}>
-                  {a.name} · {a.distanceKm} km{' '}
+                  {a.name} · {a.distanceKm} {tr('km')}{' '}
                   <span className="text-fg-subtle">({a.category})</span>
                 </li>
               ))}
@@ -351,46 +359,47 @@ function Overview({ hotel }: { hotel: HotelDetailDto }) {
       </section>
       <section aria-labelledby="policies">
         <h2 id="policies" className="font-display text-2xl font-semibold">
-          House policies
+          {tr('House policies')}
         </h2>
         <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2">
           <div className="flex gap-2">
             <Clock className="mt-0.5 size-4 text-fg-subtle" aria-hidden="true" />
             <div>
-              <dt className="font-medium">Check-in / check-out</dt>
+              <dt className="font-medium">{tr('Check-in / check-out')}</dt>
               <dd className="text-fg-muted">
-                From {hotel.checkInTime} · Until {hotel.checkOutTime} (property local time)
+                {tr('From')} {hotel.checkInTime} {tr('· Until')} {hotel.checkOutTime}{' '}
+                {tr('(property local time)')}
               </dd>
             </div>
           </div>
           <div className="flex gap-2">
             <ShieldCheck className="mt-0.5 size-4 text-fg-subtle" aria-hidden="true" />
             <div>
-              <dt className="font-medium">Guests</dt>
+              <dt className="font-medium">{tr('Guests')}</dt>
               <dd className="text-fg-muted">
-                Minimum check-in age {hotel.policies.minimumCheckInAge}.{' '}
-                {hotel.policies.petsAllowed ? 'Pets welcome.' : 'No pets.'}{' '}
+                {tr('Minimum check-in age')} {hotel.policies.minimumCheckInAge}.{' '}
+                {hotel.policies.petsAllowed ? tr('Pets welcome.') : tr('No pets.')}{' '}
                 {hotel.policies.smokingAllowed
-                  ? 'Smoking allowed in designated areas.'
-                  : 'Non-smoking.'}
+                  ? tr('Smoking allowed in designated areas.')
+                  : tr('Non-smoking.')}
               </dd>
             </div>
           </div>
           {hotel.policies.cancellationSummary && (
             <div>
-              <dt className="font-medium">Cancellation</dt>
+              <dt className="font-medium">{tr('Cancellation')}</dt>
               <dd className="text-fg-muted">{hotel.policies.cancellationSummary}</dd>
             </div>
           )}
           {hotel.policies.childPolicy && (
             <div>
-              <dt className="font-medium">Children</dt>
+              <dt className="font-medium">{tr('Children')}</dt>
               <dd className="text-fg-muted">{hotel.policies.childPolicy}</dd>
             </div>
           )}
           {hotel.policies.additionalRules.length > 0 && (
             <div className="sm:col-span-2">
-              <dt className="font-medium">House rules</dt>
+              <dt className="font-medium">{tr('House rules')}</dt>
               <dd>
                 <ul className="mt-1 list-disc pl-5 text-fg-muted">
                   {hotel.policies.additionalRules.map((r) => (
@@ -405,16 +414,16 @@ function Overview({ hotel }: { hotel: HotelDetailDto }) {
       <HotelInsights hotel={hotel} />
       <section aria-labelledby="reviews">
         <h2 id="reviews" className="font-display text-2xl font-semibold">
-          Guest reviews
+          {tr('Guest reviews')}
         </h2>
         <div className="mt-3 flex flex-col gap-2 text-sm">
           <RatingBadge rating={hotel.ratingSummary} />
           <p className="text-fg-muted">
             {hotel.ratingSummary.source === 'DEVELOPMENT_SEED'
-              ? 'This rating is sample development data, not verified guest feedback.'
+              ? tr('This rating is sample development data, not verified guest feedback.')
               : hotel.ratingSummary.count === 0
-                ? 'No verified reviews yet. Reviews open to guests after completed stays.'
-                : 'Ratings come from verified guests after completed stays.'}
+                ? tr('No verified reviews yet. Reviews open to guests after completed stays.')
+                : tr('Ratings come from verified guests after completed stays.')}
           </p>
         </div>
         <HotelReviews slug={hotel.slug} />
@@ -458,16 +467,16 @@ export default function HotelDetailPage() {
         })()
       : null;
 
-  if (detail.isPending) return <PageSpinner label="Loading property" />;
+  if (detail.isPending) return <PageSpinner label={tr('Loading property')} />;
   if (detail.isError) {
     const err = normalizeApiError(detail.error);
     return (
       <div className="container-page py-16">
         {err.status === 404 ? (
           <EmptyState
-            title="This property is not available"
-            description="It may have been unpublished or the link is incorrect."
-            action={<Button onClick={() => navigate('/hotels')}>Browse stays</Button>}
+            title={tr('This property is not available')}
+            description={tr('It may have been unpublished or the link is incorrect.')}
+            action={<Button onClick={() => navigate('/hotels')}>{tr('Browse stays')}</Button>}
           />
         ) : (
           <ErrorState
@@ -504,11 +513,11 @@ export default function HotelDetailPage() {
         }
         className="inline-flex items-center gap-1.5 text-sm text-fg-muted hover:text-fg"
       >
-        <ArrowLeft className="size-4" aria-hidden="true" /> Back to results
+        <ArrowLeft className="size-4" aria-hidden="true" /> {tr('Back to results')}
       </Link>
       <header className="mt-4 flex flex-col gap-2">
         <p className="text-sm text-fg-subtle">
-          {PROPERTY_TYPE_LABELS[hotel.propertyType]}
+          {tr(PROPERTY_TYPE_LABELS[hotel.propertyType])}
           {hotel.starCategory > 0 ? ` · ${'★'.repeat(hotel.starCategory)}` : ''}
         </p>
         <h1 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
@@ -530,7 +539,7 @@ export default function HotelDetailPage() {
         <div className="flex flex-col gap-12">
           <section aria-labelledby="rooms" className="flex flex-col gap-5">
             <h2 id="rooms" className="font-display text-2xl font-semibold">
-              Rooms & availability
+              {tr('Rooms & availability')}
             </h2>
             <Card variant="muted" className="p-5">
               <AvailabilityForm
@@ -541,7 +550,7 @@ export default function HotelDetailPage() {
             {!stay ? (
               <div className="flex flex-col gap-4">
                 <p className="text-sm text-fg-muted">
-                  Choose dates to see live availability and prices for each room.
+                  {tr('Choose dates to see live availability and prices for each room.')}
                 </p>
                 {hotel.roomTypes.map((room) => (
                   <RoomOfferCard
@@ -567,8 +576,10 @@ export default function HotelDetailPage() {
             ) : (
               <div className="flex flex-col gap-4">
                 {offers.data.every((o) => o.offers.length === 0) && (
-                  <Alert tone="warning" title="No rooms available">
-                    Nothing is available for every night of these dates. Try different dates.
+                  <Alert tone="warning" title={tr('No rooms available')}>
+                    {tr(
+                      'Nothing is available for every night of these dates. Try different dates.',
+                    )}
                   </Alert>
                 )}
                 {offers.data.map((offer) => (
@@ -585,10 +596,10 @@ export default function HotelDetailPage() {
           <Overview hotel={hotel} />
         </div>
 
-        <aside className="lg:sticky lg:top-24 lg:self-start" aria-label="Booking summary">
+        <aside className="lg:sticky lg:top-24 lg:self-start" aria-label={tr('Booking summary')}>
           <Card>
             <CardHeader>
-              <CardTitle as="h2">Your selection</CardTitle>
+              <CardTitle as="h2">{tr('Your selection')}</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
               {selected ? (
@@ -598,20 +609,21 @@ export default function HotelDetailPage() {
                     <p className="text-fg-muted">{selected.ratePlan.name}</p>
                     <p className="text-fg-subtle">
                       {selected.checkIn} → {selected.checkOut} ·{' '}
-                      {selected.occupancy.adults + selected.occupancy.children} guests ·{' '}
-                      {selected.rooms} room{selected.rooms === 1 ? '' : 's'}
+                      {selected.occupancy.adults + selected.occupancy.children} {tr('guests ·')}{' '}
+                      {selected.rooms} {tr('room')}
+                      {selected.rooms === 1 ? '' : 's'}
                     </p>
                   </div>
                   <PriceBreakdown quote={selected} />
                   <Button size="lg" fullWidth onClick={continueToBooking}>
-                    Continue to booking
+                    {tr('Continue to booking')}
                   </Button>
                 </>
               ) : (
                 <p className="text-sm text-fg-muted">
                   {stay
-                    ? 'Select a room and rate to see the full price breakdown.'
-                    : 'Choose your dates to see prices.'}
+                    ? tr('Select a room and rate to see the full price breakdown.')
+                    : tr('Choose your dates to see prices.')}
                 </p>
               )}
             </CardContent>
@@ -622,7 +634,7 @@ export default function HotelDetailPage() {
       {similar.data && similar.data.length > 0 && (
         <section aria-labelledby="similar" className="mt-20">
           <h2 id="similar" className="font-display text-2xl font-semibold">
-            Similar stays
+            {tr('Similar stays')}
           </h2>
           <ul className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {similar.data.map((h) => (

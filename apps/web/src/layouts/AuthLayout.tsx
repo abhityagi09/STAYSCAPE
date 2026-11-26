@@ -2,22 +2,35 @@ import { Outlet } from 'react-router';
 import { BadgeCheck, LockKeyhole, ShieldCheck } from 'lucide-react';
 import { Logo } from '@/components/brand/Logo';
 import { ThemeToggle } from '@/features/ui/ThemeToggle';
+import { tr } from '@/lib/tr';
 
 const promises = [
   {
     icon: BadgeCheck,
-    title: 'Verified partners',
-    body: 'Every property is reviewed before it can accept bookings.',
+    get title() {
+      return tr('Verified partners');
+    },
+    get body() {
+      return tr('Every property is reviewed before it can accept bookings.');
+    },
   },
   {
     icon: LockKeyhole,
-    title: 'Secure by design',
-    body: 'Rotating sessions, encrypted passwords and device controls.',
+    get title() {
+      return tr('Secure by design');
+    },
+    get body() {
+      return tr('Rotating sessions, encrypted passwords and device controls.');
+    },
   },
   {
     icon: ShieldCheck,
-    title: 'Clear pricing',
-    body: 'Taxes and fees are shown before you pay — no surprises.',
+    get title() {
+      return tr('Clear pricing');
+    },
+    get body() {
+      return tr('Taxes and fees are shown before you pay — no surprises.');
+    },
   },
 ];
 
@@ -27,9 +40,9 @@ export function AuthLayout() {
       <aside className="hero-texture relative hidden flex-col justify-between overflow-hidden p-12 text-ivory lg:flex">
         <Logo tone="inverse" />
         <div className="relative z-10 max-w-md">
-          <p className="eyebrow !text-gold-300">Stays worth the journey</p>
+          <p className="eyebrow !text-gold-300">{tr('Stays worth the journey')}</p>
           <h2 className="mt-4 font-display text-display-sm font-semibold">
-            Travel that feels considered, from the first click.
+            {tr('Travel that feels considered, from the first click.')}
           </h2>
           <ul className="mt-10 flex flex-col gap-6">
             {promises.map(({ icon: Icon, title, body }) => (
@@ -45,7 +58,9 @@ export function AuthLayout() {
             ))}
           </ul>
         </div>
-        <p className="text-xs text-ivory/50">© {new Date().getFullYear()} STAYSCAPE</p>
+        <p className="text-xs text-ivory/50">
+          © {new Date().getFullYear()} {tr('STAYSCAPE')}
+        </p>
         <svg
           className="pointer-events-none absolute -right-24 -bottom-24 size-[420px] text-gold-500/15"
           viewBox="0 0 200 200"

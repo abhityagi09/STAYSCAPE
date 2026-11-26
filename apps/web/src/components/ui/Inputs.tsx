@@ -11,6 +11,7 @@ import { ImagePlus, Search, X } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Button } from './Button';
 import { controlClasses } from './Field';
+import { tr, trf } from '@/lib/tr';
 
 /* ---------------------------------------------------------------- SearchInput */
 export interface SearchInputProps extends Omit<
@@ -72,7 +73,7 @@ export function SearchInput({
             inputRef.current?.focus();
           }}
           className="absolute top-1/2 right-2 inline-flex size-7 -translate-y-1/2 items-center justify-center rounded-full text-fg-subtle hover:bg-surface-muted hover:text-fg"
-          aria-label="Clear search"
+          aria-label={tr('Clear search')}
         >
           <X className="size-4" aria-hidden="true" />
         </button>
@@ -182,7 +183,7 @@ export function ImageUploader({
           )}
         </div>
         <div className="flex flex-1 flex-col items-center gap-2 text-center sm:items-start sm:text-left">
-          <p className="text-sm text-fg-muted">Drag an image here, or</p>
+          <p className="text-sm text-fg-muted">{tr('Drag an image here, or')}</p>
           <input
             ref={inputRef}
             id={inputId}
@@ -200,10 +201,10 @@ export function ImageUploader({
             loadingText="Uploading…"
             onClick={() => inputRef.current?.click()}
           >
-            Choose image
+            {tr('Choose image')}
           </Button>
           <p id={`${inputId}-hint`} className="text-xs text-fg-subtle">
-            {hint ?? `JPEG, PNG or WebP, up to ${formatBytes(maxBytes)}.`}
+            {hint ?? trf('JPEG, PNG or WebP, up to {0}.', [formatBytes(maxBytes)])}
           </p>
         </div>
       </div>

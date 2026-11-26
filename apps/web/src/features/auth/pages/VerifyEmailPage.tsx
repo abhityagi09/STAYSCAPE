@@ -8,6 +8,7 @@ import { errorMessage } from '@/lib/api/errors';
 import { authApi } from '../api';
 import { userUpdated } from '../auth-slice';
 import { useAuth } from '../use-auth';
+import { tr } from '@/lib/tr';
 
 type State =
   | { kind: 'verifying' }
@@ -44,7 +45,7 @@ function ResendForm({ defaultEmail }: { defaultEmail?: string }) {
     <form onSubmit={submit} noValidate className="flex w-full flex-col gap-4 text-left">
       {status && <Alert tone={status.tone}>{status.text}</Alert>}
       <Input
-        label="Email address"
+        label={tr('Email address')}
         type="email"
         autoComplete="email"
         value={email}
@@ -52,7 +53,7 @@ function ResendForm({ defaultEmail }: { defaultEmail?: string }) {
         error={fieldError}
       />
       <Button type="submit" loading={busy} loadingText="Sending…">
-        Send a new verification link
+        {tr('Send a new verification link')}
       </Button>
     </form>
   );
@@ -82,8 +83,8 @@ export default function VerifyEmailPage() {
   if (state.kind === 'verifying') {
     return (
       <div className="flex flex-col items-center gap-4 py-12 text-center text-primary">
-        <Spinner size="lg" label="Verifying your email" />
-        <p className="text-fg-muted">Verifying your email address…</p>
+        <Spinner size="lg" label={tr('Verifying your email')} />
+        <p className="text-fg-muted">{tr('Verifying your email address…')}</p>
       </div>
     );
   }
@@ -95,13 +96,15 @@ export default function VerifyEmailPage() {
           <CircleCheck className="size-7" aria-hidden="true" />
         </span>
         <div>
-          <h1 className="font-display text-3xl font-semibold tracking-tight">Email verified</h1>
+          <h1 className="font-display text-3xl font-semibold tracking-tight">
+            {tr('Email verified')}
+          </h1>
           <p className="mt-2 text-fg-muted" role="status">
-            {state.email} is confirmed. Thank you for securing your account.
+            {state.email} {tr('is confirmed. Thank you for securing your account.')}
           </p>
         </div>
         <ButtonLink to={user ? '/account' : '/login'}>
-          {user ? 'Go to my account' : 'Sign in'}
+          {user ? tr('Go to my account') : tr('Sign in')}
         </ButtonLink>
       </div>
     );
@@ -111,12 +114,14 @@ export default function VerifyEmailPage() {
     <div className="flex flex-col items-center gap-6 text-center">
       <ErrorState
         title={
-          state.kind === 'missing' ? 'Verification link missing' : 'We could not verify this link'
+          state.kind === 'missing'
+            ? tr('Verification link missing')
+            : tr('We could not verify this link')
         }
         description={
           state.kind === 'failed'
             ? state.message
-            : 'Open the link from your verification email, or request a new one below.'
+            : tr('Open the link from your verification email, or request a new one below.')
         }
         className="w-full"
       />

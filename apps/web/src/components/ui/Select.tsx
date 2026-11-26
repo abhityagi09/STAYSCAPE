@@ -10,6 +10,7 @@ import { Check, ChevronDown, X } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useDismiss } from '@/hooks/overlay';
 import { Field, controlClasses } from './Field';
+import { tr } from '@/lib/tr';
 
 export interface SelectOption<T extends string = string> {
   value: T;
@@ -236,7 +237,7 @@ export function MultiSelect<T extends string>({
           onClick={() => onChange([])}
           className="inline-flex w-fit items-center gap-1 text-xs text-fg-subtle hover:text-fg"
         >
-          <X className="size-3" aria-hidden="true" /> Clear selection
+          <X className="size-3" aria-hidden="true" /> {tr('Clear selection')}
         </button>
       )}
       {hint && !error && (

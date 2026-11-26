@@ -8,12 +8,37 @@ import { ThemeToggle } from '@/features/ui/ThemeToggle';
 import { LanguageSwitcher, useI18n, type MessageKey } from '@/lib/i18n';
 import { cn } from '@/lib/cn';
 import { UserMenu } from './UserMenu';
+import { tr } from '@/lib/tr';
 
 export const PUBLIC_NAV = [
-  { to: '/hotels', label: 'Find a stay', labelKey: 'site.findStay' },
-  { to: '/#destinations', label: 'Destinations', labelKey: 'site.destinations' },
-  { to: '/#inspiration', label: 'Inspiration', labelKey: 'site.inspiration' },
-  { to: '/partners', label: 'List your property', labelKey: 'site.listProperty' },
+  {
+    to: '/hotels',
+    get label() {
+      return tr('Find a stay');
+    },
+    labelKey: 'site.findStay',
+  },
+  {
+    to: '/#destinations',
+    get label() {
+      return tr('Destinations');
+    },
+    labelKey: 'site.destinations',
+  },
+  {
+    to: '/#inspiration',
+    get label() {
+      return tr('Inspiration');
+    },
+    labelKey: 'site.inspiration',
+  },
+  {
+    to: '/partners',
+    get label() {
+      return tr('List your property');
+    },
+    labelKey: 'site.listProperty',
+  },
 ] as const satisfies ReadonlyArray<{ to: string; label: string; labelKey: MessageKey }>;
 
 export function SiteHeader({ overlay = false }: { overlay?: boolean }) {
@@ -46,7 +71,7 @@ export function SiteHeader({ overlay = false }: { overlay?: boolean }) {
     >
       <div className="container-page flex h-[72px] items-center justify-between gap-6">
         <Logo tone={inverse ? 'inverse' : 'default'} />
-        <nav aria-label="Primary" className="hidden items-center gap-1 lg:flex">
+        <nav aria-label={tr('Primary')} className="hidden items-center gap-1 lg:flex">
           {PUBLIC_NAV.map((item) => (
             <NavLink
               key={item.to}
@@ -84,7 +109,7 @@ export function SiteHeader({ overlay = false }: { overlay?: boolean }) {
               </div>
             ))}
           <IconButton
-            label="Open menu"
+            label={tr('Open menu')}
             icon={<Menu />}
             className="lg:hidden"
             variant={inverse ? 'inverse' : 'ghost'}
@@ -94,7 +119,7 @@ export function SiteHeader({ overlay = false }: { overlay?: boolean }) {
         </div>
       </div>
       <Drawer open={menuOpen} onClose={() => setMenuOpen(false)} title={t('site.menu')}>
-        <nav aria-label="Mobile" className="flex flex-col gap-1">
+        <nav aria-label={tr('Mobile')} className="flex flex-col gap-1">
           {PUBLIC_NAV.map((item) => (
             <Link
               key={item.to}
@@ -183,7 +208,7 @@ export function SiteFooter() {
       <div className="border-t border-white/10">
         <div className="container-page flex flex-col gap-2 py-6 text-xs text-ivory/50 sm:flex-row sm:justify-between">
           <p>
-            © {year} STAYSCAPE. {t('footer.rights')}
+            © {year} {tr('STAYSCAPE.')} {t('footer.rights')}
           </p>
           <p>{t('footer.prices')}</p>
         </div>
@@ -201,7 +226,7 @@ export function PublicLayout() {
         href="#main"
         className="sr-only z-50 rounded-md bg-surface px-4 py-2 focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
       >
-        Skip to content
+        {tr('Skip to content')}
       </a>
       <SiteHeader overlay={isHome} />
       <main id="main" className="flex-1">

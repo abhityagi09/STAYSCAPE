@@ -6,6 +6,7 @@ import { controlClasses } from '@/components/ui/Field';
 import { cn } from '@/lib/cn';
 import { useSuggestions } from '../api';
 import type { SearchState } from '../search-state';
+import { tr, trf } from '@/lib/tr';
 
 type StayFields = Pick<
   SearchState,
@@ -42,7 +43,7 @@ function Stepper({
           className="inline-flex size-8 items-center justify-center rounded-full border border-border-strong disabled:opacity-40"
           onClick={() => onChange(value - 1)}
           disabled={value <= min}
-          aria-label={`Fewer ${label.toLowerCase()}`}
+          aria-label={trf('Fewer {0}', [label.toLowerCase()])}
         >
           <Minus className="size-3.5" aria-hidden="true" />
         </button>
@@ -54,7 +55,7 @@ function Stepper({
           className="inline-flex size-8 items-center justify-center rounded-full border border-border-strong disabled:opacity-40"
           onClick={() => onChange(value + 1)}
           disabled={value >= max}
-          aria-label={`More ${label.toLowerCase()}`}
+          aria-label={trf('More {0}', [label.toLowerCase()])}
         >
           <Plus className="size-3.5" aria-hidden="true" />
         </button>
@@ -93,7 +94,7 @@ function DestinationInput({
       onBlur={(e) => !rootRef.current?.contains(e.relatedTarget) && setOpen(false)}
     >
       <label htmlFor={inputId} className="text-sm font-medium">
-        Destination
+        {tr('Destination')}
       </label>
       <div className="relative">
         <MapPin
@@ -108,7 +109,7 @@ function DestinationInput({
           aria-autocomplete="list"
           aria-activedescendant={active >= 0 ? `${listId}-${active}` : undefined}
           autoComplete="off"
-          placeholder="City, region or property"
+          placeholder={tr('City, region or property')}
           value={value}
           onChange={(e) => {
             onChange(e.target.value);
@@ -137,7 +138,7 @@ function DestinationInput({
         <ul
           id={listId}
           role="listbox"
-          aria-label="Suggestions"
+          aria-label={tr('Suggestions')}
           className="absolute top-full z-30 mt-1 w-full overflow-hidden rounded-xl border border-border bg-surface py-1 shadow-lg"
         >
           {items.map((item, i) => (
@@ -160,7 +161,7 @@ function DestinationInput({
             >
               <span className="font-medium">{item.label}</span>
               <span className="text-xs text-fg-subtle">
-                {item.type === 'hotel' ? `Property · ${item.sublabel}` : item.sublabel}
+                {item.type === 'hotel' ? trf('Property · {0}', [item.sublabel]) : item.sublabel}
               </span>
             </li>
           ))}
@@ -222,7 +223,7 @@ export function StaySearchBar({
     <form
       onSubmit={submit}
       noValidate
-      aria-label="Search stays"
+      aria-label={tr('Search stays')}
       className={cn(
         'grid gap-4 rounded-3xl border p-5 lg:grid-cols-[1.5fr_1fr_1fr_1fr_auto] lg:items-end',
         variant === 'hero'
@@ -239,7 +240,7 @@ export function StaySearchBar({
         }
       />
       <DatePicker
-        label="Check-in"
+        label={tr('Check-in')}
         min={today}
         value={values.checkIn}
         onChange={(e) =>
@@ -255,17 +256,17 @@ export function StaySearchBar({
         }
       />
       <DatePicker
-        label="Check-out"
+        label={tr('Check-out')}
         min={values.checkIn ? addDays(values.checkIn, 1) : addDays(today, 1)}
         value={values.checkOut}
         onChange={(e) => set({ checkOut: e.target.value })}
       />
       <div className="flex flex-col gap-1.5">
         <span className="text-sm font-medium" id="guest-picker-label">
-          Guests
+          {tr('Guests')}
         </span>
         <Popover
-          label="Guests and rooms"
+          label={tr('Guests and rooms')}
           align="end"
           className="w-80"
           trigger={(props) => (
@@ -277,7 +278,8 @@ export function StaySearchBar({
             >
               <UsersRound className="size-4 text-fg-subtle" aria-hidden="true" />
               <span id="guest-picker-summary" className="truncate">
-                {guests} guest{guests === 1 ? '' : 's'} · {values.rooms} room
+                {guests} {tr('guest')}
+                {guests === 1 ? '' : 's'} · {values.rooms} {tr('room')}
                 {values.rooms === 1 ? '' : 's'}
               </span>
             </button>
@@ -286,16 +288,16 @@ export function StaySearchBar({
           {(close) => (
             <div className="flex flex-col divide-y divide-border">
               <Stepper
-                label="Adults"
-                description="Age 13+"
+                label={tr('Adults')}
+                description={tr('Age 13+')}
                 value={values.adults}
                 min={1}
                 max={30}
                 onChange={(adults) => set({ adults })}
               />
               <Stepper
-                label="Children"
-                description="Age 0–12"
+                label={tr('Children')}
+                description={tr('Age 0–12')}
                 value={values.children}
                 min={0}
                 max={10}
@@ -313,7 +315,7 @@ export function StaySearchBar({
                 <div className="grid grid-cols-2 gap-2 py-2">
                   {values.childrenAges.map((age, i) => (
                     <label key={i} className="flex flex-col gap-1 text-xs font-medium">
-                      Child {i + 1} age
+                      {tr('Child')} {i + 1} {tr('age')}
                       <select
                         value={age}
                         onChange={(e) =>
@@ -327,7 +329,7 @@ export function StaySearchBar({
                       >
                         {Array.from({ length: 18 }, (_, a) => (
                           <option key={a} value={a}>
-                            {a === 0 ? 'Under 1' : a}
+                            {a === 0 ? tr('Under 1') : a}
                           </option>
                         ))}
                       </select>
@@ -336,7 +338,7 @@ export function StaySearchBar({
                 </div>
               )}
               <Stepper
-                label="Rooms"
+                label={tr('Rooms')}
                 value={values.rooms}
                 min={1}
                 max={8}
@@ -344,7 +346,7 @@ export function StaySearchBar({
               />
               <div className="pt-3">
                 <Button size="sm" fullWidth onClick={close}>
-                  Done
+                  {tr('Done')}
                 </Button>
               </div>
             </div>
@@ -352,7 +354,7 @@ export function StaySearchBar({
         </Popover>
       </div>
       <Button type="submit" size="lg" leftIcon={<Search className="size-4" aria-hidden="true" />}>
-        Search
+        {tr('Search')}
       </Button>
       {error && (
         <p role="alert" className="text-sm font-medium text-danger lg:col-span-5">

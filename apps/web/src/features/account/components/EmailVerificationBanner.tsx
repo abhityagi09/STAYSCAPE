@@ -3,6 +3,7 @@ import type { UserDto } from '@stayscape/shared';
 import { Alert, Button } from '@/components/ui';
 import { authApi } from '@/features/auth/api';
 import { errorMessage } from '@/lib/api/errors';
+import { tr, trf } from '@/lib/tr';
 
 export function EmailVerificationBanner({ user }: { user: UserDto }) {
   const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
@@ -24,7 +25,7 @@ export function EmailVerificationBanner({ user }: { user: UserDto }) {
   return (
     <Alert
       tone={state === 'error' ? 'danger' : 'warning'}
-      title="Verify your email address"
+      title={tr('Verify your email address')}
       action={
         state !== 'sent' && (
           <Button
@@ -34,14 +35,17 @@ export function EmailVerificationBanner({ user }: { user: UserDto }) {
             loadingText="Sending…"
             onClick={() => void resend()}
           >
-            Resend verification email
+            {tr('Resend verification email')}
           </Button>
         )
       }
     >
       {state === 'sent' || state === 'error'
         ? message
-        : `We sent a link to ${user.email}. Verifying protects your account and is required before booking.`}
+        : trf(
+            'We sent a link to {0}. Verifying protects your account and is required before booking.',
+            [user.email],
+          )}
     </Alert>
   );
 }

@@ -7,6 +7,7 @@ import { Alert, Button, ButtonLink, ErrorState, PasswordInput, useToast } from '
 import { ApiClientError } from '@/lib/api/errors';
 import { applyServerErrors } from '@/lib/forms';
 import { authApi } from '../api';
+import { tr } from '@/lib/tr';
 
 export default function ResetPasswordPage() {
   const [params] = useSearchParams();
@@ -28,8 +29,8 @@ export default function ResetPasswordPage() {
   if (!/^[A-Za-z0-9_-]{20,200}$/.test(token)) {
     return (
       <ErrorState
-        title="This reset link is incomplete"
-        description="Open the link from your email again, or request a new one."
+        title={tr('This reset link is incomplete')}
+        description={tr('Open the link from your email again, or request a new one.')}
         className="items-center"
       />
     );
@@ -40,8 +41,8 @@ export default function ResetPasswordPage() {
     try {
       await authApi.resetPassword({ token, password });
       toast({
-        title: 'Password updated',
-        description: 'Sign in with your new password.',
+        title: tr('Password updated'),
+        description: tr('Sign in with your new password.'),
         variant: 'success',
       });
       navigate('/login?reason=reset', { replace: true });
@@ -57,10 +58,10 @@ export default function ResetPasswordPage() {
     <div className="flex flex-col gap-8">
       <div>
         <h1 className="font-display text-3xl font-semibold tracking-tight">
-          Choose a new password
+          {tr('Choose a new password')}
         </h1>
         <p className="mt-2 text-fg-muted">
-          For your security, all devices will be signed out once it&apos;s changed.
+          {tr("For your security, all devices will be signed out once it's changed.")}
         </p>
       </div>
       {formError && (
@@ -69,7 +70,7 @@ export default function ResetPasswordPage() {
           action={
             formError.expired ? (
               <ButtonLink to="/forgot-password" size="sm" variant="outline">
-                Request a new link
+                {tr('Request a new link')}
               </ButtonLink>
             ) : undefined
           }
@@ -79,7 +80,7 @@ export default function ResetPasswordPage() {
       )}
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
         <PasswordInput
-          label="New password"
+          label={tr('New password')}
           autoComplete="new-password"
           required
           showRequirements
@@ -87,14 +88,14 @@ export default function ResetPasswordPage() {
           {...register('password')}
         />
         <PasswordInput
-          label="Confirm new password"
+          label={tr('Confirm new password')}
           autoComplete="new-password"
           required
           error={errors.confirmPassword?.message}
           {...register('confirmPassword')}
         />
         <Button type="submit" size="lg" fullWidth loading={isSubmitting} loadingText="Updating…">
-          Update password
+          {tr('Update password')}
         </Button>
       </form>
     </div>

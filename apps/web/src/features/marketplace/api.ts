@@ -132,6 +132,7 @@ export const useHotelDetail = (slug: string) =>
   useQuery({
     queryKey: ['hotel', slug],
     queryFn: ({ signal }) => marketplaceApi.detail(slug, signal),
+    enabled: slug !== '',
   });
 export const useSimilar = (slug: string) =>
   useQuery({

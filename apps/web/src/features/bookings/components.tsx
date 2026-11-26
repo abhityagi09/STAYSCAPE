@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui';
 import { ResponsiveImage } from '@/features/marketplace/components/HotelCard';
 import type { PriceBreakdownSource } from '@/features/marketplace/components/PriceBreakdown';
 import { cn } from '@/lib/cn';
+import { tr, trf } from '@/lib/tr';
 
 type Tone = 'neutral' | 'success' | 'warning' | 'danger' | 'info' | 'accent';
 
@@ -51,13 +52,13 @@ const refundTone: Record<RefundStatus, Tone> = {
 };
 
 export const BookingStatusBadge = ({ status }: { status: BookingStatus }) => (
-  <Badge tone={bookingTone[status]}>{BOOKING_STATUS_LABELS[status]}</Badge>
+  <Badge tone={bookingTone[status]}>{tr(BOOKING_STATUS_LABELS[status])}</Badge>
 );
 export const PaymentStatusBadge = ({ status }: { status: PaymentStatus }) => (
-  <Badge tone={paymentTone[status]}>{PAYMENT_STATUS_LABELS[status]}</Badge>
+  <Badge tone={paymentTone[status]}>{tr(PAYMENT_STATUS_LABELS[status])}</Badge>
 );
 export const RefundStatusBadge = ({ status }: { status: RefundStatus }) => (
-  <Badge tone={refundTone[status]}>{REFUND_STATUS_LABELS[status]}</Badge>
+  <Badge tone={refundTone[status]}>{tr(REFUND_STATUS_LABELS[status])}</Badge>
 );
 
 export const money = (minor: number, currency: CurrencyCode) => formatMinorUnits(minor, currency);
@@ -147,8 +148,10 @@ export function HoldCountdown({
       </span>
       <span className="sr-only">
         {remaining === 0
-          ? 'Hold expired'
-          : `Hold expires at ${new Date(target).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+          ? tr('Hold expired')
+          : trf('Hold expires at {0}', [
+              new Date(target).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            ])}
       </span>
     </div>
   );
@@ -191,17 +194,18 @@ export function StaySummary({
         </p>
         <p className="flex items-center gap-1.5">
           <CalendarDays className="size-4 shrink-0 text-fg-subtle" aria-hidden="true" />
-          {formatStayDate(checkIn)} → {formatStayDate(checkOut)} · {nights} night
+          {formatStayDate(checkIn)} → {formatStayDate(checkOut)} · {nights} {tr('night')}
           {nights === 1 ? '' : 's'}
         </p>
         {hotel.checkInTime && (
           <p className="text-xs text-fg-subtle">
-            Check-in from {hotel.checkInTime} · check-out by {hotel.checkOutTime}
+            {tr('Check-in from')} {hotel.checkInTime} {tr('· check-out by')} {hotel.checkOutTime}
           </p>
         )}
         <p className="flex items-center gap-1.5">
           <UsersRound className="size-4 shrink-0 text-fg-subtle" aria-hidden="true" />
-          {guests} guest{guests === 1 ? '' : 's'} · {roomLine}
+          {guests} {tr('guest')}
+          {guests === 1 ? '' : 's'} · {roomLine}
         </p>
         {children}
       </div>

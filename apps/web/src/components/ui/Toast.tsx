@@ -10,6 +10,7 @@ import {
 } from 'react';
 import { CircleAlert, CircleCheck, Info, TriangleAlert, X } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { tr } from '@/lib/tr';
 
 export type ToastVariant = 'info' | 'success' | 'warning' | 'error';
 
@@ -76,7 +77,7 @@ function ToastItem({ toast, onDismiss }: { toast: ToastRecord; onDismiss: () => 
         type="button"
         onClick={onDismiss}
         className="rounded-md p-1 text-fg-subtle hover:text-fg focus-visible:outline-2 focus-visible:outline-ring"
-        aria-label="Dismiss notification"
+        aria-label={tr('Dismiss notification')}
       >
         <X className="size-4" aria-hidden="true" />
       </button>
@@ -112,7 +113,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={api}>
       {children}
       <section
-        aria-label="Notifications"
+        aria-label={tr('Notifications')}
         // Top-right, below the 64–72px sticky headers: bottom placement covered page actions
         // (save buttons, the comparison tray) and hover-to-pause then kept them covered.
         className="pointer-events-none fixed inset-x-0 top-[76px] z-[60] flex justify-center p-4 sm:inset-x-auto sm:right-0 sm:justify-end"

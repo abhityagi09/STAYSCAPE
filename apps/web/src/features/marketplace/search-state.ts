@@ -8,6 +8,7 @@ import {
   type PropertyType,
   type SearchSort,
 } from '@stayscape/shared';
+import { tr } from '@/lib/tr';
 
 /** All search criteria live in the URL so any filtered search can be shared or bookmarked. */
 export interface SearchState {
@@ -83,15 +84,33 @@ const FLAGS = [
 ] as const;
 export type FlagKey = (typeof FLAGS)[number];
 export const FLAG_LABELS: Record<FlagKey, string> = {
-  breakfast: 'Breakfast included',
-  parking: 'Parking',
-  pool: 'Pool',
-  wifi: 'Free Wi-Fi',
-  petFriendly: 'Pet-friendly',
-  accessible: 'Wheelchair accessible',
-  accessibilityVerifiedOnly: 'Accessibility checked by Stayscape',
-  freeCancellation: 'Free cancellation',
-  instantConfirmation: 'Instant confirmation',
+  get breakfast() {
+    return tr('Breakfast included');
+  },
+  get parking() {
+    return tr('Parking');
+  },
+  get pool() {
+    return tr('Pool');
+  },
+  get wifi() {
+    return tr('Free Wi-Fi');
+  },
+  get petFriendly() {
+    return tr('Pet-friendly');
+  },
+  get accessible() {
+    return tr('Wheelchair accessible');
+  },
+  get accessibilityVerifiedOnly() {
+    return tr('Accessibility checked by Stayscape');
+  },
+  get freeCancellation() {
+    return tr('Free cancellation');
+  },
+  get instantConfirmation() {
+    return tr('Instant confirmation');
+  },
 };
 
 const int = (v: string | null, fallback: number, min: number, max: number) => {

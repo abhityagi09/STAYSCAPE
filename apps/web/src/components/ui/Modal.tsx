@@ -4,6 +4,7 @@ import { X } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useDismiss, useFocusTrap, useScrollLock } from '@/hooks/overlay';
 import { IconButton } from './IconButton';
+import { tr } from '@/lib/tr';
 
 interface OverlayBaseProps {
   open: boolean;
@@ -85,7 +86,7 @@ export function Modal({
             )}
           </div>
           {dismissible && (
-            <IconButton label="Close dialog" icon={<X />} size="sm" onClick={onClose} />
+            <IconButton label={tr('Close dialog')} icon={<X />} size="sm" onClick={onClose} />
           )}
         </div>
         <div className="overflow-y-auto px-6 py-5">{children}</div>
@@ -149,7 +150,9 @@ export function Drawer({
               </p>
             )}
           </div>
-          {dismissible && <IconButton label="Close" icon={<X />} size="sm" onClick={onClose} />}
+          {dismissible && (
+            <IconButton label={tr('Close')} icon={<X />} size="sm" onClick={onClose} />
+          )}
         </div>
         <div className="flex-1 overflow-y-auto px-5 py-4">{children}</div>
         {footer && <div className="border-t border-border px-5 py-4">{footer}</div>}

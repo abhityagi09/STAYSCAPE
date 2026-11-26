@@ -24,6 +24,7 @@ import { NotificationList } from '../components/Notifications';
 import { PreferencesForm } from '../components/PreferencesForm';
 import { AvatarCard, ProfileForm } from '../components/ProfileForm';
 import { ChangePasswordCard, SessionsCard } from '../components/SecuritySettings';
+import { tr, trf } from '@/lib/tr';
 
 function useUser(): UserDto | null {
   return useAuth().user;
@@ -32,18 +33,18 @@ function useUser(): UserDto | null {
 export function AccountChecklist({ user }: { user: UserDto }) {
   // Derived entirely from the real account record.
   const steps = [
-    { done: true, label: 'Create your account', to: '/account/profile' },
-    { done: user.emailVerified, label: 'Verify your email address', to: '/account' },
-    { done: Boolean(user.phone), label: 'Add a mobile number', to: '/account/profile' },
-    { done: Boolean(user.avatarUrl), label: 'Add a profile photo', to: '/account/profile' },
+    { done: true, label: tr('Create your account'), to: '/account/profile' },
+    { done: user.emailVerified, label: tr('Verify your email address'), to: '/account' },
+    { done: Boolean(user.phone), label: tr('Add a mobile number'), to: '/account/profile' },
+    { done: Boolean(user.avatarUrl), label: tr('Add a profile photo'), to: '/account/profile' },
   ];
   const complete = steps.filter((s) => s.done).length;
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Account setup</CardTitle>
+        <CardTitle>{tr('Account setup')}</CardTitle>
         <CardDescription>
-          {complete} of {steps.length} complete
+          {complete} {tr('of')} {steps.length} {tr('complete')}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -53,7 +54,7 @@ export function AccountChecklist({ user }: { user: UserDto }) {
           aria-valuemin={0}
           aria-valuemax={steps.length}
           aria-valuenow={complete}
-          aria-label="Account setup progress"
+          aria-label={tr('Account setup progress')}
         >
           <div
             className="h-full rounded-full bg-primary transition-[width] duration-500"
@@ -70,7 +71,7 @@ export function AccountChecklist({ user }: { user: UserDto }) {
                   <Circle className="size-4 text-fg-subtle" aria-hidden="true" />
                 )}
                 <span className={cn(step.done && 'text-fg-muted line-through')}>{step.label}</span>
-                <span className="sr-only">{step.done ? '(done)' : '(to do)'}</span>
+                <span className="sr-only">{step.done ? tr('(done)') : tr('(to do)')}</span>
               </Link>
             </li>
           ))}
@@ -87,23 +88,25 @@ export function CustomerDashboardPage() {
   return (
     <div className="flex flex-col gap-8">
       <PageHeader
-        eyebrow="Your account"
-        title={`Hello, ${user.firstName}`}
-        description="Manage your profile, security and travel preferences."
+        eyebrow={tr('Your account')}
+        title={trf('Hello, {0}', [user.firstName])}
+        description={tr('Manage your profile, security and travel preferences.')}
       />
       <EmailVerificationBanner user={user} />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <Card>
           <CardHeader>
-            <CardTitle>Upcoming stays</CardTitle>
-            <CardDescription>Your confirmed reservations will appear here.</CardDescription>
+            <CardTitle>{tr('Upcoming stays')}</CardTitle>
+            <CardDescription>{tr('Your confirmed reservations will appear here.')}</CardDescription>
           </CardHeader>
           <CardContent>
             <EmptyState
               compact
               icon={<CalendarCheck />}
-              title="No upcoming stays"
-              description="Booking opens as verified properties join STAYSCAPE. You'll be able to reserve and manage trips from here."
+              title={tr('No upcoming stays')}
+              description={tr(
+                "Booking opens as verified properties join STAYSCAPE. You'll be able to reserve and manage trips from here.",
+              )}
               action={
                 <ButtonLink
                   to="/search"
@@ -111,7 +114,7 @@ export function CustomerDashboardPage() {
                   size="sm"
                   leftIcon={<Search className="size-4" aria-hidden="true" />}
                 >
-                  Explore stays
+                  {tr('Explore stays')}
                 </ButtonLink>
               }
             />
@@ -122,14 +125,14 @@ export function CustomerDashboardPage() {
       <Card>
         <CardHeader className="flex-row items-center justify-between">
           <div>
-            <CardTitle>Recent notifications</CardTitle>
-            <CardDescription>Account and security activity.</CardDescription>
+            <CardTitle>{tr('Recent notifications')}</CardTitle>
+            <CardDescription>{tr('Account and security activity.')}</CardDescription>
           </div>
           <Link
             to="/account/notifications"
             className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
           >
-            View all <ArrowRight className="size-4" aria-hidden="true" />
+            {tr('View all')} <ArrowRight className="size-4" aria-hidden="true" />
           </Link>
         </CardHeader>
         <CardContent>
@@ -152,9 +155,9 @@ export function ProfilePage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Profile"
-        description="Your personal details and photo."
-        breadcrumb={[{ label: 'Account', to: '/account' }, { label: 'Profile' }]}
+        title={tr('Profile')}
+        description={tr('Your personal details and photo.')}
+        breadcrumb={[{ label: tr('Account'), to: '/account' }, { label: tr('Profile') }]}
       />
       <EmailVerificationBanner user={user} />
       <AvatarCard user={user} />
@@ -169,9 +172,9 @@ export function PreferencesPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Preferences"
-        description="Language, currency and how we contact you."
-        breadcrumb={[{ label: 'Account', to: '/account' }, { label: 'Preferences' }]}
+        title={tr('Preferences')}
+        description={tr('Language, currency and how we contact you.')}
+        breadcrumb={[{ label: tr('Account'), to: '/account' }, { label: tr('Preferences') }]}
       />
       <PreferencesForm user={user} />
     </div>
@@ -182,9 +185,9 @@ export function SecurityPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Security & sessions"
-        description="Keep your account protected."
-        breadcrumb={[{ label: 'Account', to: '/account' }, { label: 'Security' }]}
+        title={tr('Security & sessions')}
+        description={tr('Keep your account protected.')}
+        breadcrumb={[{ label: tr('Account'), to: '/account' }, { label: tr('Security') }]}
       />
       <ChangePasswordCard />
       <SessionsCard />
@@ -219,8 +222,8 @@ export function NotificationsPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Notifications"
-        description="Security, account and booking updates."
+        title={tr('Notifications')}
+        description={tr('Security, account and booking updates.')}
         actions={
           <Button
             variant="outline"
@@ -228,17 +231,17 @@ export function NotificationsPage() {
             loading={markAll.isPending}
             onClick={() => markAll.mutate()}
           >
-            Mark all as read
+            {tr('Mark all as read')}
           </Button>
         }
       />
       <Card>
         <CardContent className="pt-4">
           <Tabs
-            label="Notification filters"
+            label={tr('Notification filters')}
             items={[
-              { id: 'all', label: 'All', content: <NotificationsPanel unreadOnly={false} /> },
-              { id: 'unread', label: 'Unread', content: <NotificationsPanel unreadOnly /> },
+              { id: 'all', label: tr('All'), content: <NotificationsPanel unreadOnly={false} /> },
+              { id: 'unread', label: tr('Unread'), content: <NotificationsPanel unreadOnly /> },
             ]}
           />
         </CardContent>

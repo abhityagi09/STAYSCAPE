@@ -48,6 +48,7 @@ import {
   type FlagKey,
   type SearchState,
 } from '../search-state';
+import { tr, trf } from '@/lib/tr';
 
 function FiltersPanel({
   state,
@@ -71,18 +72,22 @@ function FiltersPanel({
   return (
     <div className="flex flex-col gap-7">
       <fieldset className="flex flex-col gap-2">
-        <legend className="mb-2 text-sm font-semibold">Price per night (incl. taxes)</legend>
-        {!datesSet && <p className="text-xs text-fg-subtle">Add dates to filter by real prices.</p>}
+        <legend className="mb-2 text-sm font-semibold">
+          {tr('Price per night (incl. taxes)')}
+        </legend>
+        {!datesSet && (
+          <p className="text-xs text-fg-subtle">{tr('Add dates to filter by real prices.')}</p>
+        )}
         <div className="grid grid-cols-2 gap-2">
           <Input
-            label="Min (₹)"
+            label={tr('Min (₹)')}
             inputMode="numeric"
             value={minPrice}
             disabled={!datesSet}
             onChange={(e) => setMinPrice(e.target.value)}
           />
           <Input
-            label="Max (₹)"
+            label={tr('Max (₹)')}
             inputMode="numeric"
             value={maxPrice}
             disabled={!datesSet}
@@ -95,26 +100,26 @@ function FiltersPanel({
           disabled={!datesSet}
           onClick={() => update({ minPrice: toMinor(minPrice), maxPrice: toMinor(maxPrice) })}
         >
-          Apply price
+          {tr('Apply price')}
         </Button>
       </fieldset>
       <fieldset className="flex flex-col gap-2.5">
-        <legend className="mb-2 text-sm font-semibold">Popular filters</legend>
+        <legend className="mb-2 text-sm font-semibold">{tr('Popular filters')}</legend>
         {(Object.keys(FLAG_LABELS) as FlagKey[]).map((flag) => (
           <Checkbox
             key={flag}
-            label={FLAG_LABELS[flag]}
+            label={tr(FLAG_LABELS[flag])}
             checked={state[flag]}
             onChange={() => update({ [flag]: !state[flag] })}
           />
         ))}
       </fieldset>
       <fieldset className="flex flex-col gap-2.5">
-        <legend className="mb-2 text-sm font-semibold">Accessibility</legend>
+        <legend className="mb-2 text-sm font-semibold">{tr('Accessibility')}</legend>
         {ACCESSIBILITY_FEATURES.map((f) => (
           <Checkbox
             key={f}
-            label={ACCESSIBILITY_FEATURE_LABELS[f]}
+            label={tr(ACCESSIBILITY_FEATURE_LABELS[f])}
             checked={state.accessibilityFeatures.includes(f)}
             onChange={() =>
               update({
@@ -127,40 +132,40 @@ function FiltersPanel({
         ))}
       </fieldset>
       <fieldset className="flex flex-col gap-2.5">
-        <legend className="mb-2 text-sm font-semibold">Property type</legend>
+        <legend className="mb-2 text-sm font-semibold">{tr('Property type')}</legend>
         {PROPERTY_TYPES.map((type) => (
           <Checkbox
             key={type}
-            label={PROPERTY_TYPE_LABELS[type]}
+            label={tr(PROPERTY_TYPE_LABELS[type])}
             checked={state.propertyTypes.includes(type)}
             onChange={() => update({ propertyTypes: toggle(state.propertyTypes, type) })}
           />
         ))}
       </fieldset>
       <fieldset className="flex flex-col gap-2.5">
-        <legend className="mb-2 text-sm font-semibold">Star rating</legend>
+        <legend className="mb-2 text-sm font-semibold">{tr('Star rating')}</legend>
         {[5, 4, 3, 2, 1].map((stars) => (
           <Checkbox
             key={stars}
-            label={`${'★'.repeat(stars)} ${stars} star${stars === 1 ? '' : 's'}`}
+            label={trf('{0} {1} star{2}', ['★'.repeat(stars), stars, stars === 1 ? '' : 's'])}
             checked={state.stars.includes(stars)}
             onChange={() => update({ stars: toggle(state.stars, stars) })}
           />
         ))}
       </fieldset>
       <Select
-        label="Guest rating"
+        label={tr('Guest rating')}
         value={state.minRating === null ? '' : String(state.minRating)}
         onChange={(e) => update({ minRating: e.target.value ? Number(e.target.value) : null })}
-        placeholder="Any rating"
+        placeholder={tr('Any rating')}
         options={[
-          { value: '4.5', label: '4.5+ Exceptional' },
-          { value: '4', label: '4.0+ Very good' },
-          { value: '3.5', label: '3.5+ Good' },
+          { value: '4.5', label: tr('4.5+ Exceptional') },
+          { value: '4', label: tr('4.0+ Very good') },
+          { value: '3.5', label: tr('3.5+ Good') },
         ]}
       />
       <fieldset className="flex flex-col gap-2.5">
-        <legend className="mb-2 text-sm font-semibold">Amenities</legend>
+        <legend className="mb-2 text-sm font-semibold">{tr('Amenities')}</legend>
         {(amenities.data ?? [])
           .filter(
             (a) =>
@@ -196,7 +201,7 @@ function CompareTray() {
     <div
       className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 shadow-xl backdrop-blur"
       role="region"
-      aria-label="Comparison tray"
+      aria-label={tr('Comparison tray')}
     >
       <div className="container-page flex flex-wrap items-center gap-3 py-3">
         <GitCompareArrows className="size-5 text-primary" aria-hidden="true" />
@@ -208,7 +213,7 @@ function CompareTray() {
                 <button
                   type="button"
                   onClick={() => dispatch(removeCompare(item.id))}
-                  aria-label={`Remove ${item.name} from comparison`}
+                  aria-label={trf('Remove {0} from comparison', [item.name])}
                   className="rounded-full p-0.5 hover:bg-primary/10"
                 >
                   <X className="size-3.5" aria-hidden="true" />
@@ -218,14 +223,14 @@ function CompareTray() {
           ))}
         </ul>
         <Button variant="ghost" size="sm" onClick={() => dispatch(clearCompare())}>
-          Clear
+          {tr('Clear')}
         </Button>
         <ButtonLink
           to={`/compare${location.search}`}
           size="sm"
           aria-disabled={items.length < 2 || undefined}
         >
-          Compare {items.length}
+          {tr('Compare')} {items.length}
         </ButtonLink>
       </div>
     </div>
@@ -288,7 +293,7 @@ export default function SearchResultsPage() {
   const hasCenter = Boolean(state.destination || state.bbox);
   const sortOptions = SEARCH_SORTS.filter(
     (s) => (s !== 'distance' || hasCenter) && (state.checkIn || !s.startsWith('price')),
-  ).map((s) => ({ value: s, label: SEARCH_SORT_LABELS[s] }));
+  ).map((s) => ({ value: s, label: tr(SEARCH_SORT_LABELS[s]) }));
   const heading = state.destination
     ? `Stays in ${state.destination}`
     : state.bbox
@@ -299,7 +304,7 @@ export default function SearchResultsPage() {
   const list = (
     <section aria-labelledby="results-heading" aria-busy={query.isFetching}>
       <h2 id="results-heading" className="sr-only">
-        Results
+        {tr('Results')}
       </h2>
       {query.isPending ? (
         <div
@@ -321,11 +326,13 @@ export default function SearchResultsPage() {
       ) : results && results.items.length === 0 ? (
         <EmptyState
           icon={<SearchX />}
-          title="No stays match your search"
+          title={tr('No stays match your search')}
           description={
             state.checkIn
-              ? 'Nothing is available for every night of these dates with these filters. Try other dates or remove some filters.'
-              : 'Try a different destination or remove some filters.'
+              ? tr(
+                  'Nothing is available for every night of these dates with these filters. Try other dates or remove some filters.',
+                )
+              : tr('Try a different destination or remove some filters.')
           }
           action={
             filterCount > 0 ? (
@@ -334,7 +341,7 @@ export default function SearchResultsPage() {
                 size="sm"
                 onClick={() => setParams(toSearchParams(clearFilters(state)))}
               >
-                Clear filters
+                {tr('Clear filters')}
               </Button>
             ) : undefined
           }
@@ -386,7 +393,7 @@ export default function SearchResultsPage() {
           description={
             results
               ? `${results.pagination.total} ${results.pagination.total === 1 ? 'property' : 'properties'}${results.availabilityChecked ? ` available for ${results.nights} night${results.nights === 1 ? '' : 's'} — prices include taxes and fees` : ' — add dates to check availability and prices'}`
-              : 'Searching…'
+              : tr('Searching…')
           }
         />
         <div className="flex flex-wrap items-center gap-2">
@@ -397,10 +404,11 @@ export default function SearchResultsPage() {
             leftIcon={<SlidersHorizontal className="size-4" aria-hidden="true" />}
             onClick={() => setFiltersOpen(true)}
           >
-            Filters{filterCount ? ` (${filterCount})` : ''}
+            {tr('Filters')}
+            {filterCount ? ` (${filterCount})` : ''}
           </Button>
           <Select
-            label="Sort by"
+            label={tr('Sort by')}
             hideLabel
             value={state.sort}
             onChange={(e) => update({ sort: e.target.value as SearchSort })}
@@ -410,7 +418,7 @@ export default function SearchResultsPage() {
           <div
             className="inline-flex rounded-full border border-border-strong p-0.5"
             role="group"
-            aria-label="Result view"
+            aria-label={tr('Result view')}
           >
             {(['list', 'map'] as const).map((v) => (
               <button
@@ -434,7 +442,7 @@ export default function SearchResultsPage() {
                 ) : (
                   <MapIcon className="size-4" aria-hidden="true" />
                 )}
-                {v === 'list' ? 'List' : 'Map'}
+                {v === 'list' ? tr('List') : tr('Map')}
               </button>
             ))}
           </div>
@@ -443,22 +451,23 @@ export default function SearchResultsPage() {
       {filterCount > 0 && (
         <div className="mt-3 flex items-center gap-2 text-sm">
           <span className="text-fg-muted">
-            {filterCount} filter{filterCount === 1 ? '' : 's'} applied
+            {filterCount} {tr('filter')}
+            {filterCount === 1 ? '' : 's'} {tr('applied')}
           </span>
           <Button
             variant="link"
             size="sm"
             onClick={() => setParams(toSearchParams(clearFilters(state)))}
           >
-            Clear filters
+            {tr('Clear filters')}
           </Button>
         </div>
       )}
       {state.bbox && (
         <div className="mt-3 flex items-center gap-2 text-sm">
-          <Badge tone="info">Showing the visible map area</Badge>
+          <Badge tone="info">{tr('Showing the visible map area')}</Badge>
           <Button variant="link" size="sm" onClick={() => update({ bbox: null })}>
-            Remove map area
+            {tr('Remove map area')}
           </Button>
         </div>
       )}
@@ -472,7 +481,7 @@ export default function SearchResultsPage() {
         )}
       >
         {view === 'list' && (
-          <aside className="hidden lg:block" aria-label="Filters">
+          <aside className="hidden lg:block" aria-label={tr('Filters')}>
             <FiltersPanel state={state} update={update} />
           </aside>
         )}
@@ -483,12 +492,12 @@ export default function SearchResultsPage() {
             </div>
             <div className="order-1 flex flex-col gap-2 lg:order-2">
               <Checkbox
-                label="Search as I move the map"
+                label={tr('Search as I move the map')}
                 checked={searchOnMove}
                 onChange={() => setSearchOnMove((v) => !v)}
               />
               <MapView
-                label="Map of search results. Use the list for keyboard access."
+                label={tr('Map of search results. Use the list for keyboard access.')}
                 className="h-[60vh] lg:sticky lg:top-24 lg:h-[calc(100dvh-12rem)]"
                 markers={markers}
                 selectedId={highlighted}
@@ -511,22 +520,22 @@ export default function SearchResultsPage() {
       <Drawer
         open={filtersOpen}
         onClose={() => setFiltersOpen(false)}
-        title="Filters"
+        title={tr('Filters')}
         side="left"
         footer={
           <Button fullWidth onClick={() => setFiltersOpen(false)}>
-            Show {results?.pagination.total ?? ''} results
+            {tr('Show')} {results?.pagination.total ?? ''} {tr('results')}
           </Button>
         }
       >
         <FiltersPanel state={state} update={update} />
       </Drawer>
       <p className="mt-10 text-xs text-fg-subtle">
-        Prices are live quotes for your dates and guests, including taxes and fees.{' '}
+        {tr('Prices are live quotes for your dates and guests, including taxes and fees.')}{' '}
         <Link to="/terms" className="underline">
-          How we rank results
+          {tr('How we rank results')}
         </Link>
-        : featured placement, guest rating and popularity.
+        {tr(': featured placement, guest rating and popularity.')}
       </p>
       <CompareTray />
     </div>

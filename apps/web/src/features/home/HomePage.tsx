@@ -29,42 +29,55 @@ import { errorMessage } from '@/lib/api/errors';
 import { todayIsoDate } from '@/components/ui';
 import { TRAVEL_NOTES } from './sections/content';
 import { Newsletter } from './sections/Newsletter';
+import { tr, trf } from '@/lib/tr';
 
 const CATEGORIES: Array<{ type: PropertyType; label: string; blurb: string; icon: typeof Hotel }> =
   [
     {
       type: 'HOTEL',
-      label: 'Hotels',
+      get label() {
+        return tr('Hotels');
+      },
       blurb: 'City stays with service you can count on',
       icon: Hotel,
     },
     {
       type: 'RESORT',
-      label: 'Resorts',
+      get label() {
+        return tr('Resorts');
+      },
       blurb: 'Pools, spas and long, slow mornings',
       icon: TreePalm,
     },
     {
       type: 'VILLA',
-      label: 'Villas',
+      get label() {
+        return tr('Villas');
+      },
       blurb: 'Private space for families and friends',
       icon: House,
     },
     {
       type: 'BOUTIQUE',
-      label: 'Boutique',
+      get label() {
+        return tr('Boutique');
+      },
       blurb: 'Small, characterful, design-led',
       icon: Sparkles,
     },
     {
       type: 'HOMESTAY',
-      label: 'Homestays',
+      get label() {
+        return tr('Homestays');
+      },
       blurb: 'Local hosts and home-cooked meals',
       icon: Leaf,
     },
     {
       type: 'APARTMENT',
-      label: 'Apartments',
+      get label() {
+        return tr('Apartments');
+      },
       blurb: 'Room to live for longer trips',
       icon: Building,
     },
@@ -132,7 +145,7 @@ function HotelRail({
             to={viewAll}
             className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
           >
-            View all <ArrowRight className="size-4" aria-hidden="true" />
+            {tr('View all')} <ArrowRight className="size-4" aria-hidden="true" />
           </Link>
         }
       />
@@ -148,8 +161,8 @@ function HotelRail({
         <EmptyState
           compact
           icon={<Building2 />}
-          title="Nothing to show yet"
-          description="Listings appear here as verified properties go live."
+          title={tr('Nothing to show yet')}
+          description={tr('Listings appear here as verified properties go live.')}
         />
       ) : (
         <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -216,16 +229,19 @@ export default function HomePage() {
           ))}
         </svg>
         <div className="container-page relative pt-20 pb-40 sm:pt-28 lg:pb-48">
-          <p className="eyebrow animate-rise-in !text-gold-300">Verified stays · Honest prices</p>
+          <p className="eyebrow animate-rise-in !text-gold-300">
+            {tr('Verified stays · Honest prices')}
+          </p>
           <h1
             id="hero-title"
             className="mt-5 max-w-3xl animate-rise-in font-display text-display-sm font-semibold tracking-tight [animation-delay:60ms] sm:text-display-md lg:text-display-lg"
           >
-            Stays worth the journey.
+            {tr('Stays worth the journey.')}
           </h1>
           <p className="mt-6 max-w-xl animate-rise-in text-lg text-ivory/75 [animation-delay:120ms]">
-            Discover hotels, resorts and boutique stays across India — each one reviewed before it
-            can take a booking, with every fee shown upfront.
+            {tr(
+              'Discover hotels, resorts and boutique stays across India — each one reviewed before it can take a booking, with every fee shown upfront.',
+            )}
           </p>
         </div>
       </section>
@@ -239,24 +255,24 @@ export default function HomePage() {
       </div>
 
       <section
-        aria-label="Why STAYSCAPE"
+        aria-label={tr('Why STAYSCAPE')}
         className="container-page mt-12 grid gap-6 sm:grid-cols-3"
       >
         {[
           {
             icon: BadgeCheck,
-            title: 'Every partner verified',
-            body: 'Business and property checks before listings go live.',
+            title: tr('Every partner verified'),
+            body: tr('Business and property checks before listings go live.'),
           },
           {
             icon: ReceiptText,
-            title: 'All-in pricing',
-            body: 'Taxes and fees itemised before you pay.',
+            title: tr('All-in pricing'),
+            body: tr('Taxes and fees itemised before you pay.'),
           },
           {
             icon: ShieldCheck,
-            title: 'Your account, protected',
-            body: 'Device sessions you can see and revoke.',
+            title: tr('Your account, protected'),
+            body: tr('Device sessions you can see and revoke.'),
           },
         ].map(({ icon: Icon, title, body }) => (
           <div key={title} className="flex items-start gap-3">
@@ -279,8 +295,8 @@ export default function HomePage() {
       >
         <SectionHeading
           id="destinations-title"
-          eyebrow="Destinations"
-          title="Where travellers are heading"
+          eyebrow={tr('Destinations')}
+          title={tr('Where travellers are heading')}
         />
         {destinations.isPending ? (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -294,7 +310,7 @@ export default function HomePage() {
             onRetry={() => void destinations.refetch()}
           />
         ) : destinations.data.length === 0 ? (
-          <EmptyState compact title="Destinations coming soon" />
+          <EmptyState compact title={tr('Destinations coming soon')} />
         ) : (
           <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {destinations.data.slice(0, 8).map((d, i) => (
@@ -322,8 +338,8 @@ export default function HomePage() {
 
       <HotelRail
         id="trending"
-        eyebrow="Trending"
-        title="Popular right now"
+        eyebrow={tr('Trending')}
+        title={tr('Popular right now')}
         query={{
           data: trending.data,
           isPending: trending.isPending,
@@ -335,8 +351,8 @@ export default function HomePage() {
       />
       <HotelRail
         id="featured"
-        eyebrow="Featured"
-        title="Hand-picked stays"
+        eyebrow={tr('Featured')}
+        title={tr('Hand-picked stays')}
         query={{
           data: featured.data,
           isPending: featured.isPending,
@@ -348,33 +364,33 @@ export default function HomePage() {
       />
       <HotelRail
         id="top-rated"
-        eyebrow="Top rated"
-        title="Guests' favourites"
+        eyebrow={tr('Top rated')}
+        title={tr("Guests' favourites")}
         query={pick(topRated)}
         href={(h) => `/hotels/${h.slug}`}
         viewAll="/hotels?sort=rating_desc"
       />
       <HotelRail
         id="budget"
-        eyebrow="Budget-friendly"
-        title={`Great value this weekend (${weekendLabel})`}
-        description="Live prices for 2 guests, 1 room, including taxes."
+        eyebrow={tr('Budget-friendly')}
+        title={trf('Great value this weekend ({0})', [weekendLabel])}
+        description={tr('Live prices for 2 guests, 1 room, including taxes.')}
         query={pick(budget)}
         href={(h) => `/hotels/${h.slug}?${weekendQs}`}
         viewAll={`/hotels?${weekendQs}&sort=price_asc`}
       />
       <HotelRail
         id="luxury"
-        eyebrow="Luxury"
-        title="Five-star indulgence"
+        eyebrow={tr('Luxury')}
+        title={tr('Five-star indulgence')}
         query={pick(luxury)}
         href={(h) => `/hotels/${h.slug}`}
         viewAll="/hotels?stars=5"
       />
       <HotelRail
         id="weekend"
-        eyebrow="Weekend escapes"
-        title={`Resorts, villas & homestays free ${weekendLabel}`}
+        eyebrow={tr('Weekend escapes')}
+        title={trf('Resorts, villas & homestays free {0}', [weekendLabel])}
         query={pick(weekendEscapes)}
         href={(h) => `/hotels/${h.slug}?${weekendQs}`}
         viewAll={`/hotels?${weekendQs}&propertyTypes=RESORT,VILLA,HOMESTAY`}
@@ -383,8 +399,8 @@ export default function HomePage() {
       <section aria-labelledby="categories-title" className="container-page mt-20">
         <SectionHeading
           id="categories-title"
-          eyebrow="Browse by style"
-          title="Find the stay that fits the trip"
+          eyebrow={tr('Browse by style')}
+          title={tr('Find the stay that fits the trip')}
         />
         <ul className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
           {CATEGORIES.map(({ type, label, blurb, icon: Icon }) => (
@@ -405,16 +421,16 @@ export default function HomePage() {
       </section>
 
       <section
-        aria-label="Get started"
+        aria-label={tr('Get started')}
         className="container-page mt-20 grid gap-5 lg:grid-cols-[1.3fr_1fr]"
       >
         <div className="relative overflow-hidden rounded-3xl bg-forest-900 p-8 text-ivory sm:p-12">
-          <p className="eyebrow !text-gold-300">For property owners</p>
+          <p className="eyebrow !text-gold-300">{tr('For property owners')}</p>
           <h2 className="mt-3 max-w-md font-display text-3xl font-semibold">
-            Bring your property to travellers who value it.
+            {tr('Bring your property to travellers who value it.')}
           </h2>
           <p className="mt-3 max-w-md text-ivory/75">
-            Transparent onboarding, team permissions, real-time inventory and pricing tools.
+            {tr('Transparent onboarding, team permissions, real-time inventory and pricing tools.')}
           </p>
           <ButtonLink
             to="/partner/onboarding"
@@ -422,7 +438,7 @@ export default function HomePage() {
             className="mt-8"
             rightIcon={<ArrowRight className="size-4" aria-hidden="true" />}
           >
-            Become a partner
+            {tr('Become a partner')}
           </ButtonLink>
           <Building2
             className="absolute -right-6 -bottom-6 size-48 text-white/5"
@@ -431,17 +447,18 @@ export default function HomePage() {
         </div>
         <div className="flex flex-col justify-between rounded-3xl border border-border bg-accent-soft p-8 sm:p-12">
           <div>
-            <p className="eyebrow">For travellers</p>
+            <p className="eyebrow">{tr('For travellers')}</p>
             <h2 className="mt-3 font-display text-3xl font-semibold">
-              Save stays, compare and plan
+              {tr('Save stays, compare and plan')}
             </h2>
             <p className="mt-3 text-fg-muted">
-              Create a free account to save favourites and compare up to four properties side by
-              side.
+              {tr(
+                'Create a free account to save favourites and compare up to four properties side by side.',
+              )}
             </p>
           </div>
           <ButtonLink to="/register" className="mt-8 w-fit">
-            Create account
+            {tr('Create account')}
           </ButtonLink>
         </div>
       </section>
@@ -453,8 +470,8 @@ export default function HomePage() {
       >
         <SectionHeading
           id="inspiration-title"
-          eyebrow="Travel notes"
-          title="A little inspiration before you go"
+          eyebrow={tr('Travel notes')}
+          title={tr('A little inspiration before you go')}
         />
         <ul className="grid gap-5 md:grid-cols-3">
           {TRAVEL_NOTES.map((note) => (

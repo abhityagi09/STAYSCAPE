@@ -1,14 +1,22 @@
 import { useState, type FormEvent } from 'react';
+import { Link } from 'react-router';
 import { Download } from 'lucide-react';
 import {
   addDays,
+  DISCOUNT_RULE_TYPES,
+  PROMOTION_STATES,
   todayInTimeZone,
+  type AdminPromotionDto,
+  type AdminPromotionSummaryDto,
+  type PromotionState,
   type AdminReviewDto,
   type AgentTicketDto,
 } from '@stayscape/shared';
 import {
   Alert,
+  Badge,
   Button,
+  ButtonLink,
   Checkbox,
   DataTable,
   EmptyState,
@@ -24,6 +32,7 @@ import {
 import { useAuth } from '@/features/auth/use-auth';
 import { http, unwrap } from '@/lib/api/client';
 import { normalizeApiError } from '@/lib/api/errors';
+import { RecordPicker } from './RecordPicker';
 import { api, downloadCsv, downloadFile, useApiMutation, useApiQuery, type Page } from './api';
 import {
   BarChart,
@@ -38,6 +47,7 @@ import {
   fmtMoney,
   fmtPct,
 } from './components';
+import { tr, trf } from '@/lib/tr';
 
 const today = () => todayInTimeZone('Asia/Kolkata');
 const rid = (r: { id?: string; _id?: string }) => r.id ?? r._id ?? '';
@@ -47,15 +57,35 @@ function useFail() {
     toast({ title, description: normalizeApiError(e).message, variant: 'error' });
 }
 const SORT_OPTIONS = [
-  { value: 'newest', label: 'Newest first' },
-  { value: 'oldest', label: 'Oldest first' },
-  { value: 'amount_desc', label: 'Highest amount' },
-  { value: 'amount_asc', label: 'Lowest amount' },
+  {
+    value: 'newest',
+    get label() {
+      return tr('Newest first');
+    },
+  },
+  {
+    value: 'oldest',
+    get label() {
+      return tr('Oldest first');
+    },
+  },
+  {
+    value: 'amount_desc',
+    get label() {
+      return tr('Highest amount');
+    },
+  },
+  {
+    value: 'amount_asc',
+    get label() {
+      return tr('Lowest amount');
+    },
+  },
 ];
 function SortSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
     <Select
-      label="Sort"
+      label={tr('Sort')}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       options={SORT_OPTIONS}
@@ -126,8 +156,10 @@ export function AdminPlatformDashboardPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Platform dashboard"
-        description="Marketplace health for the selected period, compared with the period just before it."
+        title={tr('Platform dashboard')}
+        description={tr(
+          'Marketplace health for the selected period, compared with the period just before it.',
+        )}
       />
       <PeriodFilter value={period} onChange={setPeriod} />
       <QueryState query={q} skeleton={5}>
@@ -178,7 +210,7 @@ export function AdminReportsPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Reports & analytics"
+        title={tr('Reports & analytics')}
         actions={
           <Button
             size="sm"
@@ -191,7 +223,7 @@ export function AdminReportsPage() {
               )
             }
           >
-            <Download className="size-4" aria-hidden="true" /> Export CSV
+            <Download className="size-4" aria-hidden="true" /> {tr('Export CSV')}
           </Button>
         }
       />
@@ -199,15 +231,15 @@ export function AdminReportsPage() {
       <QueryState query={q} skeleton={4}>
         {d && (
           <div className="grid gap-4 lg:grid-cols-2">
-            <SectionCard title="Bookings">
+            <SectionCard title={tr('Bookings')}>
               <BarChart
-                title="Bookings per day"
+                title={tr('Bookings per day')}
                 data={d.bookingVolume.map((b) => ({ label: b.date, value: b.bookings }))}
               />
             </SectionCard>
-            <SectionCard title="Gross booking value">
+            <SectionCard title={tr('Gross booking value')}>
               <BarChart
-                title="Gross booking value per day"
+                title={tr('Gross booking value per day')}
                 data={d.bookingVolume.map((b) => ({
                   label: b.date,
                   value: b.grossBookingValueMinor,
@@ -215,60 +247,60 @@ export function AdminReportsPage() {
                 format={(v) => fmtMoney(v)}
               />
             </SectionCard>
-            <SectionCard title="Commission revenue">
+            <SectionCard title={tr('Commission revenue')}>
               <BarChart
-                title="Commission per day"
+                title={tr('Commission per day')}
                 data={d.commissionRevenue.map((c) => ({ label: c.date, value: c.amountMinor }))}
                 format={(v) => fmtMoney(v)}
               />
             </SectionCard>
-            <SectionCard title="Refunds">
+            <SectionCard title={tr('Refunds')}>
               <BarChart
-                title="Refunds per day"
+                title={tr('Refunds per day')}
                 data={d.refunds.map((r) => ({ label: r.date, value: r.amountMinor }))}
                 format={(v) => fmtMoney(v)}
               />
             </SectionCard>
-            <SectionCard title="New customers">
+            <SectionCard title={tr('New customers')}>
               <BarChart
-                title="New customers per day"
+                title={tr('New customers per day')}
                 data={d.customerGrowth.map((c) => ({ label: c.date, value: c.newCustomers }))}
               />
             </SectionCard>
-            <SectionCard title="Properties by city">
+            <SectionCard title={tr('Properties by city')}>
               <BarChart
-                title="Published properties by city"
+                title={tr('Published properties by city')}
                 data={d.propertyDistribution.byCity.map((c) => ({
                   label: c.label,
                   value: c.count,
                 }))}
               />
             </SectionCard>
-            <SectionCard title="Coupons">
+            <SectionCard title={tr('Coupons')}>
               <DataTable
-                caption="Coupon performance"
+                caption={tr('Coupon performance')}
                 rows={d.couponPerformance}
                 getRowId={(c) => c.code}
-                empty={<EmptyState compact title="No coupon use in this period" />}
+                empty={<EmptyState compact title={tr('No coupon use in this period')} />}
                 columns={[
-                  { id: 'c', header: 'Code', cell: (c) => c.code },
-                  { id: 'r', header: 'Redeemed', cell: (c) => c.redemptions, align: 'right' },
-                  { id: 'x', header: 'Released', cell: (c) => c.released, align: 'right' },
+                  { id: 'c', header: tr('Code'), cell: (c) => c.code },
+                  { id: 'r', header: tr('Redeemed'), cell: (c) => c.redemptions, align: 'right' },
+                  { id: 'x', header: tr('Released'), cell: (c) => c.released, align: 'right' },
                   {
                     id: 'd',
-                    header: 'Discount',
+                    header: tr('Discount'),
                     cell: (c) => fmtMoney(c.discountMinor),
                     align: 'right',
                   },
                 ]}
               />
             </SectionCard>
-            <SectionCard title="Support">
+            <SectionCard title={tr('Support')}>
               <KpiGrid>
-                <KpiTile label="Created" value={d.supportPerformance.created} />
-                <KpiTile label="Resolved" value={d.supportPerformance.resolved} />
+                <KpiTile label={tr('Created')} value={d.supportPerformance.created} />
+                <KpiTile label={tr('Resolved')} value={d.supportPerformance.resolved} />
                 <KpiTile
-                  label="First response"
+                  label={tr('First response')}
                   value={
                     d.supportPerformance.averageFirstResponseMinutes === null
                       ? '—'
@@ -276,7 +308,7 @@ export function AdminReportsPage() {
                   }
                 />
                 <KpiTile
-                  label="Resolution"
+                  label={tr('Resolution')}
                   value={
                     d.supportPerformance.averageResolutionHours === null
                       ? '—'
@@ -342,21 +374,21 @@ export function AdminCustomersPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Customers"
-        description="Search accounts and review their activity. Status changes are audited."
+        title={tr('Customers')}
+        description={tr('Search accounts and review their activity. Status changes are audited.')}
       />
-      <SearchInput label="Search by name or email" value={p.q} onValueChange={p.setQ} />
+      <SearchInput label={tr('Search by name or email')} value={p.q} onValueChange={p.setQ} />
       <DataTable
-        caption="Customers"
+        caption={tr('Customers')}
         rows={list.data?.items}
         loading={list.isPending}
         error={list.isError ? normalizeApiError(list.error) : null}
         getRowId={(r) => r.id}
-        empty={<EmptyState compact title="No matching accounts" />}
+        empty={<EmptyState compact title={tr('No matching accounts')} />}
         columns={[
           {
             id: 'n',
-            header: 'Name',
+            header: tr('Name'),
             cell: (r) => (
               <button
                 type="button"
@@ -367,19 +399,19 @@ export function AdminCustomersPage() {
               </button>
             ),
           },
-          { id: 'e', header: 'Email', cell: (r) => r.email },
-          { id: 'r', header: 'Roles', cell: (r) => r.roles.join(', ').toLowerCase() },
-          { id: 's', header: 'Status', cell: (r) => <StatusBadge status={r.accountStatus} /> },
-          { id: 'c', header: 'Joined', cell: (r) => fmtDate(r.createdAt) },
+          { id: 'e', header: tr('Email'), cell: (r) => r.email },
+          { id: 'r', header: tr('Roles'), cell: (r) => r.roles.join(', ').toLowerCase() },
+          { id: 's', header: tr('Status'), cell: (r) => <StatusBadge status={r.accountStatus} /> },
+          { id: 'c', header: tr('Joined'), cell: (r) => fmtDate(r.createdAt) },
         ]}
       />
       <Pager data={list.data} page={p.page} setPage={p.setPage} />
       {open && (
         <SectionCard
-          title={detail.data ? `${detail.data.firstName} ${detail.data.lastName}` : 'Customer'}
+          title={detail.data ? `${detail.data.firstName} ${detail.data.lastName}` : tr('Customer')}
           actions={
             <Button size="sm" variant="ghost" onClick={() => setOpen(null)}>
-              Close
+              {tr('Close')}
             </Button>
           }
         >
@@ -387,12 +419,12 @@ export function AdminCustomersPage() {
             {detail.data && (
               <>
                 <KpiGrid>
-                  <KpiTile label="Bookings" value={detail.data.stats.bookings} />
-                  <KpiTile label="Support tickets" value={detail.data.stats.tickets} />
+                  <KpiTile label={tr('Bookings')} value={detail.data.stats.bookings} />
+                  <KpiTile label={tr('Support tickets')} value={detail.data.stats.tickets} />
                   {detail.data.stats.spend.map((s) => (
                     <KpiTile
                       key={s.currency}
-                      label={`Spend (${s.currency})`}
+                      label={trf('Spend ({0})', [s.currency])}
                       value={fmtMoney(s.amountMinor, s.currency)}
                     />
                   ))}
@@ -417,7 +449,7 @@ export function AdminCustomersPage() {
                         )
                       }
                     >
-                      Suspend account
+                      {tr('Suspend account')}
                     </Button>
                   ) : (
                     <Button
@@ -429,7 +461,7 @@ export function AdminCustomersPage() {
                         )
                       }
                     >
-                      Reactivate account
+                      {tr('Reactivate account')}
                     </Button>
                   )}
                 </div>
@@ -516,9 +548,9 @@ function CatalogTab({ kind }: { kind: CatalogKind }) {
             key={f}
             label={
               f === 'propertyTypes'
-                ? 'Property types (comma separated)'
+                ? tr('Property types (comma separated)')
                 : f === 'amenityCodes'
-                  ? 'Amenity codes (comma separated)'
+                  ? tr('Amenity codes (comma separated)')
                   : f.replace(/([A-Z])/g, ' $1').replace(/^\w/, (c) => c.toUpperCase())
             }
             value={form[f] ?? ''}
@@ -528,7 +560,7 @@ function CatalogTab({ kind }: { kind: CatalogKind }) {
           />
         ))}
         <Button type="submit" loading={save.isPending}>
-          {editing ? 'Save changes' : 'Add'}
+          {editing ? tr('Save changes') : tr('Add')}
         </Button>
         {editing && (
           <Button
@@ -538,22 +570,22 @@ function CatalogTab({ kind }: { kind: CatalogKind }) {
               setForm(EMPTY[kind]);
             }}
           >
-            Cancel
+            {tr('Cancel')}
           </Button>
         )}
       </form>
       <DataTable
-        caption={`Catalogue: ${kind}`}
+        caption={trf('Catalogue: {0}', [kind])}
         rows={list.data?.items}
         loading={list.isPending}
         getRowId={(r) => r.id}
-        empty={<EmptyState compact title="Nothing here yet" />}
+        empty={<EmptyState compact title={tr('Nothing here yet')} />}
         columns={[
-          { id: 'n', header: 'Name', cell: (r) => r.name },
-          { id: 'c', header: 'Code', cell: (r) => String(r.code ?? r.slug ?? '') },
+          { id: 'n', header: tr('Name'), cell: (r) => r.name },
+          { id: 'c', header: tr('Code'), cell: (r) => String(r.code ?? r.slug ?? '') },
           {
             id: 'a',
-            header: 'Status',
+            header: tr('Status'),
             cell: (r) => <StatusBadge status={r.active ? 'ACTIVE' : 'PAUSED'} />,
           },
           {
@@ -588,14 +620,14 @@ function CatalogTab({ kind }: { kind: CatalogKind }) {
                     );
                   }}
                 >
-                  Edit
+                  {tr('Edit')}
                 </Button>
                 <Button
                   size="sm"
                   variant="ghost"
                   onClick={() => remove.mutate(r.id, { onError: fail('Could not delete') })}
                 >
-                  Delete
+                  {tr('Delete')}
                 </Button>
               </span>
             ),
@@ -610,17 +642,19 @@ export function AdminCatalogPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Catalogue"
-        description="Amenities, destinations and browse categories. Items in use can be deactivated but not deleted."
+        title={tr('Catalogue')}
+        description={tr(
+          'Amenities, destinations and browse categories. Items in use can be deactivated but not deleted.',
+        )}
       />
       <Tabs
-        label="Catalogue sections"
+        label={tr('Catalogue sections')}
         value={tab}
         onValueChange={(v) => setTab(v as CatalogKind)}
         items={[
-          { id: 'amenities', label: 'Amenities', content: null },
-          { id: 'destinations', label: 'Destinations', content: null },
-          { id: 'categories', label: 'Property categories', content: null },
+          { id: 'amenities', label: tr('Amenities'), content: null },
+          { id: 'destinations', label: tr('Destinations'), content: null },
+          { id: 'categories', label: tr('Property categories'), content: null },
         ]}
       />
       <CatalogTab key={tab} kind={tab} />
@@ -667,18 +701,20 @@ export function AdminBookingsPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Bookings & escalations"
-        description="Find any reservation and escalate problems such as overbooking or guest-safety issues."
+        title={tr('Bookings & escalations')}
+        description={tr(
+          'Find any reservation and escalate problems such as overbooking or guest-safety issues.',
+        )}
       />
       <div className="flex flex-wrap items-end gap-3">
         <SearchInput
-          label="Reference, guest surname, email or property"
+          label={tr('Reference, guest surname, email or property')}
           value={p.q}
           onValueChange={p.setQ}
         />
         <SortSelect value={p.sort} onChange={p.setSort} />
         <Select
-          label="Status"
+          label={tr('Status')}
           value={status}
           onChange={(e) => setStatus(e.target.value)}
           options={[
@@ -696,37 +732,37 @@ export function AdminBookingsPage() {
           containerClassName="w-56"
         />
         <Checkbox
-          label="Open escalations only"
+          label={tr('Open escalations only')}
           checked={escalatedOnly}
           onChange={(e) => setEscalatedOnly(e.target.checked)}
         />
       </div>
       <DataTable
-        caption="Bookings"
+        caption={tr('Bookings')}
         rows={list.data?.items}
         loading={list.isPending}
         error={list.isError ? normalizeApiError(list.error) : null}
         getRowId={(b) => b.reference}
-        empty={<EmptyState compact title="No matching bookings" />}
+        empty={<EmptyState compact title={tr('No matching bookings')} />}
         columns={[
           {
             id: 'r',
-            header: 'Reference',
+            header: tr('Reference'),
             cell: (b) => <span className="font-mono text-xs">{b.reference}</span>,
           },
-          { id: 'h', header: 'Property', cell: (b) => `${b.hotel.name}, ${b.hotel.city}` },
-          { id: 'g', header: 'Guest', cell: (b) => b.guestName },
-          { id: 'd', header: 'Stay', cell: (b) => `${b.checkIn} → ${b.checkOut}` },
+          { id: 'h', header: tr('Property'), cell: (b) => `${b.hotel.name}, ${b.hotel.city}` },
+          { id: 'g', header: tr('Guest'), cell: (b) => b.guestName },
+          { id: 'd', header: tr('Stay'), cell: (b) => `${b.checkIn} → ${b.checkOut}` },
           {
             id: 't',
-            header: 'Total',
+            header: tr('Total'),
             cell: (b) => fmtMoney(b.totalMinor, b.currency),
             align: 'right',
           },
-          { id: 's', header: 'Status', cell: (b) => <StatusBadge status={b.status} /> },
+          { id: 's', header: tr('Status'), cell: (b) => <StatusBadge status={b.status} /> },
           {
             id: 'e',
-            header: 'Escalation',
+            header: tr('Escalation'),
             cell: (b) =>
               b.escalation ? (
                 <span className="flex flex-col gap-1">
@@ -734,9 +770,9 @@ export function AdminBookingsPage() {
                   <span className="text-xs">{b.escalation.reason}</span>
                   <span className="flex gap-1">
                     <Input
-                      label="Resolution"
+                      label={tr('Resolution')}
                       hideLabel
-                      placeholder="Resolution"
+                      placeholder={tr('Resolution')}
                       value={reason[b.reference] ?? ''}
                       onChange={(e) => setReason({ ...reason, [b.reference]: e.target.value })}
                       containerClassName="w-40"
@@ -752,16 +788,16 @@ export function AdminBookingsPage() {
                         )
                       }
                     >
-                      Resolve
+                      {tr('Resolve')}
                     </Button>
                   </span>
                 </span>
               ) : (
                 <span className="flex gap-1">
                   <Input
-                    label="Escalation reason"
+                    label={tr('Escalation reason')}
                     hideLabel
-                    placeholder="Reason"
+                    placeholder={tr('Reason')}
                     value={reason[b.reference] ?? ''}
                     onChange={(e) => setReason({ ...reason, [b.reference]: e.target.value })}
                     containerClassName="w-40"
@@ -777,7 +813,7 @@ export function AdminBookingsPage() {
                       )
                     }
                   >
-                    Escalate
+                    {tr('Escalate')}
                   </Button>
                 </span>
               ),
@@ -816,31 +852,37 @@ export function AdminPaymentsPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Payments"
-        description="Every payment attempt. Exceptions are failed attempts, attempts stuck for over 30 minutes, and captured payments without a confirmed stay."
+        title={tr('Payments')}
+        description={tr(
+          'Every payment attempt. Exceptions are failed attempts, attempts stuck for over 30 minutes, and captured payments without a confirmed stay.',
+        )}
       />
       <div className="flex flex-wrap items-end gap-3">
-        <SearchInput label="Booking reference or provider id" value={p.q} onValueChange={p.setQ} />
+        <SearchInput
+          label={tr('Booking reference or provider id')}
+          value={p.q}
+          onValueChange={p.setQ}
+        />
         <SortSelect value={p.sort} onChange={p.setSort} />
         <Checkbox
-          label="Exceptions only"
+          label={tr('Exceptions only')}
           checked={exceptions}
           onChange={(e) => setExceptions(e.target.checked)}
         />
       </div>
       <DataTable
-        caption="Payments"
+        caption={tr('Payments')}
         rows={list.data?.items}
         loading={list.isPending}
         error={list.isError ? normalizeApiError(list.error) : null}
         getRowId={(x) => x.id}
-        empty={<EmptyState compact title="No payments found" />}
+        empty={<EmptyState compact title={tr('No payments found')} />}
         columns={[
-          { id: 'd', header: 'Created', cell: (x) => fmtDateTime(x.createdAt) },
-          { id: 'b', header: 'Booking', cell: (x) => x.bookingReference ?? '—' },
+          { id: 'd', header: tr('Created'), cell: (x) => fmtDateTime(x.createdAt) },
+          { id: 'b', header: tr('Booking'), cell: (x) => x.bookingReference ?? '—' },
           {
             id: 'p',
-            header: 'Provider',
+            header: tr('Provider'),
             cell: (x) => (
               <span className="font-mono text-xs">
                 {x.provider} · {x.providerPaymentId ?? x.providerOrderId}
@@ -849,14 +891,14 @@ export function AdminPaymentsPage() {
           },
           {
             id: 'a',
-            header: 'Amount',
+            header: tr('Amount'),
             cell: (x) =>
               `${fmtMoney(x.amountMinor, x.currency)}${x.refundedMinor ? ` (refunded ${fmtMoney(x.refundedMinor, x.currency)})` : ''}`,
             align: 'right',
           },
           {
             id: 's',
-            header: 'Status',
+            header: tr('Status'),
             cell: (x) => (
               <span className="flex flex-col">
                 <StatusBadge status={x.status} />
@@ -903,11 +945,13 @@ export function AdminRefundsPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Refunds"
-        description="Refund requests and their progress. A refund is shown as succeeded only when the payment provider confirms it."
+        title={tr('Refunds')}
+        description={tr(
+          'Refund requests and their progress. A refund is shown as succeeded only when the payment provider confirms it.',
+        )}
       />
       <Select
-        label="Status"
+        label={tr('Status')}
         value={status}
         onChange={(e) => {
           setStatus(e.target.value);
@@ -926,27 +970,27 @@ export function AdminRefundsPage() {
         }}
       />
       <DataTable
-        caption="Refunds"
+        caption={tr('Refunds')}
         rows={list.data?.items}
         loading={list.isPending}
         error={list.isError ? normalizeApiError(list.error) : null}
         getRowId={(r) => r.id}
-        empty={<EmptyState compact title="No refunds" />}
+        empty={<EmptyState compact title={tr('No refunds')} />}
         columns={[
-          { id: 'd', header: 'Requested', cell: (r) => fmtDateTime(r.requestedAt) },
+          { id: 'd', header: tr('Requested'), cell: (r) => fmtDateTime(r.requestedAt) },
           {
             id: 'b',
-            header: 'Booking',
+            header: tr('Booking'),
             cell: (r) => `${r.bookingReference ?? '—'}${r.hotelName ? ` · ${r.hotelName}` : ''}`,
           },
-          { id: 'w', header: 'Reason', cell: (r) => r.reason },
+          { id: 'w', header: tr('Reason'), cell: (r) => r.reason },
           {
             id: 'a',
-            header: 'Amount',
+            header: tr('Amount'),
             cell: (r) => fmtMoney(r.amountMinor, r.currency),
             align: 'right',
           },
-          { id: 's', header: 'Status', cell: (r) => <StatusBadge status={r.status} /> },
+          { id: 's', header: tr('Status'), cell: (r) => <StatusBadge status={r.status} /> },
           {
             id: 'x',
             header: '',
@@ -957,7 +1001,7 @@ export function AdminRefundsPage() {
                   variant="ghost"
                   onClick={() => retry.mutate(r.id, { onError: fail('Retry failed') })}
                 >
-                  Retry
+                  {tr('Retry')}
                 </Button>
               ) : r.status === 'REQUESTED' ? (
                 <span className="flex gap-1">
@@ -970,7 +1014,7 @@ export function AdminRefundsPage() {
                       )
                     }
                   >
-                    Approve
+                    {tr('Approve')}
                   </Button>
                   <Button
                     size="sm"
@@ -988,7 +1032,7 @@ export function AdminRefundsPage() {
                       )
                     }
                   >
-                    Reject
+                    {tr('Reject')}
                   </Button>
                 </span>
               ) : null,
@@ -1062,10 +1106,12 @@ export function AdminCommissionsPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Commissions"
-        description="Property rules beat partner rules, which beat the global rule. A booking’s commission is fixed when payment is confirmed and never changes afterwards."
+        title={tr('Commissions')}
+        description={tr(
+          'Property rules beat partner rules, which beat the global rule. A booking’s commission is fixed when payment is confirmed and never changes afterwards.',
+        )}
       />
-      <SectionCard title="New rule">
+      <SectionCard title={tr('New rule')}>
         <form
           className="flex flex-wrap items-end gap-3"
           onSubmit={(e) => {
@@ -1074,40 +1120,40 @@ export function AdminCommissionsPage() {
           }}
         >
           <Input
-            label="Name"
+            label={tr('Name')}
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
             containerClassName="w-56"
           />
           <Select
-            label="Applies to"
+            label={tr('Applies to')}
             value={form.scope}
             onChange={(e) => setForm({ ...form, scope: e.target.value })}
             options={[
-              { value: 'GLOBAL', label: 'All properties' },
-              { value: 'PARTNER', label: 'One partner' },
-              { value: 'HOTEL', label: 'One property' },
+              { value: 'GLOBAL', label: tr('All properties') },
+              { value: 'PARTNER', label: tr('One partner') },
+              { value: 'HOTEL', label: tr('One property') },
             ]}
             containerClassName="w-44"
           />
           {form.scope === 'PARTNER' && (
-            <Input
-              label="Partner id"
+            <RecordPicker
+              kind="partner"
+              label={tr('Partner')}
               value={form.partnerId}
-              onChange={(e) => setForm({ ...form, partnerId: e.target.value })}
-              containerClassName="w-64"
+              onChange={(partnerId) => setForm({ ...form, partnerId })}
             />
           )}
           {form.scope === 'HOTEL' && (
-            <Input
-              label="Property id"
+            <RecordPicker
+              kind="hotel"
+              label={tr('Property')}
               value={form.hotelId}
-              onChange={(e) => setForm({ ...form, hotelId: e.target.value })}
-              containerClassName="w-64"
+              onChange={(hotelId) => setForm({ ...form, hotelId })}
             />
           )}
           <Input
-            label="Rate (%)"
+            label={tr('Rate (%)')}
             inputMode="decimal"
             value={form.percent}
             onChange={(e) => setForm({ ...form, percent: e.target.value })}
@@ -1115,35 +1161,35 @@ export function AdminCommissionsPage() {
           />
           <Input
             type="date"
-            label="Effective from"
+            label={tr('Effective from')}
             value={form.effectiveFrom}
             onChange={(e) => setForm({ ...form, effectiveFrom: e.target.value })}
             containerClassName="w-44"
           />
           <Button type="submit" loading={save.isPending} disabled={form.name.length < 3}>
-            Add rule
+            {tr('Add rule')}
           </Button>
         </form>
       </SectionCard>
       <QueryState query={rules}>
         <DataTable
-          caption="Commission rules"
+          caption={tr('Commission rules')}
           rows={rules.data}
           getRowId={(r) => r._id}
-          empty={<EmptyState compact title="No rules — the default rate applies" />}
+          empty={<EmptyState compact title={tr('No rules — the default rate applies')} />}
           columns={[
-            { id: 'n', header: 'Rule', cell: (r) => r.name },
-            { id: 's', header: 'Scope', cell: (r) => r.scope.toLowerCase() },
+            { id: 'n', header: tr('Rule'), cell: (r) => r.name },
+            { id: 's', header: tr('Scope'), cell: (r) => r.scope.toLowerCase() },
             {
               id: 'r',
-              header: 'Rate',
+              header: tr('Rate'),
               cell: (r) => (r.exempt ? 'Exempt' : fmtPct(r.rateBasisPoints)),
               align: 'right',
             },
-            { id: 'f', header: 'From', cell: (r) => fmtDate(r.effectiveFrom) },
+            { id: 'f', header: tr('From'), cell: (r) => fmtDate(r.effectiveFrom) },
             {
               id: 'a',
-              header: 'Status',
+              header: tr('Status'),
               cell: (r) => <StatusBadge status={r.active ? 'ACTIVE' : 'PAUSED'} />,
             },
             {
@@ -1155,7 +1201,7 @@ export function AdminCommissionsPage() {
                   variant="ghost"
                   onClick={() => toggle.mutate(r, { onError: fail('Could not update') })}
                 >
-                  {r.active ? 'Deactivate' : 'Activate'}
+                  {r.active ? tr('Deactivate') : tr('Activate')}
                 </Button>
               ),
             },
@@ -1204,20 +1250,20 @@ function RecordPayment({ s, onDone }: { s: SettlementRow; onDone: () => void }) 
       }}
     >
       <Input
-        label="Transfer reference (UTR)"
+        label={tr('Transfer reference (UTR)')}
         value={ref}
         onChange={(e) => setRef(e.target.value)}
         containerClassName="w-48"
       />
       <Input
         type="date"
-        label="Paid on"
+        label={tr('Paid on')}
         value={paidAt}
         onChange={(e) => setPaidAt(e.target.value)}
         containerClassName="w-40"
       />
       <label className="flex flex-col gap-1 text-sm">
-        Transfer confirmation
+        {tr('Transfer confirmation')}
         <input
           type="file"
           accept="application/pdf,image/*"
@@ -1225,7 +1271,7 @@ function RecordPayment({ s, onDone }: { s: SettlementRow; onDone: () => void }) 
         />
       </label>
       <Button type="submit" size="sm" disabled={ref.length < 4 || !file} loading={submit.isPending}>
-        Mark paid
+        {tr('Mark paid')}
       </Button>
     </form>
   );
@@ -1255,14 +1301,17 @@ export function AdminSettlementsPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Settlements"
-        description="Batches of partner payables built from the ledger. Stays become eligible after check-out plus the hold period."
+        title={tr('Settlements')}
+        description={tr(
+          'Batches of partner payables built from the ledger. Stays become eligible after check-out plus the hold period.',
+        )}
       />
-      <Alert tone="warning" title="Automated payouts are disabled">
-        No payout provider is onboarded. Pay by bank transfer, then record the transfer reference
-        and confirmation document here; a settlement is never marked paid without that evidence.
+      <Alert tone="warning" title={tr('Automated payouts are disabled')}>
+        {tr(
+          'No payout provider is onboarded. Pay by bank transfer, then record the transfer reference and confirmation document here; a settlement is never marked paid without that evidence.',
+        )}
       </Alert>
-      <SectionCard title="Create a settlement">
+      <SectionCard title={tr('Create a settlement')}>
         <form
           className="flex flex-wrap items-end gap-2"
           onSubmit={(e) => {
@@ -1270,23 +1319,19 @@ export function AdminSettlementsPage() {
             create.mutate(undefined, { onError: fail('Could not create the settlement') });
           }}
         >
-          <Input
-            label="Partner id"
+          <RecordPicker
+            kind="partner"
+            label={tr('Partner')}
             value={partnerId}
-            onChange={(e) => setPartnerId(e.target.value)}
-            containerClassName="w-72"
+            onChange={setPartnerId}
           />
-          <Button
-            type="submit"
-            loading={create.isPending}
-            disabled={!/^[a-f\d]{24}$/i.test(partnerId)}
-          >
-            Create from eligible entries
+          <Button type="submit" loading={create.isPending} disabled={!partnerId}>
+            {tr('Create from eligible entries')}
           </Button>
         </form>
       </SectionCard>
       <Select
-        label="Status"
+        label={tr('Status')}
         value={status}
         onChange={(e) => {
           setStatus(e.target.value);
@@ -1299,29 +1344,29 @@ export function AdminSettlementsPage() {
         containerClassName="w-56"
       />
       <DataTable
-        caption="Settlements"
+        caption={tr('Settlements')}
         rows={list.data?.items}
         loading={list.isPending}
         error={list.isError ? normalizeApiError(list.error) : null}
         getRowId={(s) => s._id}
-        empty={<EmptyState compact title="No settlements" />}
+        empty={<EmptyState compact title={tr('No settlements')} />}
         columns={[
           {
             id: 'r',
-            header: 'Reference',
+            header: tr('Reference'),
             cell: (s) => <span className="font-mono text-xs">{s.reference}</span>,
           },
-          { id: 'c', header: 'Created', cell: (s) => fmtDate(s.createdAt) },
-          { id: 'n', header: 'Entries', cell: (s) => s.entryCount, align: 'right' },
+          { id: 'c', header: tr('Created'), cell: (s) => fmtDate(s.createdAt) },
+          { id: 'n', header: tr('Entries'), cell: (s) => s.entryCount, align: 'right' },
           {
             id: 'a',
-            header: 'Net payable',
+            header: tr('Net payable'),
             cell: (s) => fmtMoney(s.netPayableMinor, s.currency),
             align: 'right',
           },
           {
             id: 's',
-            header: 'Status',
+            header: tr('Status'),
             cell: (s) => (
               <span className="flex flex-col">
                 <StatusBadge status={s.status} />
@@ -1347,7 +1392,7 @@ export function AdminSettlementsPage() {
                         )
                       }
                     >
-                      Hold
+                      {tr('Hold')}
                     </Button>
                   )}
                   {s.status === 'ON_HOLD' && (
@@ -1361,7 +1406,7 @@ export function AdminSettlementsPage() {
                         )
                       }
                     >
-                      Release
+                      {tr('Release')}
                     </Button>
                   )}
                   {['ELIGIBLE', 'PROCESSING', 'ON_HOLD'].includes(s.status) && (
@@ -1370,7 +1415,7 @@ export function AdminSettlementsPage() {
                       variant="ghost"
                       onClick={() => setPaying(paying === s._id ? null : s._id)}
                     >
-                      Record payment
+                      {tr('Record payment')}
                     </Button>
                   )}
                   {['ELIGIBLE', 'PROCESSING', 'ON_HOLD'].includes(s.status) && (
@@ -1384,7 +1429,7 @@ export function AdminSettlementsPage() {
                         )
                       }
                     >
-                      Mark failed
+                      {tr('Mark failed')}
                     </Button>
                   )}
                 </span>
@@ -1415,6 +1460,211 @@ interface Coupon {
   endsAt: string | null;
   redeemedDiscountMinor: number;
 }
+const PROMOTION_TYPES: Record<AdminPromotionDto['ruleType'], string> = {
+  get PROMOTIONAL() {
+    return tr('Promotional');
+  },
+  get EARLY_BIRD() {
+    return tr('Early bird');
+  },
+  get LAST_MINUTE() {
+    return tr('Last minute');
+  },
+  get LONG_STAY() {
+    return tr('Long stay');
+  },
+};
+const PROMOTION_STATE_LABELS: Record<PromotionState, string> = {
+  get ACTIVE() {
+    return tr('Running');
+  },
+  get UPCOMING() {
+    return tr('Upcoming');
+  },
+  get ENDED() {
+    return tr('Ended');
+  },
+  get PAUSED() {
+    return tr('Paused');
+  },
+};
+const PROMOTION_STATE_TONES: Record<PromotionState, 'success' | 'info' | 'neutral'> = {
+  ACTIVE: 'success',
+  UPCOMING: 'info',
+  ENDED: 'neutral',
+  PAUSED: 'neutral',
+};
+function promotionValue(p: AdminPromotionDto) {
+  const v = p.adjustmentValue;
+  if (p.adjustmentType === 'PERCENT')
+    return v <= 0 ? trf('{0}% off', [Math.abs(v) / 100]) : trf('+{0}%', [v / 100]);
+  if (p.adjustmentType === 'AMOUNT')
+    return v <= 0
+      ? trf('{0} off a night', [fmtMoney(Math.abs(v), p.currency)])
+      : trf('+{0} a night', [fmtMoney(v, p.currency)]);
+  return trf('Fixed {0} a night', [fmtMoney(v, p.currency)]);
+}
+
+/** Marketplace-wide view of partner discounts, next to the platform-funded coupons. */
+export function AdminPromotionsPage() {
+  const [page, setPage] = useState(1);
+  const [state, setState] = useState<PromotionState | ''>('ACTIVE');
+  const [type, setType] = useState('');
+  const [search, setSearch] = useState('');
+  const [q, setQ] = useState('');
+  const list = useApiQuery<
+    Page<AdminPromotionDto> & { summary: AdminPromotionSummaryDto; truncated: boolean }
+  >(['admin', 'promotions'], '/admin/promotions', {
+    page,
+    state: state || undefined,
+    type: type || undefined,
+    q: q || undefined,
+  });
+  const coupons = useApiQuery<Page<Coupon>>(['admin', 'coupons'], '/admin/coupons', { page: 1 });
+  const liveCoupons = coupons.data?.items.filter((c) => c.active).length;
+  const summary = list.data?.summary;
+  return (
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title={tr('Promotions')}
+        description={tr(
+          'Discounts partners run on their own properties (funded by the partner), and the platform-funded coupons. Dates are each property’s local dates.',
+        )}
+        actions={
+          <ButtonLink to="/admin/coupons" variant="secondary">
+            {tr('Manage coupons')}
+          </ButtonLink>
+        }
+      />
+      <KpiGrid>
+        <KpiTile
+          label={tr('Running partner promotions')}
+          value={summary ? String(summary.ACTIVE) : '—'}
+        />
+        <KpiTile label={tr('Upcoming')} value={summary ? String(summary.UPCOMING) : '—'} />
+        <KpiTile label={tr('Paused by partners')} value={summary ? String(summary.PAUSED) : '—'} />
+        <KpiTile
+          label={tr('Active platform coupons')}
+          value={liveCoupons === undefined ? '—' : String(liveCoupons)}
+          hint={
+            coupons.data && coupons.data.pagination.totalPages > 1
+              ? tr('First page of coupons only')
+              : undefined
+          }
+        />
+      </KpiGrid>
+      {list.data?.truncated && (
+        <Alert tone="warning">
+          {tr('Only the 2,000 most recently updated discounts were checked. Narrow the search.')}
+        </Alert>
+      )}
+      <div className="flex flex-wrap items-end gap-3">
+        <SearchInput
+          label={tr('Property')}
+          placeholder={tr('Property name')}
+          value={search}
+          onValueChange={setSearch}
+          onSearch={(value) => {
+            setQ(value);
+            setPage(1);
+          }}
+          containerClassName="w-64"
+        />
+        <Select
+          label={tr('State')}
+          value={state}
+          onChange={(e) => {
+            setState(e.target.value as PromotionState | '');
+            setPage(1);
+          }}
+          options={[
+            { value: '', label: tr('Any state') },
+            ...PROMOTION_STATES.map((s) => ({ value: s, label: PROMOTION_STATE_LABELS[s] })),
+          ]}
+          containerClassName="w-44"
+        />
+        <Select
+          label={tr('Type')}
+          value={type}
+          onChange={(e) => {
+            setType(e.target.value);
+            setPage(1);
+          }}
+          options={[
+            { value: '', label: tr('All types') },
+            ...DISCOUNT_RULE_TYPES.map((t) => ({ value: t, label: PROMOTION_TYPES[t] })),
+          ]}
+          containerClassName="w-44"
+        />
+      </div>
+      <DataTable
+        caption={tr('Partner promotions')}
+        rows={list.data?.items}
+        loading={list.isPending}
+        getRowId={(p) => p.id}
+        empty={
+          <EmptyState
+            compact
+            title={tr('No promotions match')}
+            description={tr('Partners create discounts under Rates & pricing on their properties.')}
+          />
+        }
+        columns={[
+          {
+            id: 'n',
+            header: tr('Promotion'),
+            cell: (p) => (
+              <span className="flex flex-col">
+                <span className="font-medium">{p.name}</span>
+                <span className="text-xs text-fg-muted">{PROMOTION_TYPES[p.ruleType]}</span>
+              </span>
+            ),
+          },
+          {
+            id: 'h',
+            header: tr('Property'),
+            cell: (p) => (
+              <span className="flex flex-col">
+                <Link to={`/admin/properties/${p.hotelId}`} className="hover:underline">
+                  {p.hotelName}
+                </Link>
+                <span className="text-xs text-fg-muted">
+                  {[p.hotelCity, p.partnerName].filter(Boolean).join(' · ')}
+                </span>
+              </span>
+            ),
+          },
+          { id: 'v', header: tr('Discount'), cell: promotionValue },
+          {
+            id: 'w',
+            header: tr('Window'),
+            cell: (p) => (
+              <span className="flex flex-col">
+                <span>
+                  {p.windowFrom || p.windowTo
+                    ? trf('{0} → {1}', [p.windowFrom ?? '…', p.windowTo ?? '…'])
+                    : tr('Open-ended')}
+                </span>
+                <span className="text-xs text-fg-muted">
+                  {p.windowKind === 'BOOKING' ? tr('Booking dates') : tr('Stay dates')}
+                </span>
+              </span>
+            ),
+          },
+          {
+            id: 's',
+            header: tr('State'),
+            cell: (p) => (
+              <Badge tone={PROMOTION_STATE_TONES[p.state]}>{PROMOTION_STATE_LABELS[p.state]}</Badge>
+            ),
+          },
+        ]}
+      />
+      <Pager data={list.data} page={page} setPage={setPage} />
+    </div>
+  );
+}
+
 export function AdminCouponsPage() {
   const [page, setPage] = useState(1);
   const list = useApiQuery<Page<Coupon>>(['admin', 'coupons'], '/admin/coupons', { page });
@@ -1466,10 +1716,12 @@ export function AdminCouponsPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Coupons"
-        description="Platform-funded discounts. Limits are enforced atomically at checkout and uses are released when a hold expires."
+        title={tr('Coupons')}
+        description={tr(
+          'Platform-funded discounts. Limits are enforced atomically at checkout and uses are released when a hold expires.',
+        )}
       />
-      <SectionCard title="New coupon">
+      <SectionCard title={tr('New coupon')}>
         <form
           className="flex flex-wrap items-end gap-3"
           onSubmit={(e) => {
@@ -1478,50 +1730,50 @@ export function AdminCouponsPage() {
           }}
         >
           <Input
-            label="Code"
+            label={tr('Code')}
             value={form.code}
             onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
             containerClassName="w-40"
           />
           <Input
-            label="Name"
+            label={tr('Name')}
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
             containerClassName="w-56"
           />
           <Select
-            label="Type"
+            label={tr('Type')}
             value={form.discountType}
             onChange={(e) => setForm({ ...form, discountType: e.target.value })}
             options={[
-              { value: 'PERCENT', label: 'Percentage' },
-              { value: 'FIXED', label: 'Fixed amount (₹)' },
+              { value: 'PERCENT', label: tr('Percentage') },
+              { value: 'FIXED', label: tr('Fixed amount (₹)') },
             ]}
             containerClassName="w-44"
           />
           <Input
-            label={form.discountType === 'PERCENT' ? 'Percent off' : 'Amount off (₹)'}
+            label={form.discountType === 'PERCENT' ? tr('Percent off') : tr('Amount off (₹)')}
             inputMode="decimal"
             value={form.value}
             onChange={(e) => setForm({ ...form, value: e.target.value })}
             containerClassName="w-32"
           />
           <Input
-            label="Total uses (blank = unlimited)"
+            label={tr('Total uses (blank = unlimited)')}
             inputMode="numeric"
             value={form.totalLimit}
             onChange={(e) => setForm({ ...form, totalLimit: e.target.value })}
             containerClassName="w-52"
           />
           <Input
-            label="Uses per customer"
+            label={tr('Uses per customer')}
             inputMode="numeric"
             value={form.perUserLimit}
             onChange={(e) => setForm({ ...form, perUserLimit: e.target.value })}
             containerClassName="w-40"
           />
           <Input
-            label="Minimum booking (₹)"
+            label={tr('Minimum booking (₹)')}
             inputMode="decimal"
             value={form.minBooking}
             onChange={(e) => setForm({ ...form, minBooking: e.target.value })}
@@ -1529,13 +1781,13 @@ export function AdminCouponsPage() {
           />
           <Input
             type="date"
-            label="Ends on"
+            label={tr('Ends on')}
             value={form.endsAt}
             onChange={(e) => setForm({ ...form, endsAt: e.target.value })}
             containerClassName="w-44"
           />
           <Checkbox
-            label="First booking only"
+            label={tr('First booking only')}
             checked={form.firstBookingOnly}
             onChange={(e) => setForm({ ...form, firstBookingOnly: e.target.checked })}
           />
@@ -1544,40 +1796,40 @@ export function AdminCouponsPage() {
             loading={save.isPending}
             disabled={form.code.length < 3 || form.name.length < 2}
           >
-            Create coupon
+            {tr('Create coupon')}
           </Button>
         </form>
       </SectionCard>
       <DataTable
-        caption="Coupons"
+        caption={tr('Coupons')}
         rows={list.data?.items}
         loading={list.isPending}
         getRowId={(c) => c._id}
-        empty={<EmptyState compact title="No coupons yet" />}
+        empty={<EmptyState compact title={tr('No coupons yet')} />}
         columns={[
-          { id: 'c', header: 'Code', cell: (c) => <span className="font-mono">{c.code}</span> },
-          { id: 'n', header: 'Name', cell: (c) => c.name },
+          { id: 'c', header: tr('Code'), cell: (c) => <span className="font-mono">{c.code}</span> },
+          { id: 'n', header: tr('Name'), cell: (c) => c.name },
           {
             id: 'v',
-            header: 'Discount',
+            header: tr('Discount'),
             cell: (c) => (c.discountType === 'PERCENT' ? fmtPct(c.value) : fmtMoney(c.value)),
           },
           {
             id: 'u',
-            header: 'Used / limit',
+            header: tr('Used / limit'),
             cell: (c) =>
               `${c.usedCount}${c.reservedCount ? ` (+${c.reservedCount} held)` : ''} / ${c.totalLimit ?? '∞'}`,
             align: 'right',
           },
           {
             id: 'd',
-            header: 'Discount given',
+            header: tr('Discount given'),
             cell: (c) => fmtMoney(c.redeemedDiscountMinor),
             align: 'right',
           },
           {
             id: 's',
-            header: 'Status',
+            header: tr('Status'),
             cell: (c) => <StatusBadge status={c.active ? 'ACTIVE' : 'PAUSED'} />,
           },
           {
@@ -1589,7 +1841,7 @@ export function AdminCouponsPage() {
                 variant="ghost"
                 onClick={() => toggle.mutate(c, { onError: fail('Could not update') })}
               >
-                {c.active ? 'Pause' : 'Activate'}
+                {c.active ? tr('Pause') : tr('Activate')}
               </Button>
             ),
           },
@@ -1628,10 +1880,10 @@ function TicketPanel({ id, onClose }: { id: string; onClose: () => void }) {
   const d = t.data;
   return (
     <SectionCard
-      title={d ? `${d.ticketNumber} · ${d.subject}` : 'Ticket'}
+      title={d ? `${d.ticketNumber} · ${d.subject}` : tr('Ticket')}
       actions={
         <Button size="sm" variant="ghost" onClick={onClose}>
-          Close
+          {tr('Close')}
         </Button>
       }
     >
@@ -1649,12 +1901,13 @@ function TicketPanel({ id, onClose }: { id: string; onClose: () => void }) {
                 <span className="font-mono text-xs">{d.bookingReference}</span>
               )}
               <span className="text-fg-subtle">
-                · first response {d.firstResponseAt ? fmtDateTime(d.firstResponseAt) : 'pending'}
+                {tr('· first response')}{' '}
+                {d.firstResponseAt ? fmtDateTime(d.firstResponseAt) : 'pending'}
               </span>
             </div>
             <div className="flex flex-wrap items-end gap-2">
               <Select
-                label="Priority"
+                label={tr('Priority')}
                 value={d.priority}
                 onChange={(e) =>
                   patch.mutate({ priority: e.target.value }, { onError: fail('Could not update') })
@@ -1675,11 +1928,11 @@ function TicketPanel({ id, onClose }: { id: string; onClose: () => void }) {
                   )
                 }
               >
-                Unassign
+                {tr('Unassign')}
               </Button>
               {d.hotel && (
                 <Checkbox
-                  label="Share with property"
+                  label={tr('Share with property')}
                   checked={d.partnerVisible}
                   onChange={(e) =>
                     patch.mutate(
@@ -1690,7 +1943,7 @@ function TicketPanel({ id, onClose }: { id: string; onClose: () => void }) {
                 />
               )}
               <Input
-                label="Escalation / resolution note"
+                label={tr('Escalation / resolution note')}
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 containerClassName="w-64"
@@ -1706,7 +1959,7 @@ function TicketPanel({ id, onClose }: { id: string; onClose: () => void }) {
                   )
                 }
               >
-                Escalate
+                {tr('Escalate')}
               </Button>
               <Button
                 size="sm"
@@ -1718,10 +1971,10 @@ function TicketPanel({ id, onClose }: { id: string; onClose: () => void }) {
                   )
                 }
               >
-                Resolve
+                {tr('Resolve')}
               </Button>
             </div>
-            <ol className="flex flex-col gap-2" aria-label="Conversation">
+            <ol className="flex flex-col gap-2" aria-label={tr('Conversation')}>
               {d.messages?.map((m) => (
                 <li
                   key={m.id}
@@ -1737,10 +1990,10 @@ function TicketPanel({ id, onClose }: { id: string; onClose: () => void }) {
                     {m.authorName}{' '}
                     <span className="text-xs text-fg-subtle">
                       {m.channel === 'INTERNAL'
-                        ? 'internal note'
+                        ? tr('internal note')
                         : m.channel === 'PARTNER'
-                          ? 'property thread'
-                          : 'customer thread'}{' '}
+                          ? tr('property thread')
+                          : tr('customer thread')}{' '}
                       · {fmtDateTime(m.createdAt)}
                     </span>
                   </p>
@@ -1777,19 +2030,23 @@ function TicketPanel({ id, onClose }: { id: string; onClose: () => void }) {
               }}
             >
               <Select
-                label="Send to"
+                label={tr('Send to')}
                 value={channel}
                 onChange={(e) => setChannel(e.target.value as typeof channel)}
                 options={[
-                  { value: 'CUSTOMER', label: 'Customer' },
-                  ...(d.partnerVisible ? [{ value: 'PARTNER', label: 'Property' }] : []),
-                  { value: 'INTERNAL', label: 'Internal note (agents only)' },
+                  { value: 'CUSTOMER', label: tr('Customer') },
+                  ...(d.partnerVisible ? [{ value: 'PARTNER', label: tr('Property') }] : []),
+                  { value: 'INTERNAL', label: tr('Internal note (agents only)') },
                 ]}
                 containerClassName="w-64"
               />
-              <Textarea label="Message" value={body} onChange={(e) => setBody(e.target.value)} />
+              <Textarea
+                label={tr('Message')}
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+              />
               <label className="flex flex-col gap-1 text-sm">
-                Attachment (optional, PDF or image, up to 5 MB)
+                {tr('Attachment (optional, PDF or image, up to 5 MB)')}
                 <input
                   type="file"
                   accept="application/pdf,image/jpeg,image/png,image/webp"
@@ -1803,7 +2060,7 @@ function TicketPanel({ id, onClose }: { id: string; onClose: () => void }) {
                 disabled={!body.trim()}
                 loading={send.isPending}
               >
-                Send
+                {tr('Send')}
               </Button>
             </form>
           </>
@@ -1842,16 +2099,18 @@ export function AdminSupportPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Support queue"
-        description="Highest priority first. Internal notes are never visible to customers or properties."
+        title={tr('Support queue')}
+        description={tr(
+          'Highest priority first. Internal notes are never visible to customers or properties.',
+        )}
       />
       <QueryState query={metrics}>
         {metrics.data && (
           <KpiGrid>
-            <KpiTile label="Open" value={metrics.data.open} />
-            <KpiTile label="Created (30 days)" value={metrics.data.created} />
+            <KpiTile label={tr('Open')} value={metrics.data.open} />
+            <KpiTile label={tr('Created (30 days)')} value={metrics.data.created} />
             <KpiTile
-              label="Avg first response"
+              label={tr('Avg first response')}
               value={
                 metrics.data.averageFirstResponseMinutes === null
                   ? '—'
@@ -1859,7 +2118,7 @@ export function AdminSupportPage() {
               }
             />
             <KpiTile
-              label="Avg resolution"
+              label={tr('Avg resolution')}
               value={
                 metrics.data.averageResolutionHours === null
                   ? '—'
@@ -1870,9 +2129,13 @@ export function AdminSupportPage() {
         )}
       </QueryState>
       <div className="flex flex-wrap items-end gap-3">
-        <SearchInput label="Ticket number, subject or booking" value={p.q} onValueChange={p.setQ} />
+        <SearchInput
+          label={tr('Ticket number, subject or booking')}
+          value={p.q}
+          onValueChange={p.setQ}
+        />
         <Select
-          label="Status"
+          label={tr('Status')}
           value={status}
           onChange={(e) => setStatus(e.target.value)}
           options={[
@@ -1890,29 +2153,29 @@ export function AdminSupportPage() {
           containerClassName="w-52"
         />
         <Select
-          label="Assignee"
+          label={tr('Assignee')}
           value={assignee}
           onChange={(e) => setAssignee(e.target.value)}
           options={[
-            { value: '', label: 'Anyone' },
-            { value: 'me', label: 'Assigned to me' },
-            { value: 'unassigned', label: 'Unassigned' },
+            { value: '', label: tr('Anyone') },
+            { value: 'me', label: tr('Assigned to me') },
+            { value: 'unassigned', label: tr('Unassigned') },
           ]}
           containerClassName="w-44"
         />
       </div>
       <DataTable
-        caption="Support tickets"
+        caption={tr('Support tickets')}
         rows={list.data?.items}
         loading={list.isPending}
         error={list.isError ? normalizeApiError(list.error) : null}
         getRowId={(t) => t.id}
-        empty={<EmptyState compact title="The queue is clear" />}
+        empty={<EmptyState compact title={tr('The queue is clear')} />}
         columns={[
-          { id: 'p', header: 'Priority', cell: (t) => <StatusBadge status={t.priority} /> },
+          { id: 'p', header: tr('Priority'), cell: (t) => <StatusBadge status={t.priority} /> },
           {
             id: 's',
-            header: 'Subject',
+            header: tr('Subject'),
             cell: (t) => (
               <button
                 type="button"
@@ -1926,10 +2189,10 @@ export function AdminSupportPage() {
               </button>
             ),
           },
-          { id: 'c', header: 'Customer', cell: (t) => t.customer.name },
+          { id: 'c', header: tr('Customer'), cell: (t) => t.customer.name },
           {
             id: 'a',
-            header: 'Assignee',
+            header: tr('Assignee'),
             cell: (t) =>
               t.assignee?.name ?? (
                 <Button
@@ -1937,12 +2200,12 @@ export function AdminSupportPage() {
                   variant="ghost"
                   onClick={() => claim.mutate(t.id, { onError: fail('Could not assign') })}
                 >
-                  Assign to me
+                  {tr('Assign to me')}
                 </Button>
               ),
           },
-          { id: 't', header: 'Status', cell: (t) => <StatusBadge status={t.status} /> },
-          { id: 'l', header: 'Last message', cell: (t) => fmtDateTime(t.lastMessageAt) },
+          { id: 't', header: tr('Status'), cell: (t) => <StatusBadge status={t.status} /> },
+          { id: 'l', header: tr('Last message'), cell: (t) => fmtDateTime(t.lastMessageAt) },
         ]}
       />
       <Pager data={list.data} page={p.page} setPage={p.setPage} />
@@ -1972,32 +2235,32 @@ export function AdminOrganizationsPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Corporate accounts"
-        description="Verify businesses before their employees can request travel."
+        title={tr('Corporate accounts')}
+        description={tr('Verify businesses before their employees can request travel.')}
       />
       <Select
-        label="Status"
+        label={tr('Status')}
         value={status}
         onChange={(e) => setStatus(e.target.value)}
         options={[
-          { value: 'PENDING_VERIFICATION', label: 'Awaiting verification' },
-          { value: 'ACTIVE', label: 'Active' },
-          { value: 'SUSPENDED', label: 'Suspended' },
-          { value: '', label: 'All' },
+          { value: 'PENDING_VERIFICATION', label: tr('Awaiting verification') },
+          { value: 'ACTIVE', label: tr('Active') },
+          { value: 'SUSPENDED', label: tr('Suspended') },
+          { value: '', label: tr('All') },
         ]}
         containerClassName="w-56"
       />
       <DataTable
-        caption="Organisations"
+        caption={tr('Organisations')}
         rows={list.data?.items}
         loading={list.isPending}
         getRowId={(o) => o.id}
-        empty={<EmptyState compact title="No organisations" />}
+        empty={<EmptyState compact title={tr('No organisations')} />}
         columns={[
-          { id: 'n', header: 'Name', cell: (o) => o.name },
-          { id: 'e', header: 'Billing email', cell: (o) => o.billingEmail },
+          { id: 'n', header: tr('Name'), cell: (o) => o.name },
+          { id: 'e', header: tr('Billing email'), cell: (o) => o.billingEmail },
           { id: 'g', header: 'GSTIN', cell: (o) => o.gstin ?? '—' },
-          { id: 's', header: 'Status', cell: (o) => <StatusBadge status={o.status} /> },
+          { id: 's', header: tr('Status'), cell: (o) => <StatusBadge status={o.status} /> },
           {
             id: 'x',
             header: '',
@@ -2013,7 +2276,7 @@ export function AdminOrganizationsPage() {
                       )
                     }
                   >
-                    Approve
+                    {tr('Approve')}
                   </Button>
                 )}
                 {o.status === 'ACTIVE' && (
@@ -2030,7 +2293,7 @@ export function AdminOrganizationsPage() {
                       )
                     }
                   >
-                    Suspend
+                    {tr('Suspend')}
                   </Button>
                 )}
               </span>
@@ -2058,17 +2321,19 @@ export function AdminReviewsPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Review moderation"
-        description="Reported reviews. Removal hides a review publicly; every decision is audited."
+        title={tr('Review moderation')}
+        description={tr(
+          'Reported reviews. Removal hides a review publicly; every decision is audited.',
+        )}
       />
       <Select
-        label="Show"
+        label={tr('Show')}
         value={status}
         onChange={(e) => setStatus(e.target.value)}
         options={[
-          { value: 'FLAGGED', label: 'Reported' },
-          { value: 'REMOVED', label: 'Removed' },
-          { value: 'PUBLISHED', label: 'Published' },
+          { value: 'FLAGGED', label: tr('Reported') },
+          { value: 'REMOVED', label: tr('Removed') },
+          { value: 'PUBLISHED', label: tr('Published') },
         ]}
         containerClassName="w-44"
       />
@@ -2078,15 +2343,15 @@ export function AdminReviewsPage() {
             {list.data.map((r) => (
               <li key={r.id} className="flex flex-col gap-2 rounded-xl border border-border p-4">
                 <p className="font-medium">
-                  {r.title || 'Review'}{' '}
+                  {r.title || tr('Review')}{' '}
                   <span className="text-sm text-fg-subtle">
-                    {r.hotel.name} · {r.reportCount} report(s)
+                    {r.hotel.name} · {r.reportCount} {tr('report(s)')}
                   </span>
                 </p>
                 {r.body && <p className="text-sm whitespace-pre-wrap">{r.body}</p>}
                 {r.reports.map((x, i) => (
                   <p key={i} className="text-xs text-fg-muted">
-                    Reported: {x.reason.toLowerCase()}
+                    {tr('Reported:')} {x.reason.toLowerCase()}
                     {x.details && ` — ${x.details}`}
                   </p>
                 ))}
@@ -2102,7 +2367,7 @@ export function AdminReviewsPage() {
                         )
                       }
                     >
-                      Remove
+                      {tr('Remove')}
                     </Button>
                   )}
                   {r.status === 'REMOVED' && (
@@ -2116,7 +2381,7 @@ export function AdminReviewsPage() {
                         )
                       }
                     >
-                      Restore
+                      {tr('Restore')}
                     </Button>
                   )}
                   {r.status === 'FLAGGED' && (
@@ -2130,7 +2395,7 @@ export function AdminReviewsPage() {
                         )
                       }
                     >
-                      Dismiss reports
+                      {tr('Dismiss reports')}
                     </Button>
                   )}
                 </div>
@@ -2138,7 +2403,7 @@ export function AdminReviewsPage() {
             ))}
           </ul>
         ) : (
-          <EmptyState title="Nothing to review" />
+          <EmptyState title={tr('Nothing to review')} />
         )}
       </QueryState>
     </div>

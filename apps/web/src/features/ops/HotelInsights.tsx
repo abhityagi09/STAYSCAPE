@@ -14,6 +14,7 @@ import { useAuth } from '@/features/auth/use-auth';
 import { normalizeApiError } from '@/lib/api/errors';
 import { api, useApiMutation, useApiQuery } from './api';
 import { fmtDate, fmtMoney } from './components';
+import { tr, trf } from '@/lib/tr';
 
 interface Rates {
   available: boolean;
@@ -43,7 +44,8 @@ export function ApproxPrice({
   const converted = Math.round((amountMinor / r.rates[currency]!) * r.rates[target]!);
   return (
     <span className="text-xs text-fg-subtle" title={r.disclaimer}>
-      ≈ {fmtMoney(converted, target)} (ECB reference rate {r.publishedOn}; you pay in {currency})
+      ≈ {fmtMoney(converted, target)} {tr('(ECB reference rate')} {r.publishedOn}
+      {tr('; you pay in')} {currency})
     </span>
   );
 }
@@ -54,19 +56,19 @@ function TrustScoreCard({ hotel }: { hotel: HotelDetailDto }) {
   return (
     <section aria-labelledby="trust" className="flex flex-col gap-3">
       <h2 id="trust" className="flex items-center gap-2 font-display text-2xl font-semibold">
-        <ShieldCheck className="size-6" aria-hidden="true" /> TrustScore
+        <ShieldCheck className="size-6" aria-hidden="true" /> {tr('TrustScore')}
       </h2>
       <p className="text-sm text-fg-muted">
         {t.score === null ? (
-          'Not enough stays or reviews yet to give a score.'
+          tr('Not enough stays or reviews yet to give a score.')
         ) : (
           <>
-            <strong className="text-2xl text-fg">{t.score}</strong>/100 · confidence{' '}
-            {t.confidence.toLowerCase()}
+            <strong className="text-2xl text-fg">{t.score}</strong>
+            {tr('/100 · confidence')} {t.confidence.toLowerCase()}
           </>
         )}{' '}
-        · based on {t.basis.reviews} review(s) and {t.basis.completedStays} completed stay(s) on
-        Stayscape.
+        {tr('· based on')} {t.basis.reviews} {tr('review(s) and')} {t.basis.completedStays}{' '}
+        {tr('completed stay(s) on Stayscape.')}
       </p>
       <ul className="grid gap-2 sm:grid-cols-2">
         {t.components.map((c) => (
@@ -86,7 +88,7 @@ function TrustScoreCard({ hotel }: { hotel: HotelDetailDto }) {
         ))}
       </ul>
       <p className="text-xs text-fg-subtle">
-        Calculated only from Stayscape’s own records; properties cannot pay to change it.
+        {tr('Calculated only from Stayscape’s own records; properties cannot pay to change it.')}
       </p>
     </section>
   );
@@ -99,7 +101,7 @@ function AccessibilitySection({ hotel }: { hotel: HotelDetailDto }) {
         id="accessibility"
         className="flex items-center gap-2 font-display text-2xl font-semibold"
       >
-        <Accessibility className="size-6" aria-hidden="true" /> Accessibility
+        <Accessibility className="size-6" aria-hidden="true" /> {tr('Accessibility')}
       </h2>
       {hotel.accessibility.length ? (
         <ul className="flex flex-col gap-2">
@@ -108,11 +110,12 @@ function AccessibilitySection({ hotel }: { hotel: HotelDetailDto }) {
               <span className="font-medium">{f.label}</span>
               {f.source === 'ADMIN_VERIFIED' ? (
                 <Badge tone="success">
-                  <BadgeCheck className="size-3.5" aria-hidden="true" /> Checked by Stayscape{' '}
-                  {f.verifiedAt && `on ${fmtDate(f.verifiedAt)}`}
+                  <BadgeCheck className="size-3.5" aria-hidden="true" />{' '}
+                  {tr('Checked by Stayscape')}{' '}
+                  {f.verifiedAt && trf('on {0}', [fmtDate(f.verifiedAt)])}
                 </Badge>
               ) : (
-                <Badge tone="outline">Stated by the property</Badge>
+                <Badge tone="outline">{tr('Stated by the property')}</Badge>
               )}
               {f.note && <span className="text-fg-muted">— {f.note}</span>}
             </li>
@@ -120,8 +123,9 @@ function AccessibilitySection({ hotel }: { hotel: HotelDetailDto }) {
         </ul>
       ) : (
         <p className="text-sm text-fg-muted">
-          The property has not provided accessibility information. Contact it before booking if you
-          have specific needs.
+          {tr(
+            'The property has not provided accessibility information. Contact it before booking if you have specific needs.',
+          )}
         </p>
       )}
     </section>
@@ -143,36 +147,36 @@ function FlexibleDates({ hotel }: { hotel: HotelDetailDto }) {
   return (
     <section aria-labelledby="flexible" className="flex flex-col gap-3">
       <h2 id="flexible" className="font-display text-2xl font-semibold">
-        Flexible dates
+        {tr('Flexible dates')}
       </h2>
       <div className="flex flex-wrap items-end gap-3">
         <Input
           type="date"
-          label="Starting"
+          label={tr('Starting')}
           value={from}
           min={start}
           onChange={(e) => setFrom(e.target.value)}
           containerClassName="w-44"
         />
         <Select
-          label="Nights"
+          label={tr('Nights')}
           value={nights}
           onChange={(e) => setNights(e.target.value)}
           options={['1', '2', '3', '4', '5', '7'].map((n) => ({
             value: n,
-            label: `${n} night${n === '1' ? '' : 's'}`,
+            label: trf('{0} night{1}', [n, n === '1' ? '' : 's']),
           }))}
           containerClassName="w-32"
         />
       </div>
       {days.isPending ? (
         <p className="text-sm text-fg-subtle" role="status">
-          Checking prices…
+          {tr('Checking prices…')}
         </p>
       ) : (
         <ul
           className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7"
-          aria-label="Lowest total price by check-in date"
+          aria-label={tr('Lowest total price by check-in date')}
         >
           {days.data?.map((d) => (
             <li
@@ -189,14 +193,14 @@ function FlexibleDates({ hotel }: { hotel: HotelDetailDto }) {
                   {fmtMoney(d.lowestTotalMinor, d.currency ?? hotel.currency)}
                 </span>
               ) : (
-                <span className="text-fg-subtle">Unavailable</span>
+                <span className="text-fg-subtle">{tr('Unavailable')}</span>
               )}
             </li>
           ))}
         </ul>
       )}
       <p className="text-xs text-fg-subtle">
-        Totals for 2 adults including taxes, from live rates. The lowest is outlined.
+        {tr('Totals for 2 adults including taxes, from live rates. The lowest is outlined.')}
       </p>
     </section>
   );
@@ -227,11 +231,11 @@ function WatchAndSave({ hotel }: { hotel: HotelDetailDto }) {
   );
   if (!isAuthenticated)
     return (
-      <Alert tone="info" title="Watch this stay">
+      <Alert tone="info" title={tr('Watch this stay')}>
         <Link to="/login" className="underline">
-          Sign in
+          {tr('Sign in')}
         </Link>{' '}
-        to get price-drop alerts or add it to a trip.
+        {tr('to get price-drop alerts or add it to a trip.')}
       </Alert>
     );
   const editable = (trips.data ?? []).filter((t) => t.myRole !== 'VIEWER');
@@ -241,7 +245,7 @@ function WatchAndSave({ hotel }: { hotel: HotelDetailDto }) {
       className="flex flex-col gap-3 rounded-2xl border border-border p-4"
     >
       <h2 id="watch" className="text-lg font-semibold">
-        Watch the price or plan a trip
+        {tr('Watch the price or plan a trip')}
       </h2>
       <form
         className="flex flex-wrap items-end gap-2"
@@ -250,8 +254,8 @@ function WatchAndSave({ hotel }: { hotel: HotelDetailDto }) {
           watch.mutate(undefined, {
             onSuccess: () =>
               toast({
-                title: 'Price alert added',
-                description: 'We will notify you when the total drops.',
+                title: tr('Price alert added'),
+                description: tr('We will notify you when the total drops.'),
                 variant: 'success',
               }),
             onError: fail('Could not add the alert'),
@@ -260,14 +264,14 @@ function WatchAndSave({ hotel }: { hotel: HotelDetailDto }) {
       >
         <Input
           type="date"
-          label="Check-in"
+          label={tr('Check-in')}
           value={checkIn}
           onChange={(e) => setCheckIn(e.target.value)}
           containerClassName="w-44"
         />
         <Input
           type="date"
-          label="Check-out"
+          label={tr('Check-out')}
           value={checkOut}
           onChange={(e) => setCheckOut(e.target.value)}
           containerClassName="w-44"
@@ -279,13 +283,13 @@ function WatchAndSave({ hotel }: { hotel: HotelDetailDto }) {
           loading={watch.isPending}
           disabled={checkOut <= checkIn}
         >
-          Alert me if it drops
+          {tr('Alert me if it drops')}
         </Button>
       </form>
       {editable.length > 0 ? (
         <div className="flex flex-wrap items-end gap-2">
           <Select
-            label="Trip"
+            label={tr('Trip')}
             value={tripId || editable[0]!.id}
             onChange={(e) => setTripId(e.target.value)}
             options={editable.map((t) => ({ value: t.id, label: t.title }))}
@@ -297,20 +301,20 @@ function WatchAndSave({ hotel }: { hotel: HotelDetailDto }) {
             loading={save.isPending}
             onClick={() =>
               save.mutate(undefined, {
-                onSuccess: () => toast({ title: 'Added to your trip', variant: 'success' }),
+                onSuccess: () => toast({ title: tr('Added to your trip'), variant: 'success' }),
                 onError: fail('Could not add to the trip'),
               })
             }
           >
-            Add to trip
+            {tr('Add to trip')}
           </Button>
         </div>
       ) : (
         <p className="text-sm">
           <Link to="/trips/new" className="text-primary underline">
-            Create a trip
+            {tr('Create a trip')}
           </Link>{' '}
-          to save this stay with others.
+          {tr('to save this stay with others.')}
         </p>
       )}
     </section>

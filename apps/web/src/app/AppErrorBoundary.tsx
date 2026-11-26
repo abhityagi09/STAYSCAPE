@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { tr } from '@/lib/tr';
 
 interface State {
   error: Error | null;
@@ -36,9 +37,9 @@ export class AppErrorBoundary extends Component<{ children: ReactNode }, State> 
         }}
       >
         <div style={{ maxWidth: 420, textAlign: 'center' }}>
-          <h1 style={{ fontSize: 28, marginBottom: 12 }}>STAYSCAPE ran into a problem</h1>
+          <h1 style={{ fontSize: 28, marginBottom: 12 }}>{tr('STAYSCAPE ran into a problem')}</h1>
           <p style={{ color: '#545B58', marginBottom: 24 }}>
-            Please reload the page. If this keeps happening, try again in a few minutes.
+            {tr('Please reload the page. If this keeps happening, try again in a few minutes.')}
           </p>
           <button
             type="button"
@@ -53,7 +54,7 @@ export class AppErrorBoundary extends Component<{ children: ReactNode }, State> 
               cursor: 'pointer',
             }}
           >
-            Reload
+            {tr('Reload')}
           </button>
         </div>
       </div>

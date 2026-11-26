@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import { ChevronRight, CircleAlert, CircleCheck, Info, Star, TriangleAlert, X } from 'lucide-react';
 import { formatMinorUnits, type CurrencyCode } from '@stayscape/shared';
 import { cn } from '@/lib/cn';
+import { tr, trf } from '@/lib/tr';
 
 /* ---------------------------------------------------------------- Badge */
 export type BadgeTone =
@@ -143,7 +144,7 @@ export function Alert({
         <button
           type="button"
           onClick={onDismiss}
-          aria-label="Dismiss"
+          aria-label={tr('Dismiss')}
           className="self-start rounded p-0.5 opacity-70 hover:opacity-100"
         >
           <X className="size-4" aria-hidden="true" />
@@ -160,7 +161,7 @@ export interface BreadcrumbItem {
 }
 export function Breadcrumb({ items, className }: { items: BreadcrumbItem[]; className?: string }) {
   return (
-    <nav aria-label="Breadcrumb" className={className}>
+    <nav aria-label={tr('Breadcrumb')} className={className}>
       <ol className="flex flex-wrap items-center gap-1.5 text-sm text-fg-subtle">
         {items.map((item, index) => {
           const last = index === items.length - 1;
@@ -291,14 +292,18 @@ export function ErrorState({
       </div>
       <h3 className="font-display text-lg font-semibold text-fg">{title}</h3>
       <p className="max-w-md text-sm text-fg-muted">{description}</p>
-      {requestId && <p className="font-mono text-xs text-fg-subtle">Reference: {requestId}</p>}
+      {requestId && (
+        <p className="font-mono text-xs text-fg-subtle">
+          {tr('Reference:')} {requestId}
+        </p>
+      )}
       {onRetry && (
         <button
           type="button"
           onClick={onRetry}
           className="mt-1 rounded-full border border-border-strong bg-surface px-4 py-2 text-sm font-medium hover:bg-surface-muted"
         >
-          Try again
+          {tr('Try again')}
         </button>
       )}
     </div>
@@ -385,7 +390,7 @@ export function PriceDisplay({
     <span className={cn('inline-flex flex-wrap items-baseline gap-x-1.5', className)}>
       {original && (
         <s className="text-sm text-fg-subtle">
-          <span className="sr-only">Original price </span>
+          <span className="sr-only">{tr('Original price')} </span>
           {original}
         </s>
       )}
@@ -397,7 +402,7 @@ export function PriceDisplay({
           size === 'lg' && 'text-2xl',
         )}
       >
-        {original && <span className="sr-only">Current price </span>}
+        {original && <span className="sr-only">{tr('Current price')} </span>}
         {amount}
       </span>
       {period && <span className="text-sm text-fg-subtle">{period}</span>}
@@ -424,7 +429,11 @@ export function RatingDisplay({
     <span
       className={cn('inline-flex items-center gap-1.5', className)}
       role="img"
-      aria-label={`Rated ${clamped.toFixed(1)} out of ${max}${count !== undefined ? ` from ${count} reviews` : ''}`}
+      aria-label={trf('Rated {0} out of {1}{2}', [
+        clamped.toFixed(1),
+        max,
+        count !== undefined ? ` from ${count} reviews` : '',
+      ])}
     >
       <span className="relative inline-flex" aria-hidden="true">
         <span className="flex text-border-strong">

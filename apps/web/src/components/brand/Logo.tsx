@@ -1,5 +1,6 @@
 import { Link } from 'react-router';
 import { cn } from '@/lib/cn';
+import { tr } from '@/lib/tr';
 
 export function LogoMark({ className }: { className?: string }) {
   return (
@@ -37,7 +38,7 @@ export function Logo({
     <Link
       to={to}
       className={cn('inline-flex items-center gap-2.5 rounded-lg', className)}
-      aria-label="STAYSCAPE home"
+      aria-label={tr('STAYSCAPE home')}
     >
       <LogoMark />
       <span
@@ -46,7 +47,7 @@ export function Logo({
           tone === 'inverse' ? 'text-ivory' : 'text-fg',
         )}
       >
-        STAYSCAPE
+        {tr('STAYSCAPE')}
       </span>
     </Link>
   );

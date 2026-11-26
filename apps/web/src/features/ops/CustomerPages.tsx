@@ -38,6 +38,8 @@ import {
   fmtMoney,
   fmtPct,
 } from './components';
+import { tr, trf } from '@/lib/tr';
+import { StayPicker } from './StayPicker';
 
 function useFail() {
   const { toast } = useToast();
@@ -75,14 +77,14 @@ export function TripsPage() {
                   {trip.title}
                 </Link>
                 <p className="text-sm text-fg-muted">
-                  {trip.destination || 'Destination to decide'} ·{' '}
+                  {trip.destination || tr('Destination to decide')} ·{' '}
                   {trip.startDate
                     ? `${fmtDate(trip.startDate)} – ${fmtDate(trip.endDate)}`
-                    : 'Dates to decide'}
+                    : tr('Dates to decide')}
                 </p>
                 <p className="text-xs text-fg-subtle">
-                  {trip.items.length} item(s) · {trip.members.length}{' '}
-                  {trip.members.length === 1 ? 'person' : 'people'} · you are{' '}
+                  {trip.items.length} {tr('item(s) ·')} {trip.members.length}{' '}
+                  {trip.members.length === 1 ? 'person' : 'people'} {tr('· you are')}{' '}
                   {trip.myRole.toLowerCase()}
                 </p>
               </li>
@@ -90,8 +92,8 @@ export function TripsPage() {
           </ul>
         ) : (
           <EmptyState
-            title="No trips yet"
-            description="Create a trip to collect stays, bookings and notes in one place."
+            title={tr('No trips yet')}
+            description={tr('Create a trip to collect stays, bookings and notes in one place.')}
             action={
               <Link to="/trips/new" className="text-primary underline">
                 {t('trips.new')}
@@ -134,8 +136,8 @@ export function TripFormPage() {
   return (
     <div className="flex max-w-2xl flex-col gap-6">
       <PageHeader
-        title={id ? 'Edit trip' : 'New trip'}
-        breadcrumb={[{ label: 'TripSpace', to: '/trips' }, { label: id ? 'Edit' : 'New' }]}
+        title={id ? tr('Edit trip') : tr('New trip')}
+        breadcrumb={[{ label: tr('TripSpace'), to: '/trips' }, { label: id ? 'Edit' : 'New' }]}
       />
       <form
         className="flex flex-col gap-3"
@@ -148,27 +150,27 @@ export function TripFormPage() {
         }}
       >
         <Input
-          label="Trip name"
+          label={tr('Trip name')}
           required
           value={f.title}
           onChange={(e) => setF({ ...f, title: e.target.value })}
         />
         <Input
-          label="Destination"
+          label={tr('Destination')}
           value={f.destination}
           onChange={(e) => setF({ ...f, destination: e.target.value })}
         />
         <div className="flex flex-wrap gap-3">
           <Input
             type="date"
-            label="Start"
+            label={tr('Start')}
             value={f.startDate}
             onChange={(e) => setF({ ...f, startDate: e.target.value })}
             containerClassName="w-48"
           />
           <Input
             type="date"
-            label="End"
+            label={tr('End')}
             value={f.endDate}
             onChange={(e) => setF({ ...f, endDate: e.target.value })}
             containerClassName="w-48"
@@ -176,7 +178,7 @@ export function TripFormPage() {
           />
         </div>
         <Textarea
-          label="Notes for everyone"
+          label={tr('Notes for everyone')}
           value={f.description}
           onChange={(e) => setF({ ...f, description: e.target.value })}
         />
@@ -186,7 +188,7 @@ export function TripFormPage() {
           loading={save.isPending}
           disabled={f.title.trim().length < 2 || invalidDates}
         >
-          Save trip
+          {tr('Save trip')}
         </Button>
       </form>
     </div>
@@ -229,17 +231,17 @@ export function TripDetailPage() {
           <PageHeader
             title={d.title}
             description={`${d.destination || 'Destination to decide'} · ${d.startDate ? `${fmtDate(d.startDate)} – ${fmtDate(d.endDate)}` : 'Dates to decide'}`}
-            breadcrumb={[{ label: 'TripSpace', to: '/trips' }, { label: d.title }]}
+            breadcrumb={[{ label: tr('TripSpace'), to: '/trips' }, { label: d.title }]}
             actions={
               canEdit && (
                 <Link to={`/trips/${id}/edit`} className="text-sm text-primary underline">
-                  Edit details
+                  {tr('Edit details')}
                 </Link>
               )
             }
           />
           {d.description && <p className="whitespace-pre-wrap text-fg-muted">{d.description}</p>}
-          <SectionCard title="Plan">
+          <SectionCard title={tr('Plan')}>
             {d.items.length ? (
               <ol className="flex flex-col gap-2">
                 {d.items.map((i) => (
@@ -270,7 +272,9 @@ export function TripDetailPage() {
                       {i.note && (
                         <p className="text-sm whitespace-pre-wrap text-fg-muted">{i.note}</p>
                       )}
-                      <p className="text-xs text-fg-subtle">Added by {i.addedBy}</p>
+                      <p className="text-xs text-fg-subtle">
+                        {tr('Added by')} {i.addedBy}
+                      </p>
                     </div>
                     {canEdit && (
                       <Button
@@ -278,7 +282,7 @@ export function TripDetailPage() {
                         variant="ghost"
                         onClick={() => remove.mutate(i.id, { onError: fail('Could not remove') })}
                       >
-                        Remove
+                        {tr('Remove')}
                       </Button>
                     )}
                   </li>
@@ -287,8 +291,8 @@ export function TripDetailPage() {
             ) : (
               <EmptyState
                 compact
-                title="Nothing planned yet"
-                description="Save stays from any property page, or add a booking or a note."
+                title={tr('Nothing planned yet')}
+                description={tr('Save stays from any property page, or add a booking or a note.')}
               />
             )}
             {canEdit && (
@@ -307,18 +311,18 @@ export function TripDetailPage() {
                   }}
                 >
                   <Input
-                    label="Note title"
+                    label={tr('Note title')}
                     value={note.title}
                     onChange={(e) => setNote({ ...note, title: e.target.value })}
                   />
                   <Input
                     type="date"
-                    label="Date (optional)"
+                    label={tr('Date (optional)')}
                     value={note.date}
                     onChange={(e) => setNote({ ...note, date: e.target.value })}
                   />
                   <Textarea
-                    label="Details"
+                    label={tr('Details')}
                     value={note.note}
                     onChange={(e) => setNote({ ...note, note: e.target.value })}
                   />
@@ -328,7 +332,7 @@ export function TripDetailPage() {
                     className="self-start"
                     disabled={!note.title.trim()}
                   >
-                    Add note
+                    {tr('Add note')}
                   </Button>
                 </form>
                 <form
@@ -345,11 +349,13 @@ export function TripDetailPage() {
                   }}
                 >
                   <Input
-                    label="Add one of your bookings (reference)"
-                    placeholder="SS-XXXXXXXX"
+                    label={tr('Add one of your bookings (reference)')}
+                    placeholder={tr('SS-XXXXXXXX')}
                     value={bookingRef}
                     onChange={(e) => setBookingRef(e.target.value)}
-                    hint="Companions see the property, dates and status — never prices or guest details."
+                    hint={tr(
+                      'Companions see the property, dates and status — never prices or guest details.',
+                    )}
                   />
                   <Button
                     type="submit"
@@ -357,13 +363,13 @@ export function TripDetailPage() {
                     className="self-start"
                     disabled={!/^SS-[A-Z0-9]{8}$/i.test(bookingRef.trim())}
                   >
-                    Add booking
+                    {tr('Add booking')}
                   </Button>
                 </form>
               </div>
             )}
           </SectionCard>
-          <SectionCard title="People">
+          <SectionCard title={tr('People')}>
             <ul className="flex flex-col gap-1 text-sm">
               {d.members.map((m) => (
                 <li key={m.userId} className="flex items-center justify-between gap-2">
@@ -376,7 +382,7 @@ export function TripDetailPage() {
                       variant="ghost"
                       onClick={() => leave.mutate(m.userId, { onError: fail('Could not remove') })}
                     >
-                      Remove
+                      {tr('Remove')}
                     </Button>
                   )}
                 </li>
@@ -399,34 +405,34 @@ export function TripDetailPage() {
                 >
                   <Input
                     type="email"
-                    label="Invite by email"
+                    label={tr('Invite by email')}
                     value={invite.email}
                     onChange={(e) => setInvite({ ...invite, email: e.target.value })}
                     containerClassName="w-72"
                   />
                   <Select
-                    label="Can"
+                    label={tr('Can')}
                     value={invite.role}
                     onChange={(e) => setInvite({ ...invite, role: e.target.value })}
                     options={[
-                      { value: 'VIEWER', label: 'View' },
-                      { value: 'EDITOR', label: 'Edit' },
+                      { value: 'VIEWER', label: tr('View') },
+                      { value: 'EDITOR', label: tr('Edit') },
                     ]}
                     containerClassName="w-32"
                   />
                   <Button type="submit" size="sm" disabled={!invite.email}>
-                    Create invitation
+                    {tr('Create invitation')}
                   </Button>
                 </form>
                 {links.invite && (
-                  <Alert tone="info" title="Send this link to them">
-                    Only the invited email address can use it, once, within 14 days:{' '}
+                  <Alert tone="info" title={tr('Send this link to them')}>
+                    {tr('Only the invited email address can use it, once, within 14 days:')}{' '}
                     <code className="break-all">{links.invite}</code>
                   </Alert>
                 )}
                 <div className="flex flex-wrap items-center gap-2">
                   <Checkbox
-                    label="Read-only share link (hotels and dates only)"
+                    label={tr('Read-only share link (hotels and dates only)')}
                     checked={d.shared}
                     onChange={(e) =>
                       share.mutate(e.target.checked, {
@@ -441,7 +447,7 @@ export function TripDetailPage() {
                   />
                 </div>
                 {links.share && (
-                  <Alert tone="info" title="Share link">
+                  <Alert tone="info" title={tr('Share link')}>
                     {links.share}
                   </Alert>
                 )}
@@ -452,14 +458,14 @@ export function TripDetailPage() {
                   onClick={() =>
                     del.mutate(undefined, {
                       onSuccess: () => {
-                        toast({ title: 'Trip deleted' });
+                        toast({ title: tr('Trip deleted') });
                         navigate('/trips');
                       },
                       onError: fail('Could not delete'),
                     })
                   }
                 >
-                  Delete trip
+                  {tr('Delete trip')}
                 </Button>
               </>
             ) : (
@@ -476,7 +482,7 @@ export function TripDetailPage() {
                     });
                 }}
               >
-                Leave this trip
+                {tr('Leave this trip')}
               </Button>
             )}
           </SectionCard>
@@ -497,8 +503,8 @@ export function TripJoinPage() {
   return (
     <div className="flex max-w-xl flex-col gap-4">
       <PageHeader
-        title="Join a trip"
-        description="Accept the invitation to see and help plan this trip."
+        title={tr('Join a trip')}
+        description={tr('Accept the invitation to see and help plan this trip.')}
       />
       <Button
         className="self-start"
@@ -511,7 +517,7 @@ export function TripJoinPage() {
           })
         }
       >
-        Accept invitation
+        {tr('Accept invitation')}
       </Button>
     </div>
   );
@@ -578,7 +584,10 @@ export function RewardsPage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title={t('rewards.title')}
-        description={`Earn 1 point for every ₹100 of room charges on completed stays. Each point is worth ₹${LOYALTY_RULES.redeemValueMinorPerPoint / 100} off a future booking.`}
+        description={trf(
+          'Earn 1 point for every ₹100 of room charges on completed stays. Each point is worth ₹{0} off a future booking.',
+          [LOYALTY_RULES.redeemValueMinorPerPoint / 100],
+        )}
       />
       <QueryState query={loyalty}>
         {l && (
@@ -587,26 +596,35 @@ export function RewardsPage() {
               <KpiTile
                 label={t('rewards.balance')}
                 value={l.balance.toLocaleString('en-IN')}
-                hint={`Worth ${fmtMoney(l.balance * l.pointValueMinor)}`}
+                hint={trf('Worth {0}', [fmtMoney(l.balance * l.pointValueMinor)])}
               />
               <KpiTile
                 label={t('rewards.tier')}
                 value={l.tier.toLowerCase()}
                 hint={
                   l.nextTier
-                    ? `${l.nextTier.pointsNeeded.toLocaleString('en-IN')} points to ${l.nextTier.tier.toLowerCase()}`
-                    : 'Highest tier'
+                    ? trf('{0} points to {1}', [
+                        l.nextTier.pointsNeeded.toLocaleString('en-IN'),
+                        l.nextTier.tier.toLowerCase(),
+                      ])
+                    : tr('Highest tier')
                 }
               />
               <KpiTile
-                label="Earned in 12 months"
+                label={tr('Earned in 12 months')}
                 value={l.last12MonthsEarned.toLocaleString('en-IN')}
               />
-              <KpiTile label="Lifetime earned" value={l.lifetimeEarned.toLocaleString('en-IN')} />
+              <KpiTile
+                label={tr('Lifetime earned')}
+                value={l.lifetimeEarned.toLocaleString('en-IN')}
+              />
             </KpiGrid>
             <SectionCard
-              title="Redeem points"
-              description={`Turn at least ${LOYALTY_RULES.minRedeemPoints} points into a single-use coupon valid for ${LOYALTY_RULES.redeemCouponValidDays} days. Unused coupons return the points.`}
+              title={tr('Redeem points')}
+              description={trf(
+                'Turn at least {0} points into a single-use coupon valid for {1} days. Unused coupons return the points.',
+                [LOYALTY_RULES.minRedeemPoints, LOYALTY_RULES.redeemCouponValidDays],
+              )}
             >
               <form
                 className="flex flex-wrap items-end gap-2"
@@ -622,7 +640,7 @@ export function RewardsPage() {
                   type="number"
                   min={LOYALTY_RULES.minRedeemPoints}
                   step={100}
-                  label="Points"
+                  label={tr('Points')}
                   value={points}
                   onChange={(e) => setPoints(e.target.value)}
                   containerClassName="w-40"
@@ -634,35 +652,35 @@ export function RewardsPage() {
                     Number(points) < LOYALTY_RULES.minRedeemPoints || Number(points) > l.balance
                   }
                 >
-                  Get coupon worth {fmtMoney(Number(points) * l.pointValueMinor || 0)}
+                  {tr('Get coupon worth')} {fmtMoney(Number(points) * l.pointValueMinor || 0)}
                 </Button>
               </form>
               {issued && (
-                <Alert tone="success" title="Your coupon">
-                  Use code <strong className="font-mono">{issued.code}</strong> at checkout for{' '}
-                  {fmtMoney(issued.valueMinor)} off
-                  {issued.expiresAt && ` before ${fmtDate(issued.expiresAt)}`}.
+                <Alert tone="success" title={tr('Your coupon')}>
+                  {tr('Use code')} <strong className="font-mono">{issued.code}</strong>{' '}
+                  {tr('at checkout for')} {fmtMoney(issued.valueMinor)} {tr('off')}
+                  {issued.expiresAt && trf(' before {0}', [fmtDate(issued.expiresAt)])}.
                 </Alert>
               )}
             </SectionCard>
-            <SectionCard title="Points history">
+            <SectionCard title={tr('Points history')}>
               <DataTable
-                caption="Points history"
+                caption={tr('Points history')}
                 rows={l.entries}
                 getRowId={(e) => e.id}
                 empty={
                   <EmptyState
                     compact
-                    title="No points yet"
-                    description="Points arrive after your stay is completed."
+                    title={tr('No points yet')}
+                    description={tr('Points arrive after your stay is completed.')}
                   />
                 }
                 columns={[
-                  { id: 'd', header: 'Date', cell: (e) => fmtDate(e.createdAt) },
-                  { id: 'w', header: 'Activity', cell: (e) => e.description },
+                  { id: 'd', header: tr('Date'), cell: (e) => fmtDate(e.createdAt) },
+                  { id: 'w', header: tr('Activity'), cell: (e) => e.description },
                   {
                     id: 'p',
-                    header: 'Points',
+                    header: tr('Points'),
                     cell: (e) => (e.points > 0 ? `+${e.points}` : e.points),
                     align: 'right',
                   },
@@ -675,21 +693,29 @@ export function RewardsPage() {
       <QueryState query={referrals}>
         {referrals.data && (
           <SectionCard
-            title="Refer a friend"
-            description={`When a friend you refer completes their first stay of ₹${REFERRAL_RULES.minQualifyingSubtotalMinor / 100} or more, you get ${REFERRAL_RULES.referrerPoints} points and they get ${REFERRAL_RULES.refereePoints}.`}
+            title={tr('Refer a friend')}
+            description={trf(
+              'When a friend you refer completes their first stay of ₹{0} or more, you get {1} points and they get {2}.',
+              [
+                REFERRAL_RULES.minQualifyingSubtotalMinor / 100,
+                REFERRAL_RULES.referrerPoints,
+                REFERRAL_RULES.refereePoints,
+              ],
+            )}
           >
             <p>
-              Your code: <strong className="font-mono text-lg">{referrals.data.code}</strong>{' '}
+              {tr('Your code:')}{' '}
+              <strong className="font-mono text-lg">{referrals.data.code}</strong>{' '}
               <span className="text-sm text-fg-subtle">
-                ({referrals.data.rewardedThisYear} of {referrals.data.limitPerYear} rewards used
-                this year)
+                ({referrals.data.rewardedThisYear} {tr('of')} {referrals.data.limitPerYear}{' '}
+                {tr('rewards used this year)')}
               </span>
             </p>
             {referrals.data.referrals.length > 0 && (
               <ul className="flex flex-col gap-1 text-sm">
                 {referrals.data.referrals.map((r, i) => (
                   <li key={i}>
-                    {r.refereeInitials} · joined {fmtDate(r.joinedAt)} ·{' '}
+                    {r.refereeInitials} {tr('· joined')} {fmtDate(r.joinedAt)} ·{' '}
                     <StatusBadge status={r.status} />
                     {r.reason && <span className="text-fg-muted"> — {r.reason}</span>}
                   </li>
@@ -705,20 +731,24 @@ export function RewardsPage() {
                 }}
               >
                 <Input
-                  label="Were you referred? Enter their code"
+                  label={tr('Were you referred? Enter their code')}
                   value={code}
                   onChange={(e) => setCode(e.target.value.toUpperCase())}
                   containerClassName="w-64"
-                  hint={`New accounts only, within ${REFERRAL_RULES.claimWindowDays} days of joining and before a first booking.`}
+                  hint={trf(
+                    'New accounts only, within {0} days of joining and before a first booking.',
+                    [REFERRAL_RULES.claimWindowDays],
+                  )}
                 />
                 <Button type="submit" size="sm" disabled={code.length < 6}>
-                  Add code
+                  {tr('Add code')}
                 </Button>
               </form>
             )}
             {referrals.data.referredBy && (
               <p className="text-sm">
-                Referral code added · <StatusBadge status={referrals.data.referredBy.status} />
+                {tr('Referral code added ·')}{' '}
+                <StatusBadge status={referrals.data.referredBy.status} />
               </p>
             )}
           </SectionCard>
@@ -738,42 +768,44 @@ export function PriceAlertsPage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title={t('alerts.title')}
-        description="We re-check live prices and notify you once for each new low (at most once a day). Add alerts from any property page."
+        description={tr(
+          'We re-check live prices and notify you once for each new low (at most once a day). Add alerts from any property page.',
+        )}
       />
       <QueryState query={alerts}>
         <DataTable
-          caption="Price alerts"
+          caption={tr('Price alerts')}
           rows={alerts.data}
           getRowId={(a) => a.id}
-          empty={<EmptyState compact title="No alerts yet" />}
+          empty={<EmptyState compact title={tr('No alerts yet')} />}
           columns={[
-            { id: 'h', header: 'Property', cell: (a) => a.hotelName },
+            { id: 'h', header: tr('Property'), cell: (a) => a.hotelName },
             {
               id: 'd',
-              header: 'Stay',
+              header: tr('Stay'),
               cell: (a) => `${a.checkIn} → ${a.checkOut} · ${a.adults} adult(s)`,
             },
             {
               id: 'b',
-              header: 'When added',
+              header: tr('When added'),
               cell: (a) => fmtMoney(a.baselineTotalMinor, a.currency ?? 'INR'),
               align: 'right',
             },
             {
               id: 'n',
-              header: 'Latest',
+              header: tr('Latest'),
               cell: (a) => fmtMoney(a.lastSeenTotalMinor, a.currency ?? 'INR'),
               align: 'right',
             },
             {
               id: 't',
-              header: 'Target',
+              header: tr('Target'),
               cell: (a) =>
                 a.targetTotalMinor ? fmtMoney(a.targetTotalMinor, a.currency ?? 'INR') : 'Any drop',
             },
             {
               id: 's',
-              header: 'Status',
+              header: tr('Status'),
               cell: (a) => <StatusBadge status={a.active ? 'ACTIVE' : 'EXPIRED'} />,
             },
             {
@@ -785,7 +817,7 @@ export function PriceAlertsPage() {
                   variant="ghost"
                   onClick={() => remove.mutate(a.id, { onError: fail('Could not remove') })}
                 >
-                  Remove
+                  {tr('Remove')}
                 </Button>
               ),
             },
@@ -801,11 +833,13 @@ export function RecommendationsPanel() {
   if (!q.data?.items.length) return null;
   return (
     <SectionCard
-      title={q.data.personalized ? 'Picked for you' : 'Popular stays'}
+      title={q.data.personalized ? tr('Picked for you') : tr('Popular stays')}
       description={
         q.data.personalized
-          ? 'Based only on your own bookings and saved stays. You can turn this off in Settings.'
-          : 'Turn on personalised recommendations in Settings to see picks based on your stays.'
+          ? tr(
+              'Based only on your own bookings and saved stays. You can turn this off in Settings.',
+            )
+          : tr('Turn on personalised recommendations in Settings to see picks based on your stays.')
       }
     >
       <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -878,18 +912,24 @@ function RequestsTable({ scope, org }: { scope: 'mine' | 'org'; org: Org }) {
   );
   return (
     <DataTable
-      caption={scope === 'mine' ? 'My travel requests' : 'Team travel requests'}
+      caption={scope === 'mine' ? tr('My travel requests') : tr('Team travel requests')}
       rows={list.data?.items}
       loading={list.isPending}
       getRowId={(r) => r.id}
-      empty={<EmptyState compact title="No requests" />}
+      empty={<EmptyState compact title={tr('No requests')} />}
       columns={[
         ...(scope === 'org'
-          ? [{ id: 'e', header: 'Employee', cell: (r: TravelRequest) => r.employee.name ?? '—' }]
+          ? [
+              {
+                id: 'e',
+                header: tr('Employee'),
+                cell: (r: TravelRequest) => r.employee.name ?? '—',
+              },
+            ]
           : []),
         {
           id: 'h',
-          header: 'Stay',
+          header: tr('Stay'),
           cell: (r) => (
             <span>
               {r.hotel.name}, {r.hotel.city}
@@ -901,12 +941,13 @@ function RequestsTable({ scope, org }: { scope: 'mine' | 'org'; org: Org }) {
         },
         {
           id: 'p',
-          header: 'Quoted',
+          header: tr('Quoted'),
           cell: (r) => (
             <span>
               {fmtMoney(r.quotedTotalMinor, r.currency)}
               <span className="block text-xs text-fg-subtle">
-                {fmtMoney(r.nightlyMinor, r.currency)}/night
+                {fmtMoney(r.nightlyMinor, r.currency)}
+                {tr('/night')}
               </span>
             </span>
           ),
@@ -914,7 +955,7 @@ function RequestsTable({ scope, org }: { scope: 'mine' | 'org'; org: Org }) {
         },
         {
           id: 'v',
-          header: 'Policy',
+          header: tr('Policy'),
           cell: (r) =>
             r.violations.length ? (
               r.violations.map((v) => (
@@ -923,12 +964,12 @@ function RequestsTable({ scope, org }: { scope: 'mine' | 'org'; org: Org }) {
                 </Badge>
               ))
             ) : (
-              <Badge tone="success">within policy</Badge>
+              <Badge tone="success">{tr('within policy')}</Badge>
             ),
         },
         {
           id: 's',
-          header: 'Status',
+          header: tr('Status'),
           cell: (r) => (
             <span className="flex flex-col">
               <StatusBadge status={r.status} />
@@ -951,27 +992,27 @@ function RequestsTable({ scope, org }: { scope: 'mine' | 'org'; org: Org }) {
                     )
                   }
                 >
-                  Approve
+                  {tr('Approve')}
                 </Button>
                 <Button
                   size="sm"
                   variant="ghost"
                   onClick={() =>
                     decide.mutate(
-                      { id: r.id, decision: 'REJECT', note: 'Outside travel policy' },
+                      { id: r.id, decision: 'REJECT', note: tr('Outside travel policy') },
                       { onError: fail('Could not reject') },
                     )
                   }
                 >
-                  Reject
+                  {tr('Reject')}
                 </Button>
               </span>
             ) : scope === 'mine' && ['APPROVED', 'AUTO_APPROVED'].includes(r.status) ? (
               <span className="flex gap-1">
                 <Input
-                  label="Booking reference"
+                  label={tr('Booking reference')}
                   hideLabel
-                  placeholder="SS-XXXXXXXX"
+                  placeholder={tr('SS-XXXXXXXX')}
                   value={ref[r.id] ?? ''}
                   onChange={(e) => setRef({ ...ref, [r.id]: e.target.value.toUpperCase() })}
                   containerClassName="w-36"
@@ -986,7 +1027,7 @@ function RequestsTable({ scope, org }: { scope: 'mine' | 'org'; org: Org }) {
                     )
                   }
                 >
-                  Link booking
+                  {tr('Link booking')}
                 </Button>
               </span>
             ) : null,
@@ -1065,24 +1106,26 @@ export function CorporatePage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title={t('corporate.title')}
-        description="Book work trips within your company’s policy, with approvals and invoices in one place."
+        description={tr(
+          'Book work trips within your company’s policy, with approvals and invoices in one place.',
+        )}
       />
       {notMember ? (
         <>
           {params.get('token') && (
-            <SectionCard title="You have been invited">
+            <SectionCard title={tr('You have been invited')}>
               <Button
                 className="self-start"
                 loading={accept.isPending}
                 onClick={() => accept.mutate(undefined, { onError: fail('Could not accept') })}
               >
-                Join the organisation
+                {tr('Join the organisation')}
               </Button>
             </SectionCard>
           )}
           <SectionCard
-            title="Set up your company"
-            description="Stayscape verifies the business before employees can request travel."
+            title={tr('Set up your company')}
+            description={tr('Stayscape verifies the business before employees can request travel.')}
           >
             <form
               className="flex flex-wrap items-end gap-3"
@@ -1092,20 +1135,20 @@ export function CorporatePage() {
               }}
             >
               <Input
-                label="Company name"
+                label={tr('Company name')}
                 value={createForm.name}
                 onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
                 containerClassName="w-64"
               />
               <Input
                 type="email"
-                label="Billing email"
+                label={tr('Billing email')}
                 value={createForm.billingEmail}
                 onChange={(e) => setCreateForm({ ...createForm, billingEmail: e.target.value })}
                 containerClassName="w-64"
               />
               <Input
-                label="GSTIN (optional)"
+                label={tr('GSTIN (optional)')}
                 value={createForm.gstin}
                 onChange={(e) =>
                   setCreateForm({ ...createForm, gstin: e.target.value.toUpperCase() })
@@ -1117,7 +1160,7 @@ export function CorporatePage() {
                 loading={create.isPending}
                 disabled={createForm.name.length < 2 || !createForm.billingEmail}
               >
-                Create
+                {tr('Create')}
               </Button>
             </form>
           </SectionCard>
@@ -1133,55 +1176,43 @@ export function CorporatePage() {
               {o.status !== 'ACTIVE' && (
                 <Alert
                   tone="warning"
-                  title={o.status === 'SUSPENDED' ? 'Suspended' : 'Awaiting verification'}
+                  title={o.status === 'SUSPENDED' ? tr('Suspended') : tr('Awaiting verification')}
                 >
                   {o.statusReason ??
-                    'Stayscape is verifying this business. Travel requests open once it is approved.'}
+                    tr(
+                      'Stayscape is verifying this business. Travel requests open once it is approved.',
+                    )}
                 </Alert>
               )}
               {o.status === 'ACTIVE' && (
                 <SectionCard
-                  title="Request a trip"
-                  description="Copy the property, room and rate ids from the property page. The price is quoted live and checked against your policy."
+                  title={tr('Request a trip')}
+                  description={tr(
+                    'Choose the property, room and rate. The price is quoted live and checked against your policy.',
+                  )}
                 >
                   <form
                     className="flex flex-wrap items-end gap-3"
                     onSubmit={(e) => {
                       e.preventDefault();
                       request.mutate(undefined, {
-                        onSuccess: () => toast({ title: 'Request submitted', variant: 'success' }),
+                        onSuccess: () =>
+                          toast({ title: tr('Request submitted'), variant: 'success' }),
                         onError: fail('Could not submit'),
                       });
                     }}
                   >
-                    <Input
-                      label="Property id"
-                      value={req.hotelId}
-                      onChange={(e) => setReq({ ...req, hotelId: e.target.value })}
-                      containerClassName="w-60"
-                    />
-                    <Input
-                      label="Room id"
-                      value={req.roomTypeId}
-                      onChange={(e) => setReq({ ...req, roomTypeId: e.target.value })}
-                      containerClassName="w-60"
-                    />
-                    <Input
-                      label="Rate id"
-                      value={req.ratePlanId}
-                      onChange={(e) => setReq({ ...req, ratePlanId: e.target.value })}
-                      containerClassName="w-60"
-                    />
+                    <StayPicker value={req} onChange={(stay) => setReq({ ...req, ...stay })} />
                     <Input
                       type="date"
-                      label="Check-in"
+                      label={tr('Check-in')}
                       value={req.checkIn}
                       onChange={(e) => setReq({ ...req, checkIn: e.target.value })}
                       containerClassName="w-44"
                     />
                     <Input
                       type="date"
-                      label="Check-out"
+                      label={tr('Check-out')}
                       value={req.checkOut}
                       onChange={(e) => setReq({ ...req, checkOut: e.target.value })}
                       containerClassName="w-44"
@@ -1189,13 +1220,13 @@ export function CorporatePage() {
                     <Input
                       type="number"
                       min={1}
-                      label="Adults"
+                      label={tr('Adults')}
                       value={req.adults}
                       onChange={(e) => setReq({ ...req, adults: e.target.value })}
                       containerClassName="w-24"
                     />
                     <Input
-                      label="Purpose"
+                      label={tr('Purpose')}
                       value={req.purpose}
                       onChange={(e) => setReq({ ...req, purpose: e.target.value })}
                       containerClassName="w-72"
@@ -1203,77 +1234,87 @@ export function CorporatePage() {
                     <Button
                       type="submit"
                       loading={request.isPending}
-                      disabled={req.purpose.length < 5}
+                      disabled={req.purpose.length < 5 || !req.ratePlanId}
                     >
-                      Submit request
+                      {tr('Submit request')}
                     </Button>
                   </form>
                 </SectionCard>
               )}
-              <SectionCard title="My requests">
+              <SectionCard title={tr('My requests')}>
                 <RequestsTable scope="mine" org={o} />
               </SectionCard>
               {o.myRole !== 'EMPLOYEE' && (
-                <SectionCard title="Team requests">
+                <SectionCard title={tr('Team requests')}>
                   <RequestsTable scope="org" org={o} />
                 </SectionCard>
               )}
               {o.myRole === 'ORG_ADMIN' && (
                 <>
                   <SectionCard
-                    title="Travel policy"
-                    description={`Current: ${o.policy.maxNightlyMinor ? `max ${fmtMoney(o.policy.maxNightlyMinor)}/night` : 'no nightly cap'} · ${o.policy.monthlyBudgetMinor ? `budget ${fmtMoney(o.policy.monthlyBudgetMinor)}/month` : 'no budget'} · approval above ${o.policy.approvalRequiredAboveMinor ? fmtMoney(o.policy.approvalRequiredAboveMinor) : 'never (within policy)'}`}
+                    title={tr('Travel policy')}
+                    description={trf('Current: {0} · {1} · approval above {2}', [
+                      o.policy.maxNightlyMinor
+                        ? `max ${fmtMoney(o.policy.maxNightlyMinor)}/night`
+                        : 'no nightly cap',
+                      o.policy.monthlyBudgetMinor
+                        ? `budget ${fmtMoney(o.policy.monthlyBudgetMinor)}/month`
+                        : 'no budget',
+                      o.policy.approvalRequiredAboveMinor
+                        ? fmtMoney(o.policy.approvalRequiredAboveMinor)
+                        : 'never (within policy)',
+                    ])}
                   >
                     <form
                       className="flex flex-wrap items-end gap-3"
                       onSubmit={(e) => {
                         e.preventDefault();
                         savePolicy.mutate(undefined, {
-                          onSuccess: () => toast({ title: 'Policy saved', variant: 'success' }),
+                          onSuccess: () => toast({ title: tr('Policy saved'), variant: 'success' }),
                           onError: fail('Could not save'),
                         });
                       }}
                     >
                       <Input
-                        label="Max per night (₹)"
+                        label={tr('Max per night (₹)')}
                         inputMode="decimal"
                         value={policy.maxNightly}
                         onChange={(e) => setPolicy({ ...policy, maxNightly: e.target.value })}
                         containerClassName="w-40"
                       />
                       <Input
-                        label="Approval above (₹)"
+                        label={tr('Approval above (₹)')}
                         inputMode="decimal"
                         value={policy.approvalAbove}
                         onChange={(e) => setPolicy({ ...policy, approvalAbove: e.target.value })}
                         containerClassName="w-40"
                       />
                       <Input
-                        label="Monthly budget (₹)"
+                        label={tr('Monthly budget (₹)')}
                         inputMode="decimal"
                         value={policy.budget}
                         onChange={(e) => setPolicy({ ...policy, budget: e.target.value })}
                         containerClassName="w-40"
                       />
                       <Input
-                        label="Book at least (days ahead)"
+                        label={tr('Book at least (days ahead)')}
                         inputMode="numeric"
                         value={policy.minAdvanceDays}
                         onChange={(e) => setPolicy({ ...policy, minAdvanceDays: e.target.value })}
                         containerClassName="w-48"
                       />
                       <Input
-                        label="Allowed cities (comma separated)"
+                        label={tr('Allowed cities (comma separated)')}
                         value={policy.cities}
                         onChange={(e) => setPolicy({ ...policy, cities: e.target.value })}
                         containerClassName="w-72"
                       />
                       <Button type="submit" loading={savePolicy.isPending}>
-                        Save policy
+                        {tr('Save policy')}
                       </Button>
                     </form>
                   </SectionCard>
-                  <SectionCard title="Invite people">
+                  <SectionCard title={tr('Invite people')}>
                     <form
                       className="flex flex-wrap items-end gap-2"
                       onSubmit={(e) => {
@@ -1289,35 +1330,35 @@ export function CorporatePage() {
                     >
                       <Input
                         type="email"
-                        label="Email"
+                        label={tr('Email')}
                         value={inviteEmail}
                         onChange={(e) => setInviteEmail(e.target.value)}
                         containerClassName="w-72"
                       />
                       <Select
-                        label="Role"
+                        label={tr('Role')}
                         value={inviteRole}
                         onChange={(e) => setInviteRole(e.target.value)}
                         options={[
-                          { value: 'EMPLOYEE', label: 'Employee' },
-                          { value: 'APPROVER', label: 'Approver' },
-                          { value: 'ORG_ADMIN', label: 'Administrator' },
+                          { value: 'EMPLOYEE', label: tr('Employee') },
+                          { value: 'APPROVER', label: tr('Approver') },
+                          { value: 'ORG_ADMIN', label: tr('Administrator') },
                         ]}
                         containerClassName="w-44"
                       />
                       <Button type="submit" size="sm" disabled={!inviteEmail}>
-                        Create invitation
+                        {tr('Create invitation')}
                       </Button>
                     </form>
                     {inviteLink && (
-                      <Alert tone="info" title="Invitation link">
-                        Valid for 14 days for that email address only:{' '}
+                      <Alert tone="info" title={tr('Invitation link')}>
+                        {tr('Valid for 14 days for that email address only:')}{' '}
                         <code className="break-all">{inviteLink}</code>
                       </Alert>
                     )}
                     <p className="text-sm">
                       <Link to="/account/corporate/reports" className="text-primary underline">
-                        Spend report and invoices
+                        {tr('Spend report and invoices')}
                       </Link>
                     </p>
                   </SectionCard>
@@ -1354,20 +1395,23 @@ export function CorporateReportsPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Spend & invoices"
-        breadcrumb={[{ label: 'Corporate travel', to: '/account/corporate' }, { label: 'Reports' }]}
+        title={tr('Spend & invoices')}
+        breadcrumb={[
+          { label: tr('Corporate travel'), to: '/account/corporate' },
+          { label: tr('Reports') },
+        ]}
       />
       <div className="flex flex-wrap gap-3">
         <Input
           type="date"
-          label="From"
+          label={tr('From')}
           value={period.from}
           onChange={(e) => setPeriod({ ...period, from: e.target.value })}
           containerClassName="w-44"
         />
         <Input
           type="date"
-          label="To"
+          label={tr('To')}
           value={period.to}
           onChange={(e) => setPeriod({ ...period, to: e.target.value })}
           containerClassName="w-44"
@@ -1377,43 +1421,48 @@ export function CorporateReportsPage() {
         {report.data && (
           <>
             <KpiGrid>
-              <KpiTile label="Spend" value={fmtMoney(report.data.spendMinor)} />
-              <KpiTile label="Within policy" value={fmtPct(report.data.inPolicyRateBp)} />
+              <KpiTile label={tr('Spend')} value={fmtMoney(report.data.spendMinor)} />
+              <KpiTile label={tr('Within policy')} value={fmtPct(report.data.inPolicyRateBp)} />
               <KpiTile
-                label="Requests"
+                label={tr('Requests')}
                 value={report.data.requests.total ?? 0}
-                hint={`${report.data.requests.pending ?? 0} pending`}
+                hint={trf('{0} pending', [report.data.requests.pending ?? 0])}
               />
-              <KpiTile label="Booked" value={report.data.requests.booked ?? 0} />
+              <KpiTile label={tr('Booked')} value={report.data.requests.booked ?? 0} />
             </KpiGrid>
             <DataTable
-              caption="Spend by department"
+              caption={tr('Spend by department')}
               rows={report.data.byDepartment}
               getRowId={(d) => d.department}
-              empty={<EmptyState compact title="No booked travel in this period" />}
+              empty={<EmptyState compact title={tr('No booked travel in this period')} />}
               columns={[
-                { id: 'd', header: 'Department', cell: (d) => d.department },
-                { id: 'b', header: 'Bookings', cell: (d) => d.bookings, align: 'right' },
-                { id: 's', header: 'Spend', cell: (d) => fmtMoney(d.spendMinor), align: 'right' },
+                { id: 'd', header: tr('Department'), cell: (d) => d.department },
+                { id: 'b', header: tr('Bookings'), cell: (d) => d.bookings, align: 'right' },
+                {
+                  id: 's',
+                  header: tr('Spend'),
+                  cell: (d) => fmtMoney(d.spendMinor),
+                  align: 'right',
+                },
               ]}
             />
           </>
         )}
       </QueryState>
-      <SectionCard title="Invoices">
+      <SectionCard title={tr('Invoices')}>
         <DataTable
-          caption="Invoices"
+          caption={tr('Invoices')}
           rows={invoices.data}
           loading={invoices.isPending}
           getRowId={(i) => i.requestId}
-          empty={<EmptyState compact title="No booked trips yet" />}
+          empty={<EmptyState compact title={tr('No booked trips yet')} />}
           columns={[
-            { id: 'r', header: 'Booking', cell: (i) => i.bookingReference ?? '—' },
-            { id: 'h', header: 'Property', cell: (i) => i.hotelName },
-            { id: 'd', header: 'Check-in', cell: (i) => i.checkIn },
+            { id: 'r', header: tr('Booking'), cell: (i) => i.bookingReference ?? '—' },
+            { id: 'h', header: tr('Property'), cell: (i) => i.hotelName },
+            { id: 'd', header: tr('Check-in'), cell: (i) => i.checkIn },
             {
               id: 't',
-              header: 'Total',
+              header: tr('Total'),
               cell: (i) => fmtMoney(i.totalMinor, i.currency),
               align: 'right',
             },
@@ -1432,7 +1481,7 @@ export function CorporateReportsPage() {
                       )
                     }
                   >
-                    Download
+                    {tr('Download')}
                   </Button>
                 ) : null,
             },
@@ -1488,13 +1537,15 @@ export function AssistantPage() {
     <div className="flex max-w-3xl flex-col gap-4">
       <PageHeader title={t('assistant.title')} description={t('assistant.disclaimer')} />
       <section
-        aria-label="Conversation"
+        aria-label={tr('Conversation')}
         aria-live="polite"
         className="flex min-h-64 flex-col gap-3 rounded-2xl border border-border p-4"
       >
         {turns.length === 0 && (
           <p className="text-sm text-fg-subtle">
-            Try: “A quiet stay in Udaipur for 2 adults from the 12th to the 14th next month”.
+            {tr(
+              'Try: “A quiet stay in Udaipur for 2 adults from the 12th to the 14th next month”.',
+            )}
           </p>
         )}
         {turns.map((turn, i) => (
@@ -1511,7 +1562,7 @@ export function AssistantPage() {
               <>
                 {turn.reply.degraded && (
                   <Badge tone="outline" className="self-start">
-                    Basic search mode
+                    {tr('Basic search mode')}
                   </Badge>
                 )}
                 {turn.reply.hotels.length > 0 && (
@@ -1525,14 +1576,15 @@ export function AssistantPage() {
                           {h.name}
                         </Link>{' '}
                         · {h.city}
-                        {h.price && ` · ${fmtMoney(h.price.totalMinor, h.price.currency)} total`}
+                        {h.price &&
+                          trf(' · {0} total', [fmtMoney(h.price.totalMinor, h.price.currency)])}
                       </li>
                     ))}
                   </ul>
                 )}
                 {turn.reply.quotes.map((q, j) => (
                   <p key={j} className="text-sm">
-                    Quote: {q.hotelName}, {q.roomTypeName} ({q.ratePlanName}), {q.checkIn} →{' '}
+                    {tr('Quote:')} {q.hotelName}, {q.roomTypeName} ({q.ratePlanName}), {q.checkIn} →{' '}
                     {q.checkOut}: <strong>{fmtMoney(q.totalMinor, q.currency)}</strong>
                   </p>
                 ))}
@@ -1542,7 +1594,7 @@ export function AssistantPage() {
         ))}
         {send.isPending && (
           <p className="text-sm text-fg-subtle" role="status">
-            Searching Stayscape…
+            {tr('Searching Stayscape…')}
           </p>
         )}
         <div ref={endRef} />
@@ -1585,7 +1637,9 @@ export function AssistantPage() {
         </Button>
       </form>
       {last && (
-        <p className="text-xs text-fg-subtle">{last.usage.remainingToday} messages left today.</p>
+        <p className="text-xs text-fg-subtle">
+          {last.usage.remainingToday} {tr('messages left today.')}
+        </p>
       )}
     </div>
   );

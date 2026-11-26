@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { ErrorState, Skeleton } from './Display';
+import { tr, trf } from '@/lib/tr';
 
 export interface Column<T> {
   id: string;
@@ -128,7 +129,7 @@ export function DataTable<T>({
           {!loading && rows?.length === 0 && (
             <tr>
               <td colSpan={columns.length} className="px-4 py-10">
-                {empty ?? <p className="text-center text-fg-muted">No records found.</p>}
+                {empty ?? <p className="text-center text-fg-muted">{tr('No records found.')}</p>}
               </td>
             </tr>
           )}
@@ -184,7 +185,7 @@ export function Pagination({
     'inline-flex h-9 min-w-9 items-center justify-center rounded-full px-3 text-sm transition-colors disabled:pointer-events-none disabled:opacity-40';
   return (
     <nav
-      aria-label="Pagination"
+      aria-label={tr('Pagination')}
       className={cn('flex items-center justify-center gap-1', className)}
     >
       <button
@@ -192,7 +193,7 @@ export function Pagination({
         className={cn(btn, 'hover:bg-surface-muted')}
         onClick={() => onPageChange(page - 1)}
         disabled={page <= 1}
-        aria-label="Previous page"
+        aria-label={tr('Previous page')}
       >
         <ChevronLeft className="size-4" aria-hidden="true" />
       </button>
@@ -207,7 +208,7 @@ export function Pagination({
             type="button"
             onClick={() => onPageChange(p)}
             aria-current={p === page ? 'page' : undefined}
-            aria-label={`Page ${p}`}
+            aria-label={trf('Page {0}', [p])}
             className={cn(
               btn,
               p === page ? 'bg-primary font-semibold text-primary-fg' : 'hover:bg-surface-muted',
@@ -222,7 +223,7 @@ export function Pagination({
         className={cn(btn, 'hover:bg-surface-muted')}
         onClick={() => onPageChange(page + 1)}
         disabled={page >= totalPages}
-        aria-label="Next page"
+        aria-label={tr('Next page')}
       >
         <ChevronRight className="size-4" aria-hidden="true" />
       </button>

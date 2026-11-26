@@ -25,6 +25,7 @@ import {
 import { errorMessage } from '@/lib/api/errors';
 import { applyServerErrors } from '@/lib/forms';
 import { useUpdateProfile, useUploadAvatar } from '../api';
+import { tr } from '@/lib/tr';
 
 const profileFormSchema = z.object({
   firstName: personNameSchema('First name'),
@@ -39,14 +40,14 @@ export function AvatarCard({ user }: { user: UserDto }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Profile photo</CardTitle>
+        <CardTitle>{tr('Profile photo')}</CardTitle>
         <CardDescription>
-          Shown to properties you book with and on reviews you write.
+          {tr('Shown to properties you book with and on reviews you write.')}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <ImageUploader
-          label="Upload a new photo"
+          label={tr('Upload a new photo')}
           currentUrl={user.avatarUrl}
           accept={AVATAR_MIME_TYPES}
           maxBytes={AVATAR_MAX_BYTES}
@@ -54,7 +55,7 @@ export function AvatarCard({ user }: { user: UserDto }) {
           onUpload={async (file) => {
             try {
               await upload.mutateAsync(file);
-              toast({ title: 'Profile photo updated', variant: 'success' });
+              toast({ title: tr('Profile photo updated'), variant: 'success' });
             } catch (error) {
               throw new Error(errorMessage(error));
             }
@@ -93,7 +94,7 @@ export function ProfileForm({ user }: { user: UserDto }) {
         lastName: updated.lastName,
         phone: updated.phone ?? '',
       });
-      toast({ title: 'Profile saved', variant: 'success' });
+      toast({ title: tr('Profile saved'), variant: 'success' });
     } catch (error) {
       setFormError(applyServerErrors(error, setError, ['firstName', 'lastName', 'phone']));
     }
@@ -102,9 +103,9 @@ export function ProfileForm({ user }: { user: UserDto }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Personal details</CardTitle>
+        <CardTitle>{tr('Personal details')}</CardTitle>
         <CardDescription>
-          Use the name that appears on your ID — properties may check it at arrival.
+          {tr('Use the name that appears on your ID — properties may check it at arrival.')}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -112,14 +113,14 @@ export function ProfileForm({ user }: { user: UserDto }) {
           {formError && <Alert tone="danger">{formError}</Alert>}
           <div className="grid gap-5 sm:grid-cols-2">
             <Input
-              label="First name"
+              label={tr('First name')}
               autoComplete="given-name"
               required
               error={errors.firstName?.message}
               {...register('firstName')}
             />
             <Input
-              label="Last name"
+              label={tr('Last name')}
               autoComplete="family-name"
               required
               error={errors.lastName?.message}
@@ -128,23 +129,23 @@ export function ProfileForm({ user }: { user: UserDto }) {
           </div>
           <div className="flex flex-col gap-1.5">
             <Input
-              label="Email"
+              label={tr('Email')}
               type="email"
               value={user.email}
               readOnly
               disabled
-              hint="Contact support to change the email on your account."
+              hint={tr('Contact support to change the email on your account.')}
             />
             <div>
               {user.emailVerified ? (
-                <Badge tone="success">Verified</Badge>
+                <Badge tone="success">{tr('Verified')}</Badge>
               ) : (
-                <Badge tone="warning">Not verified</Badge>
+                <Badge tone="warning">{tr('Not verified')}</Badge>
               )}
             </div>
           </div>
           <Input
-            label="Mobile number"
+            label={tr('Mobile number')}
             type="tel"
             autoComplete="tel"
             optionalLabel
@@ -154,10 +155,10 @@ export function ProfileForm({ user }: { user: UserDto }) {
           />
           <div className="flex justify-end gap-2">
             <Button variant="ghost" disabled={!isDirty || isSubmitting} onClick={() => reset()}>
-              Discard
+              {tr('Discard')}
             </Button>
             <Button type="submit" disabled={!isDirty} loading={isSubmitting} loadingText="Saving…">
-              Save changes
+              {tr('Save changes')}
             </Button>
           </div>
         </form>

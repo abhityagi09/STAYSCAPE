@@ -3,6 +3,7 @@ import { Check, Eye, EyeOff, X } from 'lucide-react';
 import { PASSWORD_RULES } from '@stayscape/shared';
 import { cn } from '@/lib/cn';
 import { Field, controlClasses } from './Field';
+import { tr } from '@/lib/tr';
 
 export interface InputProps extends Omit<ComponentProps<'input'>, 'id'> {
   label: ReactNode;
@@ -103,7 +104,7 @@ export function PasswordInput({
             type="button"
             onClick={() => setVisible((v) => !v)}
             className="inline-flex size-9 items-center justify-center rounded-md text-fg-subtle hover:text-fg focus-visible:outline-2 focus-visible:outline-ring"
-            aria-label={visible ? 'Hide password' : 'Show password'}
+            aria-label={visible ? tr('Hide password') : tr('Show password')}
             aria-pressed={visible}
           >
             {visible ? (
@@ -117,7 +118,7 @@ export function PasswordInput({
       {showRequirements && (
         <ul
           className="grid grid-cols-1 gap-1 text-xs sm:grid-cols-2"
-          aria-label="Password requirements"
+          aria-label={tr('Password requirements')}
         >
           {PASSWORD_RULES.map((rule) => {
             const met = rule.test(text);
@@ -133,7 +134,7 @@ export function PasswordInput({
                 )}
                 <span>
                   {rule.label}
-                  <span className="sr-only">{met ? ' (met)' : ' (not met)'}</span>
+                  <span className="sr-only">{met ? tr(' (met)') : tr(' (not met)')}</span>
                 </span>
               </li>
             );

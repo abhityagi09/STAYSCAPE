@@ -5,6 +5,7 @@ import type { ImageDto } from '@stayscape/shared';
 import { useFocusTrap, useScrollLock } from '@/hooks/overlay';
 import { cn } from '@/lib/cn';
 import { ResponsiveImage } from './HotelCard';
+import { tr, trf } from '@/lib/tr';
 
 /** Full-screen gallery: ←/→ to navigate, Home/End, Escape to close; focus is trapped and restored. */
 export function Lightbox({
@@ -49,20 +50,20 @@ export function Lightbox({
       ref={ref}
       role="dialog"
       aria-modal="true"
-      aria-label={`${title} photos`}
+      aria-label={trf('{0} photos', [title])}
       className="fixed inset-0 z-[70] flex flex-col bg-black/95 text-white"
       tabIndex={-1}
     >
       <div className="flex items-center justify-between p-4">
         <p className="text-sm" aria-live="polite">
-          Photo {index + 1} of {images.length}
+          {tr('Photo')} {index + 1} {tr('of')} {images.length}
           {image.alt && <span className="text-white/70"> — {image.alt}</span>}
         </p>
         <button
           type="button"
           onClick={onClose}
           className="rounded-full p-2 hover:bg-white/10"
-          aria-label="Close gallery"
+          aria-label={tr('Close gallery')}
         >
           <X className="size-6" aria-hidden="true" />
         </button>
@@ -80,7 +81,7 @@ export function Lightbox({
               type="button"
               onClick={() => go(-1)}
               className="absolute left-4 rounded-full bg-white/10 p-3 hover:bg-white/20"
-              aria-label="Previous photo"
+              aria-label={tr('Previous photo')}
             >
               <ChevronLeft className="size-6" aria-hidden="true" />
             </button>
@@ -88,20 +89,20 @@ export function Lightbox({
               type="button"
               onClick={() => go(1)}
               className="absolute right-4 rounded-full bg-white/10 p-3 hover:bg-white/20"
-              aria-label="Next photo"
+              aria-label={tr('Next photo')}
             >
               <ChevronRight className="size-6" aria-hidden="true" />
             </button>
           </>
         )}
       </div>
-      <div className="flex gap-2 overflow-x-auto p-4" role="group" aria-label="Thumbnails">
+      <div className="flex gap-2 overflow-x-auto p-4" role="group" aria-label={tr('Thumbnails')}>
         {images.map((img, i) => (
           <button
             key={img.id}
             type="button"
             onClick={() => onIndex(i)}
-            aria-label={`Show photo ${i + 1}`}
+            aria-label={trf('Show photo {0}', [i + 1])}
             aria-current={i === index}
             className={cn(
               'h-16 w-24 shrink-0 overflow-hidden rounded-md border-2',
@@ -122,7 +123,7 @@ export function PhotoGrid({ images, title }: { images: ImageDto[]; title: string
   if (images.length === 0)
     return (
       <div className="flex aspect-[16/7] items-center justify-center rounded-3xl bg-surface-muted text-fg-subtle">
-        No photos yet
+        {tr('No photos yet')}
       </div>
     );
   const [first, ...rest] = images;
@@ -136,7 +137,7 @@ export function PhotoGrid({ images, title }: { images: ImageDto[]; title: string
           type="button"
           onClick={() => setOpen(0)}
           className="relative sm:col-span-2 sm:row-span-2"
-          aria-label={`Open photo 1 of ${images.length}`}
+          aria-label={trf('Open photo 1 of {0}', [images.length])}
         >
           <ResponsiveImage
             image={first!}
@@ -151,7 +152,7 @@ export function PhotoGrid({ images, title }: { images: ImageDto[]; title: string
             type="button"
             onClick={() => setOpen(i + 1)}
             className="relative hidden sm:block"
-            aria-label={`Open photo ${i + 2} of ${images.length}`}
+            aria-label={trf('Open photo {0} of {1}', [i + 2, images.length])}
           >
             <ResponsiveImage image={img} sizes="25vw" className="size-full" />
           </button>
@@ -162,7 +163,8 @@ export function PhotoGrid({ images, title }: { images: ImageDto[]; title: string
         onClick={() => setOpen(0)}
         className="absolute right-4 bottom-4 inline-flex items-center gap-2 rounded-full bg-surface/95 px-4 py-2 text-sm font-medium shadow-md hover:bg-surface"
       >
-        <Images className="size-4" aria-hidden="true" /> View all {images.length} photos
+        <Images className="size-4" aria-hidden="true" /> {tr('View all')} {images.length}{' '}
+        {tr('photos')}
       </button>
       {open !== null && (
         <Lightbox

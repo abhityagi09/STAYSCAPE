@@ -29,6 +29,7 @@ import {
 } from '@/features/bookings/components';
 import { normalizeApiError } from '@/lib/api/errors';
 import { usePartnerHotels } from '../api';
+import { tr, trf } from '@/lib/tr';
 
 function PropertyPicker({ value, onChange }: { value: string; onChange: (id: string) => void }) {
   const hotels = usePartnerHotels();
@@ -40,7 +41,7 @@ function PropertyPicker({ value, onChange }: { value: string; onChange: (id: str
   }, [value, first, onChange]);
   return (
     <Select
-      label="Property"
+      label={tr('Property')}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       options={
@@ -73,9 +74,9 @@ function ReservationRow({
           <PaymentStatusBadge status={b.paymentStatus} />
         </div>
         <span>
-          {formatStayDate(b.checkIn)} → {formatStayDate(b.checkOut)} · {b.nights} night
-          {b.nights === 1 ? '' : 's'} · {b.guests} guest{b.guests === 1 ? '' : 's'} ·{' '}
-          {b.roomSummary}
+          {formatStayDate(b.checkIn)} → {formatStayDate(b.checkOut)} · {b.nights} {tr('night')}
+          {b.nights === 1 ? '' : 's'} · {b.guests} {tr('guest')}
+          {b.guests === 1 ? '' : 's'} · {b.roomSummary}
         </span>
         <span className="text-fg-subtle">
           <Link
@@ -85,30 +86,34 @@ function ReservationRow({
             {b.reference}
           </Link>{' '}
           · {b.guestPhone} · {b.guestEmail}
-          {b.estimatedArrivalTime ? ` · arriving ~${b.estimatedArrivalTime}` : ''}
+          {b.estimatedArrivalTime ? trf(' · arriving ~{0}', [b.estimatedArrivalTime]) : ''}
         </span>
-        {b.specialRequests && <span className="text-fg-muted">Requests: {b.specialRequests}</span>}
+        {b.specialRequests && (
+          <span className="text-fg-muted">
+            {tr('Requests:')} {b.specialRequests}
+          </span>
+        )}
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <span className="mr-2 font-semibold tabular-nums">{money(b.totalMinor, b.currency)}</span>
         {b.actions.canCheckIn && (
           <Button size="sm" onClick={() => onAction(b, 'check-in')}>
-            Check in
+            {tr('Check in')}
           </Button>
         )}
         {b.actions.canCheckOut && (
           <Button size="sm" onClick={() => onAction(b, 'check-out')}>
-            Check out
+            {tr('Check out')}
           </Button>
         )}
         {b.actions.canMarkNoShow && (
           <Button size="sm" variant="outline" onClick={() => onAction(b, 'no-show')}>
-            No-show
+            {tr('No-show')}
           </Button>
         )}
         {b.status === 'CONFIRMED' && !b.actions.canMarkNoShow && (
           <Button size="sm" variant="ghost" onClick={() => onAction(b, 'reject')}>
-            Decline
+            {tr('Decline')}
           </Button>
         )}
       </div>
@@ -147,37 +152,39 @@ export function PartnerReservationsPage() {
       ),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['partner-bookings'] });
-      toast({ title: 'Reservation updated', variant: 'success' });
+      toast({ title: tr('Reservation updated'), variant: 'success' });
       setPending(null);
       setReason('');
     },
     onError: (e) =>
       toast({
-        title: 'Action failed',
+        title: tr('Action failed'),
         description: normalizeApiError(e).message,
         variant: 'error',
       }),
   });
   const confirmCopy: Record<Action, { title: string; body: string; label: string }> = {
     'check-in': {
-      title: 'Check this guest in?',
-      body: 'Record that the guest has arrived.',
-      label: 'Check in',
+      title: tr('Check this guest in?'),
+      body: tr('Record that the guest has arrived.'),
+      label: tr('Check in'),
     },
     'check-out': {
-      title: 'Check this guest out?',
-      body: 'Record that the guest has left.',
-      label: 'Check out',
+      title: tr('Check this guest out?'),
+      body: tr('Record that the guest has left.'),
+      label: tr('Check out'),
     },
     'no-show': {
-      title: 'Record a no-show?',
-      body: 'The booking is cancelled under its no-show policy, any refund due is issued, and remaining nights are released.',
-      label: 'Record no-show',
+      title: tr('Record a no-show?'),
+      body: tr(
+        'The booking is cancelled under its no-show policy, any refund due is issued, and remaining nights are released.',
+      ),
+      label: tr('Record no-show'),
     },
     reject: {
-      title: 'Decline this booking?',
-      body: 'Only if you cannot honour it. The guest is refunded in full and notified.',
-      label: 'Decline booking',
+      title: tr('Decline this booking?'),
+      body: tr('Only if you cannot honour it. The guest is refunded in full and notified.'),
+      label: tr('Decline booking'),
     },
   };
   const list = query.isPending ? (
@@ -190,7 +197,7 @@ export function PartnerReservationsPage() {
       onRetry={() => void query.refetch()}
     />
   ) : query.data.items.length === 0 ? (
-    <EmptyState icon={<CalendarCheck />} title="No reservations here" />
+    <EmptyState icon={<CalendarCheck />} title={tr('No reservations here')} />
   ) : (
     <>
       <ul className="flex flex-col gap-3">
@@ -214,8 +221,8 @@ export function PartnerReservationsPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Reservations"
-        description="Confirmed stays for your properties. Unpaid holds are never shown."
+        title={tr('Reservations')}
+        description={tr('Confirmed stays for your properties. Unpaid holds are never shown.')}
         actions={
           <PropertyPicker
             value={hotelId}
@@ -229,16 +236,16 @@ export function PartnerReservationsPage() {
       <div
         className="flex flex-wrap items-end gap-3"
         role="search"
-        aria-label="Filter reservations"
+        aria-label={tr('Filter reservations')}
       >
         <Input
-          label="Guest name or reference"
+          label={tr('Guest name or reference')}
           value={filters.q}
           onChange={(e) => setFilter('q', e.target.value)}
           containerClassName="w-64"
         />
         <Select
-          label="Status"
+          label={tr('Status')}
           value={filters.status}
           onChange={(e) => setFilter('status', e.target.value)}
           options={[
@@ -255,37 +262,41 @@ export function PartnerReservationsPage() {
         />
         <Input
           type="date"
-          label="Check-in from"
+          label={tr('Check-in from')}
           value={filters.from}
           onChange={(e) => setFilter('from', e.target.value)}
           containerClassName="w-44"
         />
         <Input
           type="date"
-          label="Check-in to"
+          label={tr('Check-in to')}
           value={filters.to}
           onChange={(e) => setFilter('to', e.target.value)}
           containerClassName="w-44"
         />
       </div>
       <Tabs
-        label="Reservation views"
+        label={tr('Reservation views')}
         value={view}
         onValueChange={(v) => {
           setView(v);
           setPage(1);
         }}
         items={[
-          { id: 'arrivals', label: 'Arriving today', content: view === 'arrivals' ? list : null },
-          { id: 'in-house', label: 'In house', content: view === 'in-house' ? list : null },
+          {
+            id: 'arrivals',
+            label: tr('Arriving today'),
+            content: view === 'arrivals' ? list : null,
+          },
+          { id: 'in-house', label: tr('In house'), content: view === 'in-house' ? list : null },
           {
             id: 'departures',
-            label: 'Departing today',
+            label: tr('Departing today'),
             content: view === 'departures' ? list : null,
           },
-          { id: 'upcoming', label: 'Upcoming', content: view === 'upcoming' ? list : null },
-          { id: 'past', label: 'Past', content: view === 'past' ? list : null },
-          { id: 'all', label: 'All', content: view === 'all' ? list : null },
+          { id: 'upcoming', label: tr('Upcoming'), content: view === 'upcoming' ? list : null },
+          { id: 'past', label: tr('Past'), content: view === 'past' ? list : null },
+          { id: 'all', label: tr('All'), content: view === 'all' ? list : null },
         ]}
       />
       {pending && (
@@ -304,7 +315,9 @@ export function PartnerReservationsPage() {
           <p className="text-sm">{confirmCopy[pending.action].body}</p>
           {(pending.action === 'reject' || pending.action === 'no-show') && (
             <Textarea
-              label={pending.action === 'reject' ? 'Reason (shared with the guest)' : 'Note'}
+              label={
+                pending.action === 'reject' ? tr('Reason (shared with the guest)') : tr('Note')
+              }
               rows={2}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
@@ -331,17 +344,19 @@ function ReviewItem({ hotelId, review }: { hotelId: string; review: PartnerRevie
     <li className="rounded-2xl border border-border bg-surface p-4 text-sm">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="font-semibold">
-          {review.authorName} · {review.roomTypeName} · stayed {review.stayMonth}
+          {review.authorName} · {review.roomTypeName} {tr('· stayed')} {review.stayMonth}
         </span>
         <span className="flex items-center gap-2">
-          {review.status === 'FLAGGED' && <Badge tone="warning">Reported — under moderation</Badge>}
+          {review.status === 'FLAGGED' && (
+            <Badge tone="warning">{tr('Reported — under moderation')}</Badge>
+          )}
           <span className="font-semibold">★ {review.overall.toFixed(1)}</span>
         </span>
       </div>
       <p className="mt-2 font-medium">{review.title}</p>
       <p className="text-fg-muted">{review.body}</p>
       <p className="mt-1 text-xs text-fg-subtle">
-        {formatInstant(review.createdAt)} · booking {review.bookingReference}
+        {formatInstant(review.createdAt)} {tr('· booking')} {review.bookingReference}
       </p>
       {editing ? (
         <form
@@ -352,7 +367,7 @@ function ReviewItem({ hotelId, review }: { hotelId: string; review: PartnerRevie
           }}
         >
           <Textarea
-            label="Public response"
+            label={tr('Public response')}
             rows={3}
             value={body}
             onChange={(e) => setBody(e.target.value)}
@@ -365,14 +380,14 @@ function ReviewItem({ hotelId, review }: { hotelId: string; review: PartnerRevie
             disabled={body.trim().length < 5}
             loading={respond.isPending}
           >
-            Publish response
+            {tr('Publish response')}
           </Button>
         </form>
       ) : (
         <div className="mt-3 rounded-lg bg-surface-muted p-3">
-          <span className="font-medium">Your response:</span> {review.response?.body}{' '}
+          <span className="font-medium">{tr('Your response:')}</span> {review.response?.body}{' '}
           <Button size="sm" variant="link" onClick={() => setEditing(true)}>
-            Edit
+            {tr('Edit')}
           </Button>
         </div>
       )}
@@ -391,19 +406,21 @@ export function PartnerReviewsPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Guest reviews"
-        description="Reviews come only from verified, completed stays. You can respond publicly; reviews can only be removed by platform moderators for policy violations."
+        title={tr('Guest reviews')}
+        description={tr(
+          'Reviews come only from verified, completed stays. You can respond publicly; reviews can only be removed by platform moderators for policy violations.',
+        )}
         actions={<PropertyPicker value={hotelId} onChange={setHotelId} />}
       />
       <Alert tone="info">
-        Report a review to moderators through support if it breaks the content policy.
+        {tr('Report a review to moderators through support if it breaks the content policy.')}
       </Alert>
       {!hotelId ? null : query.isPending ? (
         <PageSpinner />
       ) : query.error ? (
         <ErrorState description={normalizeApiError(query.error).message} />
       ) : query.data.length === 0 ? (
-        <EmptyState icon={<Star />} title="No reviews yet" />
+        <EmptyState icon={<Star />} title={tr('No reviews yet')} />
       ) : (
         <ul className="flex flex-col gap-3">
           {query.data.map((r) => (
@@ -454,7 +471,7 @@ export function PartnerReservationDetailPage() {
           .filter((a) => a.roomNumbers.length),
       ),
     onSuccess: () => {
-      toast({ title: 'Rooms assigned', variant: 'success' });
+      toast({ title: tr('Rooms assigned'), variant: 'success' });
       refresh();
     },
     onError: fail('Could not assign rooms'),
@@ -478,20 +495,29 @@ export function PartnerReservationDetailPage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title={`${b.guestName} · ${b.reference}`}
-        description={`${formatStayDate(b.checkIn)} → ${formatStayDate(b.checkOut)} · ${b.nights} night${b.nights === 1 ? '' : 's'} · ${b.roomSummary}`}
-        breadcrumb={[{ label: 'Reservations', to: '/partner/bookings' }, { label: b.reference }]}
+        description={trf('{0} → {1} · {2} night{3} · {4}', [
+          formatStayDate(b.checkIn),
+          formatStayDate(b.checkOut),
+          b.nights,
+          b.nights === 1 ? '' : 's',
+          b.roomSummary,
+        ])}
+        breadcrumb={[
+          { label: tr('Reservations'), to: '/partner/bookings' },
+          { label: b.reference },
+        ]}
         actions={
           <div className="flex flex-wrap gap-2">
             <BookingStatusBadge status={b.status} />
             <PaymentStatusBadge status={b.paymentStatus} />
             {b.actions.canCheckIn && (
               <Button size="sm" loading={act.isPending} onClick={() => act.mutate('check-in')}>
-                Check in
+                {tr('Check in')}
               </Button>
             )}
             {b.actions.canCheckOut && (
               <Button size="sm" loading={act.isPending} onClick={() => act.mutate('check-out')}>
-                Check out
+                {tr('Check out')}
               </Button>
             )}
           </div>
@@ -502,7 +528,7 @@ export function PartnerReservationDetailPage() {
         className="grid gap-3 rounded-2xl border border-border p-4 text-sm sm:grid-cols-2"
       >
         <h2 id="guest" className="font-semibold sm:col-span-2">
-          Guest
+          {tr('Guest')}
         </h2>
         <p>
           {g.primaryGuest.firstName} {g.primaryGuest.lastName} · {g.primaryGuest.phone} ·{' '}
@@ -510,19 +536,28 @@ export function PartnerReservationDetailPage() {
         </p>
         {g.additionalGuests.length > 0 && (
           <p>
-            Also staying: {g.additionalGuests.map((x) => `${x.firstName} ${x.lastName}`).join(', ')}
+            {tr('Also staying:')}{' '}
+            {g.additionalGuests.map((x) => `${x.firstName} ${x.lastName}`).join(', ')}
           </p>
         )}
-        {g.estimatedArrivalTime && <p>Arriving around {g.estimatedArrivalTime}</p>}
-        {g.specialRequests && <p className="sm:col-span-2">Requests: {g.specialRequests}</p>}
+        {g.estimatedArrivalTime && (
+          <p>
+            {tr('Arriving around')} {g.estimatedArrivalTime}
+          </p>
+        )}
+        {g.specialRequests && (
+          <p className="sm:col-span-2">
+            {tr('Requests:')} {g.specialRequests}
+          </p>
+        )}
         <p>
-          Checked in:{' '}
+          {tr('Checked in:')}{' '}
           {b.checkedInAt
             ? `${formatInstant(b.checkedInAt)}${b.checkedInBy ? ` by ${b.checkedInBy}` : ''}`
             : '—'}
         </p>
         <p>
-          Checked out:{' '}
+          {tr('Checked out:')}{' '}
           {b.checkedOutAt
             ? `${formatInstant(b.checkedOutAt)}${b.checkedOutBy ? ` by ${b.checkedOutBy}` : ''}`
             : '—'}
@@ -533,28 +568,30 @@ export function PartnerReservationDetailPage() {
         className="flex flex-col gap-2 rounded-2xl border border-border p-4 text-sm"
       >
         <h2 id="payment" className="font-semibold">
-          Payment
+          {tr('Payment')}
         </h2>
         <p>
-          Total {money(b.price.totals.totalMinor, b.price.currency)}
-          {b.price.coupon ? ` (coupon ${b.price.coupon.code}, funded by Stayscape)` : ''}
+          {tr('Total')} {money(b.price.totals.totalMinor, b.price.currency)}
+          {b.price.coupon ? trf(' (coupon {0}, funded by Stayscape)', [b.price.coupon.code]) : ''}
         </p>
         {b.payments.map((p, i) => (
           <p key={i}>
             {formatInstant(p.createdAt)} · {money(p.amountMinor, p.currency)} ·{' '}
             {p.status.toLowerCase()}
-            {p.refundedMinor ? ` · refunded ${money(p.refundedMinor, p.currency)}` : ''}
+            {p.refundedMinor ? trf(' · refunded {0}', [money(p.refundedMinor, p.currency)]) : ''}
           </p>
         ))}
         {b.refunds.map((r, i) => (
           <p key={i}>
-            Refund {money(r.amountMinor, r.currency)} · {r.status.toLowerCase()} · {r.reason}
+            {tr('Refund')} {money(r.amountMinor, r.currency)} · {r.status.toLowerCase()} ·{' '}
+            {r.reason}
           </p>
         ))}
         {b.cancellation && (
           <p>
-            Cancelled: charge{' '}
-            {money(b.cancellation.cancellationChargeMinor, b.cancellation.currency)}, refundable{' '}
+            {tr('Cancelled: charge')}{' '}
+            {money(b.cancellation.cancellationChargeMinor, b.cancellation.currency)}
+            {tr(', refundable')}{' '}
             {money(b.cancellation.refundableAmountMinor, b.cancellation.currency)}
           </p>
         )}
@@ -564,7 +601,7 @@ export function PartnerReservationDetailPage() {
         className="flex flex-col gap-3 rounded-2xl border border-border p-4 text-sm"
       >
         <h2 id="rooms" className="font-semibold">
-          Room assignment
+          {tr('Room assignment')}
         </h2>
         {b.items.map((item) => {
           const current =
@@ -574,7 +611,11 @@ export function PartnerReservationDetailPage() {
           return (
             <Input
               key={item.roomTypeId}
-              label={`${item.roomTypeName}: ${item.rooms} room number${item.rooms === 1 ? '' : 's'} (comma separated)`}
+              label={trf('{0}: {1} room number{2} (comma separated)', [
+                item.roomTypeName,
+                item.rooms,
+                item.rooms === 1 ? '' : 's',
+              ])}
               value={rooms[item.roomTypeId] ?? current}
               onChange={(e) => setRooms({ ...rooms, [item.roomTypeId]: e.target.value })}
             />
@@ -587,7 +628,7 @@ export function PartnerReservationDetailPage() {
           disabled={!Object.keys(rooms).length}
           onClick={() => assign.mutate()}
         >
-          Save room assignment
+          {tr('Save room assignment')}
         </Button>
       </section>
       <section
@@ -595,7 +636,7 @@ export function PartnerReservationDetailPage() {
         className="flex flex-col gap-3 rounded-2xl border border-border p-4 text-sm"
       >
         <h2 id="notes" className="font-semibold">
-          Internal notes
+          {tr('Internal notes')}
         </h2>
         <ol className="flex flex-col gap-2">
           {b.notes.length ? (
@@ -607,10 +648,12 @@ export function PartnerReservationDetailPage() {
               </li>
             ))
           ) : (
-            <li className="text-fg-subtle">No notes yet. Notes are visible to your team only.</li>
+            <li className="text-fg-subtle">
+              {tr('No notes yet. Notes are visible to your team only.')}
+            </li>
           )}
         </ol>
-        <Textarea label="Add a note" value={note} onChange={(e) => setNote(e.target.value)} />
+        <Textarea label={tr('Add a note')} value={note} onChange={(e) => setNote(e.target.value)} />
         <Button
           size="sm"
           className="self-start"
@@ -618,7 +661,7 @@ export function PartnerReservationDetailPage() {
           disabled={!note.trim()}
           onClick={() => addNote.mutate()}
         >
-          Add note
+          {tr('Add note')}
         </Button>
       </section>
       <section
@@ -626,7 +669,7 @@ export function PartnerReservationDetailPage() {
         className="flex flex-col gap-2 rounded-2xl border border-border p-4 text-sm"
       >
         <h2 id="timeline" className="font-semibold">
-          Timeline
+          {tr('Timeline')}
         </h2>
         <ol className="flex flex-col gap-1">
           {b.timeline.map((t, i) => (

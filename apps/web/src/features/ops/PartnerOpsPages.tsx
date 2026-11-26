@@ -38,6 +38,7 @@ import {
   fmtMoney,
   fmtPct,
 } from './components';
+import { tr, trf } from '@/lib/tr';
 
 const today = () => todayInTimeZone('Asia/Kolkata');
 function useErrorToast() {
@@ -60,11 +61,11 @@ function PropertyPicker({
   if (!hotels.data?.length) return null;
   return (
     <Select
-      label="Property"
+      label={tr('Property')}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       options={[
-        ...(allowAll ? [{ value: '', label: 'All properties' }] : []),
+        ...(allowAll ? [{ value: '', label: tr('All properties') }] : []),
         ...hotels.data.map((h) => ({ value: h.id, label: h.name })),
       ]}
       containerClassName="w-64"
@@ -140,8 +141,8 @@ export function PartnerAnalyticsPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Performance"
-        description="Reservations, revenue and occupancy for the properties you can access."
+        title={tr('Performance')}
+        description={tr('Reservations, revenue and occupancy for the properties you can access.')}
         actions={
           <Button
             variant="outline"
@@ -154,7 +155,7 @@ export function PartnerAnalyticsPage() {
               )
             }
           >
-            <Download className="size-4" aria-hidden="true" /> Export CSV
+            <Download className="size-4" aria-hidden="true" /> {tr('Export CSV')}
           </Button>
         }
       />
@@ -166,79 +167,85 @@ export function PartnerAnalyticsPage() {
           <>
             <KpiGrid>
               <KpiTile
-                label="Reservations"
+                label={tr('Reservations')}
                 value={k.totalReservations}
                 changeBp={change(k.totalReservations, k.previousPeriod.totalReservations)}
               />
-              <KpiTile label="Upcoming arrivals (7 days)" value={k.upcomingArrivals} />
-              <KpiTile label="Guests in house" value={k.currentGuests} />
-              <KpiTile label="Completed stays" value={k.completedStays} />
+              <KpiTile label={tr('Upcoming arrivals (7 days)')} value={k.upcomingArrivals} />
+              <KpiTile label={tr('Guests in house')} value={k.currentGuests} />
+              <KpiTile label={tr('Completed stays')} value={k.completedStays} />
               <KpiTile
-                label="Cancelled"
+                label={tr('Cancelled')}
                 value={k.cancelledBookings}
-                hint={`Cancellation rate ${fmtPct(k.cancellationRateBp)}`}
+                hint={trf('Cancellation rate {0}', [fmtPct(k.cancellationRateBp)])}
               />
               <KpiTile
-                label="Gross booking value"
+                label={tr('Gross booking value')}
                 value={fmtMoney(k.grossBookingValueMinor, cur)}
                 changeBp={change(k.grossBookingValueMinor, k.previousPeriod.grossBookingValueMinor)}
               />
-              <KpiTile label="Room revenue" value={fmtMoney(k.recognisedRoomRevenueMinor, cur)} />
               <KpiTile
-                label="Occupancy"
+                label={tr('Room revenue')}
+                value={fmtMoney(k.recognisedRoomRevenueMinor, cur)}
+              />
+              <KpiTile
+                label={tr('Occupancy')}
                 value={fmtPct(k.occupancyBp)}
-                hint={`${k.roomNightsSold} of ${k.availableRoomNights} room nights`}
+                hint={trf('{0} of {1} room nights', [k.roomNightsSold, k.availableRoomNights])}
               />
               <KpiTile label="ADR" value={fmtMoney(k.adrMinor, cur)} />
-              <KpiTile label="RevPAR" value={fmtMoney(k.revparMinor, cur)} />
+              <KpiTile label={tr('RevPAR')} value={fmtMoney(k.revparMinor, cur)} />
               <KpiTile
-                label="Average booking value"
+                label={tr('Average booking value')}
                 value={fmtMoney(k.averageBookingValueMinor, cur)}
               />
               <KpiTile
-                label="Guest review score"
+                label={tr('Guest review score')}
                 value={k.guestReviewScore ?? '—'}
-                hint={`${k.reviewCount} review(s) · conversion ${fmtPct(k.bookingConversionBp)}`}
+                hint={trf('{0} review(s) · conversion {1}', [
+                  k.reviewCount,
+                  fmtPct(k.bookingConversionBp),
+                ])}
               />
             </KpiGrid>
             <div className="grid gap-4 lg:grid-cols-2">
-              <SectionCard title="Room revenue by night">
+              <SectionCard title={tr('Room revenue by night')}>
                 <BarChart
-                  title="Recognised room revenue per night"
+                  title={tr('Recognised room revenue per night')}
                   data={q.data.trend.map((t) => ({ label: t.date, value: t.revenueMinor }))}
                   format={(v) => fmtMoney(v, cur)}
                 />
               </SectionCard>
-              <SectionCard title="Occupancy by night">
+              <SectionCard title={tr('Occupancy by night')}>
                 <BarChart
-                  title="Occupancy per night"
+                  title={tr('Occupancy per night')}
                   data={q.data.trend.map((t) => ({ label: t.date, value: t.occupancyBp }))}
                   format={fmtPct}
                 />
               </SectionCard>
-              <SectionCard title="Bookings by confirmation date">
+              <SectionCard title={tr('Bookings by confirmation date')}>
                 <BarChart
-                  title="Bookings per day"
+                  title={tr('Bookings per day')}
                   data={q.data.bookingTrend.map((b) => ({ label: b.date, value: b.bookings }))}
                 />
               </SectionCard>
-              <SectionCard title="Room category performance">
+              <SectionCard title={tr('Room category performance')}>
                 {q.data.roomPerformance.length ? (
                   <DataTable
-                    caption="Room category performance"
+                    caption={tr('Room category performance')}
                     rows={q.data.roomPerformance}
                     getRowId={(r) => r.roomType}
                     columns={[
-                      { id: 'r', header: 'Room category', cell: (r) => r.roomType },
+                      { id: 'r', header: tr('Room category'), cell: (r) => r.roomType },
                       {
                         id: 'n',
-                        header: 'Nights sold',
+                        header: tr('Nights sold'),
                         cell: (r) => r.roomNightsSold,
                         align: 'right',
                       },
                       {
                         id: 'v',
-                        header: 'Revenue',
+                        header: tr('Revenue'),
                         cell: (r) => fmtMoney(r.revenueMinor, cur),
                         align: 'right',
                       },
@@ -251,7 +258,7 @@ export function PartnerAnalyticsPage() {
                     ]}
                   />
                 ) : (
-                  <EmptyState compact title="No stays in this period" />
+                  <EmptyState compact title={tr('No stays in this period')} />
                 )}
               </SectionCard>
             </div>
@@ -260,7 +267,7 @@ export function PartnerAnalyticsPage() {
       </QueryState>
       <details className="rounded-xl border border-border p-4 text-sm">
         <summary className="flex cursor-pointer items-center gap-2 font-medium">
-          <Info className="size-4" aria-hidden="true" /> How these metrics are calculated
+          <Info className="size-4" aria-hidden="true" /> {tr('How these metrics are calculated')}
         </summary>
         <dl className="mt-3 grid gap-2 sm:grid-cols-2">
           {DEFINITIONS.map(([term, def]) => (
@@ -285,11 +292,11 @@ function PermissionChecklist({
 }) {
   return (
     <fieldset className="grid gap-2 sm:grid-cols-2">
-      <legend className="mb-2 text-sm font-medium">Permissions</legend>
+      <legend className="mb-2 text-sm font-medium">{tr('Permissions')}</legend>
       {STAFF_PERMISSIONS.map((p) => (
         <Checkbox
           key={p}
-          label={STAFF_PERMISSION_LABELS[p]}
+          label={tr(STAFF_PERMISSION_LABELS[p])}
           checked={value.includes(p)}
           onChange={(e) =>
             onChange(e.target.checked ? [...value, p] : value.filter((x) => x !== p))
@@ -341,7 +348,7 @@ function StaffRow({
             onClick={() => setEditing((e) => !e)}
             aria-expanded={editing}
           >
-            Edit access
+            {tr('Edit access')}
           </Button>
           {member.invitationStatus === 'ACCEPTED' && (
             <Button
@@ -349,7 +356,7 @@ function StaffRow({
               variant="ghost"
               onClick={() => suspend.mutate(true, { onError: fail('Could not suspend') })}
             >
-              Suspend
+              {tr('Suspend')}
             </Button>
           )}
           {member.invitationStatus === 'SUSPENDED' && (
@@ -358,7 +365,7 @@ function StaffRow({
               variant="ghost"
               onClick={() => suspend.mutate(false, { onError: fail('Could not reactivate') })}
             >
-              Reactivate
+              {tr('Reactivate')}
             </Button>
           )}
           <Button
@@ -367,25 +374,25 @@ function StaffRow({
             onClick={() => setShowLog((s) => !s)}
             aria-expanded={showLog}
           >
-            Activity
+            {tr('Activity')}
           </Button>
           <Button
             size="sm"
             variant="ghost"
             onClick={() => remove.mutate(undefined, { onError: fail('Could not remove') })}
           >
-            Remove
+            {tr('Remove')}
           </Button>
         </div>
       </div>
       <p className="text-xs text-fg-subtle">
-        {member.permissions.length} permission(s) · {member.assignedProperties.length} propert
-        {member.assignedProperties.length === 1 ? 'y' : 'ies'}
+        {member.permissions.length} {tr('permission(s) ·')} {member.assignedProperties.length}{' '}
+        {member.assignedProperties.length === 1 ? tr('property') : tr('properties')}
       </p>
       {editing && (
         <div className="flex flex-col gap-3 border-t border-border pt-3">
           <fieldset className="flex flex-wrap gap-3">
-            <legend className="mb-2 text-sm font-medium">Properties</legend>
+            <legend className="mb-2 text-sm font-medium">{tr('Properties')}</legend>
             {hotels.map((h) => (
               <Checkbox
                 key={h.id}
@@ -410,7 +417,7 @@ function StaffRow({
               })
             }
           >
-            Save access
+            {tr('Save access')}
           </Button>
         </div>
       )}
@@ -425,7 +432,7 @@ function StaffRow({
                 </li>
               ))
             ) : (
-              <li className="text-fg-subtle">No activity yet.</li>
+              <li className="text-fg-subtle">{tr('No activity yet.')}</li>
             )}
           </ul>
         </QueryState>
@@ -450,10 +457,12 @@ export function PartnerStaffPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Team"
-        description="Invite staff, choose which properties they work on and exactly what they may do. Every action they take is logged."
+        title={tr('Team')}
+        description={tr(
+          'Invite staff, choose which properties they work on and exactly what they may do. Every action they take is logged.',
+        )}
       />
-      <SectionCard title="Invite a team member">
+      <SectionCard title={tr('Invite a team member')}>
         <form
           className="flex flex-col gap-3"
           onSubmit={(e) => {
@@ -461,14 +470,14 @@ export function PartnerStaffPage() {
             invite.mutate(undefined, {
               onSuccess: () => {
                 setEmail('');
-                toast({ title: 'Invitation sent', variant: 'success' });
+                toast({ title: tr('Invitation sent'), variant: 'success' });
               },
               onError: fail('Invitation failed'),
             });
           }}
         >
           <Input
-            label="Email address"
+            label={tr('Email address')}
             type="email"
             required
             value={email}
@@ -476,7 +485,7 @@ export function PartnerStaffPage() {
             containerClassName="max-w-sm"
           />
           <fieldset className="flex flex-wrap gap-3">
-            <legend className="mb-2 text-sm font-medium">Properties</legend>
+            <legend className="mb-2 text-sm font-medium">{tr('Properties')}</legend>
             {list.map((h) => (
               <Checkbox
                 key={h.id}
@@ -495,7 +504,7 @@ export function PartnerStaffPage() {
             loading={invite.isPending}
             disabled={!email || !props.length || !perms.length}
           >
-            Send invitation
+            {tr('Send invitation')}
           </Button>
         </form>
       </SectionCard>
@@ -508,8 +517,8 @@ export function PartnerStaffPage() {
           </ul>
         ) : (
           <EmptyState
-            title="No team members yet"
-            description="Invited people appear here once you send an invitation."
+            title={tr('No team members yet')}
+            description={tr('Invited people appear here once you send an invitation.')}
           />
         )}
       </QueryState>
@@ -551,12 +560,15 @@ export function PartnerSettlementsPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Settlements"
-        description="What Stayscape owes you, from an append-only ledger. Payouts are recorded only with transfer evidence."
+        title={tr('Settlements')}
+        description={tr(
+          'What Stayscape owes you, from an append-only ledger. Payouts are recorded only with transfer evidence.',
+        )}
       />
-      <Alert tone="info" title="Automated payouts are not enabled">
-        Settlements are paid by bank transfer and marked paid only after the transfer reference and
-        evidence are recorded.
+      <Alert tone="info" title={tr('Automated payouts are not enabled')}>
+        {tr(
+          'Settlements are paid by bank transfer and marked paid only after the transfer reference and evidence are recorded.',
+        )}
       </Alert>
       <QueryState query={summary}>
         {summary.data && (
@@ -576,27 +588,27 @@ export function PartnerSettlementsPage() {
           </KpiGrid>
         )}
       </QueryState>
-      <SectionCard title="Settlement batches">
+      <SectionCard title={tr('Settlement batches')}>
         <DataTable
-          caption="Settlement batches"
+          caption={tr('Settlement batches')}
           rows={settlements.data?.items}
           loading={settlements.isPending}
           error={settlements.isError ? normalizeApiError(settlements.error) : null}
           getRowId={(s) => s._id}
-          empty={<EmptyState compact title="No settlements yet" />}
+          empty={<EmptyState compact title={tr('No settlements yet')} />}
           columns={[
-            { id: 'r', header: 'Reference', cell: (s) => s.reference },
-            { id: 'c', header: 'Created', cell: (s) => fmtDate(s.createdAt) },
-            { id: 's', header: 'Status', cell: (s) => <StatusBadge status={s.status} /> },
+            { id: 'r', header: tr('Reference'), cell: (s) => s.reference },
+            { id: 'c', header: tr('Created'), cell: (s) => fmtDate(s.createdAt) },
+            { id: 's', header: tr('Status'), cell: (s) => <StatusBadge status={s.status} /> },
             {
               id: 'a',
-              header: 'Net payable',
+              header: tr('Net payable'),
               cell: (s) => fmtMoney(s.netPayableMinor, s.currency),
               align: 'right',
             },
             {
               id: 'p',
-              header: 'Paid',
+              header: tr('Paid'),
               cell: (s) =>
                 s.evidence
                   ? `${fmtDate(s.evidence.paidAt)} · ${s.evidence.providerReference}`
@@ -605,21 +617,25 @@ export function PartnerSettlementsPage() {
           ]}
         />
       </SectionCard>
-      <SectionCard title="Ledger">
+      <SectionCard title={tr('Ledger')}>
         <DataTable
-          caption="Ledger entries"
+          caption={tr('Ledger entries')}
           rows={ledger.data?.items}
           loading={ledger.isPending}
           getRowId={(e) => e._id}
-          empty={<EmptyState compact title="No ledger entries yet" />}
+          empty={<EmptyState compact title={tr('No ledger entries yet')} />}
           columns={[
-            { id: 'd', header: 'Date', cell: (e) => fmtDate(e.occurredAt) },
-            { id: 'e', header: 'Event', cell: (e) => e.event.replace(/_/g, ' ').toLowerCase() },
-            { id: 'r', header: 'Details', cell: (e) => e.description ?? '—' },
-            { id: 'x', header: 'Account', cell: (e) => e.account.replace(/_/g, ' ').toLowerCase() },
+            { id: 'd', header: tr('Date'), cell: (e) => fmtDate(e.occurredAt) },
+            { id: 'e', header: tr('Event'), cell: (e) => e.event.replace(/_/g, ' ').toLowerCase() },
+            { id: 'r', header: tr('Details'), cell: (e) => e.description ?? '—' },
+            {
+              id: 'x',
+              header: tr('Account'),
+              cell: (e) => e.account.replace(/_/g, ' ').toLowerCase(),
+            },
             {
               id: 'a',
-              header: 'Amount',
+              header: tr('Amount'),
               cell: (e) => fmtMoney(e.amountMinor, e.currency),
               align: 'right',
             },
@@ -688,11 +704,11 @@ function ConnectionCard({ hotelId, c }: { hotelId: string; c: Connection }) {
       title={c.name}
       description={
         <>
-          Provider:{' '}
+          {tr('Provider:')}{' '}
           {c.provider === 'LOCAL_SIMULATOR'
-            ? 'Local simulator (development and testing only)'
+            ? tr('Local simulator (development and testing only)')
             : c.provider}
-          {!c.verifiedIntegration && ' · not a verified third-party integration'}
+          {!c.verifiedIntegration && tr(' · not a verified third-party integration')}
         </>
       }
       actions={
@@ -704,11 +720,11 @@ function ConnectionCard({ hotelId, c }: { hotelId: string; c: Connection }) {
     >
       <dl className="grid gap-1 text-sm sm:grid-cols-2">
         <div>
-          <dt className="text-fg-subtle">Webhook URL</dt>
+          <dt className="text-fg-subtle">{tr('Webhook URL')}</dt>
           <dd className="font-mono text-xs break-all">{c.webhookPath}</dd>
         </div>
         <div>
-          <dt className="text-fg-subtle">Last sync</dt>
+          <dt className="text-fg-subtle">{tr('Last sync')}</dt>
           <dd>
             {fmtDateTime(c.lastSyncAt)}
             {c.lastError && <span className="text-danger"> — {c.lastError}</span>}
@@ -716,16 +732,16 @@ function ConnectionCard({ hotelId, c }: { hotelId: string; c: Connection }) {
         </div>
       </dl>
       {secret && (
-        <Alert tone="warning" title="Copy this webhook secret now">
-          It will not be shown again: <code className="font-mono break-all">{secret}</code>
+        <Alert tone="warning" title={tr('Copy this webhook secret now')}>
+          {tr('It will not be shown again:')} <code className="font-mono break-all">{secret}</code>
         </Alert>
       )}
       <fieldset className="flex flex-col gap-2">
-        <legend className="mb-1 text-sm font-medium">Room mapping</legend>
+        <legend className="mb-1 text-sm font-medium">{tr('Room mapping')}</legend>
         {rooms.data?.map((r) => (
           <Input
             key={r.id}
-            label={`External room code for ${r.name}`}
+            label={trf('External room code for {0}', [r.name])}
             value={codes[r.id] ?? ''}
             onChange={(e) => setCodes({ ...codes, [r.id]: e.target.value })}
             containerClassName="max-w-sm"
@@ -750,7 +766,7 @@ function ConnectionCard({ hotelId, c }: { hotelId: string; c: Connection }) {
             )
           }
         >
-          Save mapping
+          {tr('Save mapping')}
         </Button>
         <Button
           size="sm"
@@ -758,7 +774,7 @@ function ConnectionCard({ hotelId, c }: { hotelId: string; c: Connection }) {
           loading={sync.isPending}
           onClick={() => sync.mutate(undefined, { onError: fail('Sync failed') })}
         >
-          Sync availability now
+          {tr('Sync availability now')}
         </Button>
         <Button
           size="sm"
@@ -770,7 +786,7 @@ function ConnectionCard({ hotelId, c }: { hotelId: string; c: Connection }) {
             )
           }
         >
-          {c.status === 'ACTIVE' ? 'Pause' : 'Resume'}
+          {c.status === 'ACTIVE' ? tr('Pause') : tr('Resume')}
         </Button>
         <Button
           size="sm"
@@ -782,31 +798,31 @@ function ConnectionCard({ hotelId, c }: { hotelId: string; c: Connection }) {
             })
           }
         >
-          Rotate secret
+          {tr('Rotate secret')}
         </Button>
       </div>
       <QueryState query={events}>
         <DataTable
-          caption="Channel event log"
+          caption={tr('Channel event log')}
           rows={events.data?.items}
           getRowId={(e) => e.id}
-          empty={<EmptyState compact title="No events received yet" />}
+          empty={<EmptyState compact title={tr('No events received yet')} />}
           columns={[
-            { id: 't', header: 'Received', cell: (e) => fmtDateTime(e.createdAt) },
+            { id: 't', header: tr('Received'), cell: (e) => fmtDateTime(e.createdAt) },
             {
               id: 'y',
-              header: 'Event',
+              header: tr('Event'),
               cell: (e) =>
                 `${e.type === 'RESERVATION_CREATED' ? 'New' : 'Cancelled'} ${e.externalRef}`,
             },
             {
               id: 'd',
-              header: 'Stay',
+              header: tr('Stay'),
               cell: (e) => `${e.checkIn} → ${e.checkOut} · ${e.rooms} × ${e.roomCode}`,
             },
             {
               id: 's',
-              header: 'Status',
+              header: tr('Status'),
               cell: (e) => (
                 <span className="flex flex-col gap-1">
                   <StatusBadge status={e.status} />
@@ -824,7 +840,7 @@ function ConnectionCard({ hotelId, c }: { hotelId: string; c: Connection }) {
                     variant="ghost"
                     onClick={() => retry.mutate(e.id, { onError: fail('Retry failed') })}
                   >
-                    Retry
+                    {tr('Retry')}
                   </Button>
                 ) : null,
             },
@@ -855,18 +871,20 @@ export function PartnerChannelsPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Channel manager"
-        description="Connect a channel manager so reservations made elsewhere hold rooms here, and your availability is pushed out automatically."
+        title={tr('Channel manager')}
+        description={tr(
+          'Connect a channel manager so reservations made elsewhere hold rooms here, and your availability is pushed out automatically.',
+        )}
       />
-      <Alert tone="info" title="Integration status">
-        Only the built-in local simulator is available. Connecting a real channel manager (for
-        example SiteMinder or STAAH) needs that provider’s API access and a dedicated adapter, which
-        has not been built or verified yet.
+      <Alert tone="info" title={tr('Integration status')}>
+        {tr(
+          'Only the built-in local simulator is available. Connecting a real channel manager (for example SiteMinder or STAAH) needs that provider’s API access and a dedicated adapter, which has not been built or verified yet.',
+        )}
       </Alert>
       <PropertyPicker value={hotelId} onChange={setHotelId} />
       {created?.webhookSecret && (
-        <Alert tone="warning" title="Copy this webhook secret now">
-          It will not be shown again:{' '}
+        <Alert tone="warning" title={tr('Copy this webhook secret now')}>
+          {tr('It will not be shown again:')}{' '}
           <code className="font-mono break-all">{created.webhookSecret}</code>
         </Alert>
       )}
@@ -875,7 +893,7 @@ export function PartnerChannelsPage() {
           <ConnectionCard key={c.id} hotelId={hotelId} c={c} />
         ))}
         {list.data && !list.data.some((c) => c.provider === 'LOCAL_SIMULATOR') && (
-          <SectionCard title="Connect the local simulator">
+          <SectionCard title={tr('Connect the local simulator')}>
             <form
               className="flex flex-wrap items-end gap-2"
               onSubmit={(e) => {
@@ -887,14 +905,14 @@ export function PartnerChannelsPage() {
               }}
             >
               <Input
-                label="Connection name"
+                label={tr('Connection name')}
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 containerClassName="w-64"
               />
               <Button type="submit" loading={create.isPending} disabled={name.trim().length < 2}>
-                Connect
+                {tr('Connect')}
               </Button>
             </form>
           </SectionCard>
@@ -965,11 +983,13 @@ export function PartnerBlocksPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Blocks & closures"
-        description="Take rooms out of sale for maintenance, or close dates to new bookings. Existing reservations are never affected."
+        title={tr('Blocks & closures')}
+        description={tr(
+          'Take rooms out of sale for maintenance, or close dates to new bookings. Existing reservations are never affected.',
+        )}
       />
       <PropertyPicker value={hotelId} onChange={setHotelId} />
-      <SectionCard title="Close dates (stop-sell)">
+      <SectionCard title={tr('Close dates (stop-sell)')}>
         <form
           className="flex flex-wrap items-end gap-3"
           onSubmit={(e) => {
@@ -985,7 +1005,7 @@ export function PartnerBlocksPage() {
           }}
         >
           <Select
-            label="Room category"
+            label={tr('Room category')}
             options={roomOptions}
             value={closure.roomTypeId || roomOptions[0]?.value || ''}
             onChange={(e) => setClosure({ ...closure, roomTypeId: e.target.value })}
@@ -993,46 +1013,46 @@ export function PartnerBlocksPage() {
           />
           <Input
             type="date"
-            label="From"
+            label={tr('From')}
             value={closure.from}
             onChange={(e) => setClosure({ ...closure, from: e.target.value })}
             containerClassName="w-44"
           />
           <Input
             type="date"
-            label="To"
+            label={tr('To')}
             value={closure.to}
             onChange={(e) => setClosure({ ...closure, to: e.target.value })}
             containerClassName="w-44"
           />
           <Select
-            label="Action"
+            label={tr('Action')}
             options={[
-              { value: 'close', label: 'Close to new bookings' },
-              { value: 'open', label: 'Reopen' },
+              { value: 'close', label: tr('Close to new bookings') },
+              { value: 'open', label: tr('Reopen') },
             ]}
             value={closure.stopSell ? 'close' : 'open'}
             onChange={(e) => setClosure({ ...closure, stopSell: e.target.value === 'close' })}
             containerClassName="w-52"
           />
           <Button type="submit" loading={stopSell.isPending} disabled={!roomOptions.length}>
-            Apply
+            {tr('Apply')}
           </Button>
         </form>
       </SectionCard>
-      <SectionCard title="New maintenance block">
+      <SectionCard title={tr('New maintenance block')}>
         <form
           className="flex flex-wrap items-end gap-3"
           onSubmit={(e) => {
             e.preventDefault();
             create.mutate(undefined, {
-              onSuccess: () => toast({ title: 'Rooms blocked', variant: 'success' }),
+              onSuccess: () => toast({ title: tr('Rooms blocked'), variant: 'success' }),
               onError: fail('Could not block rooms'),
             });
           }}
         >
           <Select
-            label="Room category"
+            label={tr('Room category')}
             options={roomOptions}
             value={form.roomTypeId || roomOptions[0]?.value || ''}
             onChange={(e) => setForm({ ...form, roomTypeId: e.target.value })}
@@ -1040,14 +1060,14 @@ export function PartnerBlocksPage() {
           />
           <Input
             type="date"
-            label="From"
+            label={tr('From')}
             value={form.from}
             onChange={(e) => setForm({ ...form, from: e.target.value })}
             containerClassName="w-44"
           />
           <Input
             type="date"
-            label="To (inclusive)"
+            label={tr('To (inclusive)')}
             value={form.to}
             onChange={(e) => setForm({ ...form, to: e.target.value })}
             containerClassName="w-44"
@@ -1055,48 +1075,48 @@ export function PartnerBlocksPage() {
           <Input
             type="number"
             min={1}
-            label="Rooms"
+            label={tr('Rooms')}
             value={form.rooms}
             onChange={(e) => setForm({ ...form, rooms: e.target.value })}
             containerClassName="w-28"
           />
           <Select
-            label="Reason"
+            label={tr('Reason')}
             options={[
-              { value: 'MAINTENANCE', label: 'Maintenance' },
-              { value: 'RENOVATION', label: 'Renovation' },
-              { value: 'OWNER_USE', label: 'Owner use' },
-              { value: 'OTHER', label: 'Other' },
+              { value: 'MAINTENANCE', label: tr('Maintenance') },
+              { value: 'RENOVATION', label: tr('Renovation') },
+              { value: 'OWNER_USE', label: tr('Owner use') },
+              { value: 'OTHER', label: tr('Other') },
             ]}
             value={form.reason}
             onChange={(e) => setForm({ ...form, reason: e.target.value })}
             containerClassName="w-44"
           />
           <Input
-            label="Note"
+            label={tr('Note')}
             value={form.note}
             onChange={(e) => setForm({ ...form, note: e.target.value })}
             containerClassName="w-64"
           />
           <Button type="submit" loading={create.isPending} disabled={!roomOptions.length}>
-            Block rooms
+            {tr('Block rooms')}
           </Button>
         </form>
       </SectionCard>
-      <SectionCard title="Active blocks">
+      <SectionCard title={tr('Active blocks')}>
         <QueryState query={blocks}>
           <DataTable
-            caption="Active blocks"
+            caption={tr('Active blocks')}
             rows={blocks.data}
             getRowId={(b) => b.id}
-            empty={<EmptyState compact title="No active blocks" />}
+            empty={<EmptyState compact title={tr('No active blocks')} />}
             columns={[
-              { id: 'r', header: 'Room category', cell: (b) => roomName(b.roomTypeId) },
-              { id: 'd', header: 'Dates', cell: (b) => `${b.from} → ${b.to}` },
-              { id: 'n', header: 'Rooms', cell: (b) => b.rooms, align: 'right' },
+              { id: 'r', header: tr('Room category'), cell: (b) => roomName(b.roomTypeId) },
+              { id: 'd', header: tr('Dates'), cell: (b) => `${b.from} → ${b.to}` },
+              { id: 'n', header: tr('Rooms'), cell: (b) => b.rooms, align: 'right' },
               {
                 id: 'w',
-                header: 'Reason',
+                header: tr('Reason'),
                 cell: (b) => (
                   <span>
                     {b.reason.replace('_', ' ').toLowerCase()}
@@ -1113,7 +1133,7 @@ export function PartnerBlocksPage() {
                     variant="ghost"
                     onClick={() => release.mutate(b.id, { onError: fail('Could not release') })}
                   >
-                    Release
+                    {tr('Release')}
                   </Button>
                 ),
               },
@@ -1158,8 +1178,10 @@ export function PartnerSupportPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Guest support"
-        description="Requests the Stayscape support team has shared with your property. Guest contact details stay with Stayscape."
+        title={tr('Guest support')}
+        description={tr(
+          'Requests the Stayscape support team has shared with your property. Guest contact details stay with Stayscape.',
+        )}
       />
       <QueryState query={list}>
         {list.data?.length ? (
@@ -1197,7 +1219,7 @@ export function PartnerSupportPage() {
                           </li>
                         ))}
                         {!detail.data?.messages?.length && (
-                          <li className="text-sm text-fg-subtle">No messages yet.</li>
+                          <li className="text-sm text-fg-subtle">{tr('No messages yet.')}</li>
                         )}
                       </ol>
                     </QueryState>
@@ -1212,7 +1234,7 @@ export function PartnerSupportPage() {
                       }}
                     >
                       <Textarea
-                        label="Reply to the support team"
+                        label={tr('Reply to the support team')}
                         value={body}
                         onChange={(e) => setBody(e.target.value)}
                       />
@@ -1223,7 +1245,7 @@ export function PartnerSupportPage() {
                         disabled={!body.trim()}
                         loading={reply.isPending}
                       >
-                        Send
+                        {tr('Send')}
                       </Button>
                     </form>
                   </div>
@@ -1233,12 +1255,12 @@ export function PartnerSupportPage() {
           </ul>
         ) : (
           <EmptyState
-            title="No shared requests"
+            title={tr('No shared requests')}
             description={
               <>
-                When the support team needs your help with a guest request it appears here.{' '}
+                {tr('When the support team needs your help with a guest request it appears here.')}{' '}
                 <Link to="/partner/bookings" className="underline">
-                  View reservations
+                  {tr('View reservations')}
                 </Link>
                 .
               </>
@@ -1247,7 +1269,7 @@ export function PartnerSupportPage() {
         )}
       </QueryState>
       <Badge tone="outline" className="self-start">
-        Internal support notes are never shown here
+        {tr('Internal support notes are never shown here')}
       </Badge>
     </div>
   );

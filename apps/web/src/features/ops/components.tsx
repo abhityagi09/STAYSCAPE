@@ -11,6 +11,7 @@ import {
   type BadgeTone,
 } from '@/components/ui';
 import { normalizeApiError } from '@/lib/api/errors';
+import { tr, trf } from '@/lib/tr';
 
 export const fmtMoney = (
   minor: number | null | undefined,
@@ -45,7 +46,8 @@ export function KpiTile({
         <span className="font-display text-2xl text-fg tabular-nums">{value}</span>
         {changeBp !== undefined && changeBp !== null && (
           <span className={changeBp >= 0 ? 'text-xs text-success' : 'text-xs text-danger'}>
-            {changeBp >= 0 ? '▲' : '▼'} {Math.abs(changeBp / 100).toFixed(1)}% vs previous period
+            {changeBp >= 0 ? '▲' : '▼'} {Math.abs(changeBp / 100).toFixed(1)}
+            {tr('% vs previous period')}
           </span>
         )}
         {hint && <span className="text-xs text-fg-subtle">{hint}</span>}
@@ -86,20 +88,20 @@ export function BarChart({
           onClick={() => setShowTable((s) => !s)}
           aria-pressed={showTable}
         >
-          {showTable ? 'Show chart' : 'Show as table'}
+          {showTable ? tr('Show chart') : tr('Show as table')}
         </Button>
       </figcaption>
       {data.length === 0 ? (
-        <p className="py-6 text-center text-sm text-fg-subtle">No data for this period.</p>
+        <p className="py-6 text-center text-sm text-fg-subtle">{tr('No data for this period.')}</p>
       ) : showTable ? (
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-fg-subtle">
               <th scope="col" className="py-1">
-                Period
+                {tr('Period')}
               </th>
               <th scope="col" className="py-1 text-right">
-                Value
+                {tr('Value')}
               </th>
             </tr>
           </thead>
@@ -115,7 +117,7 @@ export function BarChart({
       ) : (
         <svg
           role="img"
-          aria-label={`${title}: ${data.length} values, highest ${format(max)}`}
+          aria-label={trf('{0}: {1} values, highest {2}', [title, data.length, format(max)])}
           viewBox={`0 0 ${data.length * 12} ${height}`}
           preserveAspectRatio="none"
           className="h-40 w-full"
@@ -154,22 +156,26 @@ export function PeriodFilter({
 }) {
   const today = todayInTimeZone('Asia/Kolkata');
   const presets = [
-    { label: 'Next 30 days', from: today, to: addDays(today, 30) },
-    { label: 'Last 30 days', from: addDays(today, -30), to: today },
-    { label: 'Last 90 days', from: addDays(today, -90), to: today },
+    { label: tr('Next 30 days'), from: today, to: addDays(today, 30) },
+    { label: tr('Last 30 days'), from: addDays(today, -30), to: today },
+    { label: tr('Last 90 days'), from: addDays(today, -90), to: today },
   ];
   return (
-    <div className="flex flex-wrap items-end gap-3" role="group" aria-label="Reporting period">
+    <div
+      className="flex flex-wrap items-end gap-3"
+      role="group"
+      aria-label={tr('Reporting period')}
+    >
       <Input
         type="date"
-        label="From"
+        label={tr('From')}
         value={value.from}
         onChange={(e) => onChange({ ...value, from: e.target.value })}
         containerClassName="w-44"
       />
       <Input
         type="date"
-        label="To"
+        label={tr('To')}
         value={value.to}
         onChange={(e) => onChange({ ...value, to: e.target.value })}
         containerClassName="w-44"

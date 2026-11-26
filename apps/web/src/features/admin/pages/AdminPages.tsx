@@ -45,6 +45,7 @@ import { ChangePasswordCard, SessionsCard } from '@/features/account/components/
 import { useAuth } from '@/features/auth/use-auth';
 import { errorMessage, normalizeApiError } from '@/lib/api/errors';
 import { useAdminUsers, useAuditLog, useUpdateUserRoles, useUpdateUserStatus } from '../api';
+import { tr, trf } from '@/lib/tr';
 
 const date = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' });
 const dateTime = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
@@ -78,7 +79,7 @@ function AuditTable({
   const columns: Column<AuditLogDto>[] = [
     {
       id: 'time',
-      header: 'Time',
+      header: tr('Time'),
       cell: (row) => (
         <time dateTime={row.timestamp} className="whitespace-nowrap text-fg-muted">
           {dateTime.format(new Date(row.timestamp))}
@@ -87,14 +88,14 @@ function AuditTable({
     },
     {
       id: 'action',
-      header: 'Action',
+      header: tr('Action'),
       cell: (row) => (
         <code className="rounded bg-surface-muted px-1.5 py-0.5 text-xs">{row.action}</code>
       ),
     },
     {
       id: 'entity',
-      header: 'Entity',
+      header: tr('Entity'),
       cell: (row) => (
         <span className="text-fg-muted">
           {row.entityType}
@@ -104,7 +105,7 @@ function AuditTable({
     },
     {
       id: 'actor',
-      header: 'Actor',
+      header: tr('Actor'),
       cell: (row) => (
         <span className="font-mono text-xs text-fg-muted">
           {row.actorId ? row.actorId.slice(-8) : 'anonymous'}
@@ -118,24 +119,24 @@ function AuditTable({
     },
     {
       id: 'details',
-      header: <span className="sr-only">Details</span>,
+      header: <span className="sr-only">{tr('Details')}</span>,
       align: 'right',
       cell: (row) => (
         <Popover
-          label={`Details for ${row.action}`}
+          label={trf('Details for {0}', [row.action])}
           align="end"
           className="w-80"
           trigger={(props) => (
-            <IconButton {...props} label="View details" icon={<Ellipsis />} size="sm" />
+            <IconButton {...props} label={tr('View details')} icon={<Ellipsis />} size="sm" />
           )}
         >
           <dl className="flex flex-col gap-2 text-xs">
             <div>
-              <dt className="font-semibold">Request ID</dt>
+              <dt className="font-semibold">{tr('Request ID')}</dt>
               <dd className="font-mono break-all text-fg-muted">{row.requestId ?? '—'}</dd>
             </div>
             <div>
-              <dt className="font-semibold">Metadata</dt>
+              <dt className="font-semibold">{tr('Metadata')}</dt>
               <dd>
                 <pre className="mt-1 max-h-48 overflow-auto rounded bg-surface-muted p-2 text-[11px]">
                   {JSON.stringify(row.metadata, null, 2)}
@@ -150,7 +151,7 @@ function AuditTable({
   const err = error ? normalizeApiError(error) : null;
   return (
     <DataTable
-      caption="Audit log"
+      caption={tr('Audit log')}
       columns={columns}
       rows={items}
       getRowId={(row) => row.id}
@@ -161,8 +162,8 @@ function AuditTable({
         <EmptyState
           compact
           icon={<ScrollText />}
-          title="No audit events"
-          description="No events match these filters."
+          title={tr('No audit events')}
+          description={tr('No events match these filters.')}
         />
       }
     />
@@ -177,33 +178,35 @@ export function AdminDashboardPage() {
   return (
     <div className="flex flex-col gap-8">
       <PageHeader
-        eyebrow="Administration"
-        title="Overview"
-        description="Platform administration. Business metrics will appear once bookings and payments are live — nothing here is estimated."
+        eyebrow={tr('Administration')}
+        title={tr('Overview')}
+        description={tr(
+          'Platform administration. Business metrics will appear once bookings and payments are live — nothing here is estimated.',
+        )}
       />
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="md:col-span-1">
           <CardHeader>
-            <CardTitle>Your access</CardTitle>
-            <CardDescription>Effective roles for this session.</CardDescription>
+            <CardTitle>{tr('Your access')}</CardTitle>
+            <CardDescription>{tr('Effective roles for this session.')}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <div className="flex flex-wrap gap-1.5">
               {user.roles.map((role) => (
                 <Badge key={role} tone={PRIVILEGED_ROLES.includes(role) ? 'accent' : 'primary'}>
-                  {ROLE_LABELS[role]}
+                  {tr(ROLE_LABELS[role])}
                 </Badge>
               ))}
             </div>
             <p className="text-xs text-fg-subtle">
-              {user.permissions.length} permissions granted. All are enforced by the API on every
-              request.
+              {user.permissions.length}{' '}
+              {tr('permissions granted. All are enforced by the API on every request.')}
             </p>
           </CardContent>
         </Card>
         <Card className="md:col-span-2">
           <CardHeader>
-            <CardTitle>Available tools</CardTitle>
+            <CardTitle>{tr('Available tools')}</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-2">
             {can('users:read') && (
@@ -213,9 +216,9 @@ export function AdminDashboardPage() {
               >
                 <Users className="mt-0.5 size-5 text-primary" aria-hidden="true" />
                 <span>
-                  <span className="block font-medium">Users & roles</span>
+                  <span className="block font-medium">{tr('Users & roles')}</span>
                   <span className="text-sm text-fg-muted">
-                    Search accounts, manage roles and status.
+                    {tr('Search accounts, manage roles and status.')}
                   </span>
                 </span>
               </Link>
@@ -227,9 +230,9 @@ export function AdminDashboardPage() {
               >
                 <ScrollText className="mt-0.5 size-5 text-primary" aria-hidden="true" />
                 <span>
-                  <span className="block font-medium">Audit log</span>
+                  <span className="block font-medium">{tr('Audit log')}</span>
                   <span className="text-sm text-fg-muted">
-                    Security-relevant activity across the platform.
+                    {tr('Security-relevant activity across the platform.')}
                   </span>
                 </span>
               </Link>
@@ -240,8 +243,10 @@ export function AdminDashboardPage() {
             >
               <ShieldCheck className="mt-0.5 size-5 text-primary" aria-hidden="true" />
               <span>
-                <span className="block font-medium">Account & security</span>
-                <span className="text-sm text-fg-muted">Your profile, password and sessions.</span>
+                <span className="block font-medium">{tr('Account & security')}</span>
+                <span className="text-sm text-fg-muted">
+                  {tr('Your profile, password and sessions.')}
+                </span>
               </span>
             </Link>
           </CardContent>
@@ -251,10 +256,10 @@ export function AdminDashboardPage() {
         <section aria-labelledby="recent-activity" className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <h2 id="recent-activity" className="font-display text-xl font-semibold">
-              Recent activity
+              {tr('Recent activity')}
             </h2>
             <Link to="/admin/audit" className="text-sm font-medium text-primary hover:underline">
-              Full audit log
+              {tr('Full audit log')}
             </Link>
           </div>
           <AuditTable
@@ -287,7 +292,7 @@ function RolesDialog({ target, onClose }: { target: AdminUserDto | null; onClose
   });
   const options = ROLES.map((role) => ({
     value: role,
-    label: ROLE_LABELS[role],
+    label: tr(ROLE_LABELS[role]),
     disabled: !checkRoleChange({
       actorId: user.id,
       actorRoles: user.roles,
@@ -301,13 +306,13 @@ function RolesDialog({ target, onClose }: { target: AdminUserDto | null; onClose
     <Modal
       open
       onClose={onClose}
-      title="Change roles"
+      title={tr('Change roles')}
       description={`${target.firstName} ${target.lastName} · ${target.email}`}
       dismissible={!update.isPending}
       footer={
         <>
           <Button variant="outline" onClick={onClose} disabled={update.isPending}>
-            Cancel
+            {tr('Cancel')}
           </Button>
           <Button
             loading={update.isPending}
@@ -317,12 +322,12 @@ function RolesDialog({ target, onClose }: { target: AdminUserDto | null; onClose
                 { id: target.id, roles },
                 {
                   onSuccess: () => {
-                    toast({ title: 'Roles updated', variant: 'success' });
+                    toast({ title: tr('Roles updated'), variant: 'success' });
                     onClose();
                   },
                   onError: (error) =>
                     toast({
-                      title: 'Could not update roles',
+                      title: tr('Could not update roles'),
                       description: errorMessage(error),
                       variant: 'error',
                     }),
@@ -330,18 +335,18 @@ function RolesDialog({ target, onClose }: { target: AdminUserDto | null; onClose
               )
             }
           >
-            Save roles
+            {tr('Save roles')}
           </Button>
         </>
       }
     >
       <div className="flex flex-col gap-4">
         <MultiSelect
-          label="Roles"
+          label={tr('Roles')}
           options={options}
           value={roles}
           onChange={setRoles}
-          hint="Privileged roles can only be granted by a super administrator."
+          hint={tr('Privileged roles can only be granted by a super administrator.')}
           error={roles.length === 0 ? 'Select at least one role' : undefined}
         />
         {!check.allowed && roles.length > 0 && <Alert tone="warning">{check.reason}</Alert>}
@@ -378,7 +383,7 @@ export function AdminUsersPage() {
   const columns: Column<AdminUserDto>[] = [
     {
       id: 'name',
-      header: 'User',
+      header: tr('User'),
       cell: (row) => (
         <div>
           <p className="font-medium">
@@ -390,12 +395,12 @@ export function AdminUsersPage() {
     },
     {
       id: 'roles',
-      header: 'Roles',
+      header: tr('Roles'),
       cell: (row) => (
         <div className="flex flex-wrap gap-1">
           {row.roles.map((r) => (
             <Badge key={r} tone={PRIVILEGED_ROLES.includes(r) ? 'accent' : 'neutral'}>
-              {ROLE_LABELS[r]}
+              {tr(ROLE_LABELS[r])}
             </Badge>
           ))}
         </div>
@@ -403,29 +408,29 @@ export function AdminUsersPage() {
     },
     {
       id: 'status',
-      header: 'Status',
+      header: tr('Status'),
       cell: (row) => (
         <Badge tone={statusTone[row.accountStatus]}>{row.accountStatus.toLowerCase()}</Badge>
       ),
     },
     {
       id: 'verified',
-      header: 'Email',
+      header: tr('Email'),
       cell: (row) =>
         row.emailVerified ? (
-          <Badge tone="success">Verified</Badge>
+          <Badge tone="success">{tr('Verified')}</Badge>
         ) : (
-          <Badge tone="warning">Unverified</Badge>
+          <Badge tone="warning">{tr('Unverified')}</Badge>
         ),
     },
     {
       id: 'created',
-      header: 'Joined',
+      header: tr('Joined'),
       cell: (row) => <span className="text-fg-muted">{date.format(new Date(row.createdAt))}</span>,
     },
     {
       id: 'actions',
-      header: <span className="sr-only">Actions</span>,
+      header: <span className="sr-only">{tr('Actions')}</span>,
       align: 'right',
       cell: (row) => {
         if (!canManage || !user || row.id === user.id) return null;
@@ -440,24 +445,24 @@ export function AdminUsersPage() {
             trigger={(props) => (
               <IconButton
                 {...props}
-                label={`Actions for ${row.email}`}
+                label={trf('Actions for {0}', [row.email])}
                 icon={<Ellipsis />}
                 size="sm"
               />
             )}
             items={[
-              { id: 'roles', label: 'Change roles…', onSelect: () => setRolesTarget(row) },
+              { id: 'roles', label: tr('Change roles…'), onSelect: () => setRolesTarget(row) },
               row.accountStatus === 'ACTIVE'
                 ? {
                     id: 'suspend',
-                    label: 'Suspend account…',
+                    label: tr('Suspend account…'),
                     danger: true,
                     disabled: !moderation.allowed,
                     onSelect: () => setStatusTarget({ user: row, next: 'SUSPENDED' }),
                   }
                 : {
                     id: 'activate',
-                    label: 'Reactivate account…',
+                    label: tr('Reactivate account…'),
                     disabled: !moderation.allowed,
                     onSelect: () => setStatusTarget({ user: row, next: 'ACTIVE' }),
                   },
@@ -473,31 +478,31 @@ export function AdminUsersPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Users & roles"
-        description="Search accounts and manage access."
-        breadcrumb={[{ label: 'Admin', to: '/admin' }, { label: 'Users' }]}
+        title={tr('Users & roles')}
+        description={tr('Search accounts and manage access.')}
+        breadcrumb={[{ label: tr('Admin'), to: '/admin' }, { label: tr('Users') }]}
       />
       <div className="grid gap-3 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]">
         <SearchInput
-          label="Search users"
-          placeholder="Search by name or email"
+          label={tr('Search users')}
+          placeholder={tr('Search by name or email')}
           value={search}
           onValueChange={setSearch}
         />
         <Select
-          label="Role"
+          label={tr('Role')}
           hideLabel
           value={role}
           onChange={(e) => setRole(e.target.value)}
-          placeholder="All roles"
-          options={ROLES.map((r) => ({ value: r, label: ROLE_LABELS[r] }))}
+          placeholder={tr('All roles')}
+          options={ROLES.map((r) => ({ value: r, label: tr(ROLE_LABELS[r]) }))}
         />
         <Select
-          label="Status"
+          label={tr('Status')}
           hideLabel
           value={status}
           onChange={(e) => setStatus(e.target.value)}
-          placeholder="All statuses"
+          placeholder={tr('All statuses')}
           options={ACCOUNT_STATUSES.map((s) => ({
             value: s,
             label: s.charAt(0) + s.slice(1).toLowerCase(),
@@ -505,7 +510,7 @@ export function AdminUsersPage() {
         />
       </div>
       <DataTable
-        caption="Users"
+        caption={tr('Users')}
         columns={columns}
         rows={query.data?.items}
         getRowId={(row) => row.id}
@@ -516,15 +521,15 @@ export function AdminUsersPage() {
           <EmptyState
             compact
             icon={<Users />}
-            title="No users found"
-            description="Try a different search or filter."
+            title={tr('No users found')}
+            description={tr('Try a different search or filter.')}
           />
         }
       />
       {query.data && (
         <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
           <p className="text-sm text-fg-subtle" aria-live="polite">
-            {query.data.pagination.total} users
+            {query.data.pagination.total} {tr('users')}
           </p>
           <Pagination
             page={page}
@@ -538,14 +543,16 @@ export function AdminUsersPage() {
       <ConfirmationDialog
         open={statusTarget !== null}
         title={
-          statusTarget?.next === 'SUSPENDED' ? 'Suspend this account?' : 'Reactivate this account?'
+          statusTarget?.next === 'SUSPENDED'
+            ? tr('Suspend this account?')
+            : tr('Reactivate this account?')
         }
         description={
           statusTarget
             ? `${statusTarget.user.email}${statusTarget.next === 'SUSPENDED' ? ' will be signed out everywhere and unable to sign in.' : ' will be able to sign in again.'}`
             : undefined
         }
-        confirmLabel={statusTarget?.next === 'SUSPENDED' ? 'Suspend' : 'Reactivate'}
+        confirmLabel={statusTarget?.next === 'SUSPENDED' ? tr('Suspend') : tr('Reactivate')}
         tone={statusTarget?.next === 'SUSPENDED' ? 'danger' : 'default'}
         loading={updateStatus.isPending}
         onCancel={() => {
@@ -562,13 +569,13 @@ export function AdminUsersPage() {
             },
             {
               onSuccess: () => {
-                toast({ title: 'Account status updated', variant: 'success' });
+                toast({ title: tr('Account status updated'), variant: 'success' });
                 setStatusTarget(null);
                 setReason('');
               },
               onError: (error) =>
                 toast({
-                  title: 'Could not update status',
+                  title: tr('Could not update status'),
                   description: errorMessage(error),
                   variant: 'error',
                 }),
@@ -577,11 +584,11 @@ export function AdminUsersPage() {
         }}
       >
         <Input
-          label="Reason"
+          label={tr('Reason')}
           optionalLabel
           value={reason}
           onChange={(e) => setReason(e.target.value)}
-          hint="Recorded in the audit log."
+          hint={tr('Recorded in the audit log.')}
           maxLength={500}
         />
       </ConfirmationDialog>
@@ -600,13 +607,15 @@ export function AdminAuditPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Audit log"
-        description="Security-relevant events. Passwords, tokens and secrets are never recorded."
-        breadcrumb={[{ label: 'Admin', to: '/admin' }, { label: 'Audit log' }]}
+        title={tr('Audit log')}
+        description={tr(
+          'Security-relevant events. Passwords, tokens and secrets are never recorded.',
+        )}
+        breadcrumb={[{ label: tr('Admin'), to: '/admin' }, { label: tr('Audit log') }]}
       />
       <SearchInput
-        label="Filter by exact action"
-        placeholder="e.g. auth.login"
+        label={tr('Filter by exact action')}
+        placeholder={tr('e.g. auth.login')}
         value={action}
         onValueChange={setAction}
         containerClassName="max-w-md"
@@ -635,16 +644,16 @@ export function AdminSettingsPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Account & security"
-        description="Your own administrator account."
-        breadcrumb={[{ label: 'Admin', to: '/admin' }, { label: 'Settings' }]}
+        title={tr('Account & security')}
+        description={tr('Your own administrator account.')}
+        breadcrumb={[{ label: tr('Admin'), to: '/admin' }, { label: tr('Settings') }]}
       />
       <Tabs
-        label="Account settings"
+        label={tr('Account settings')}
         items={[
           {
             id: 'profile',
-            label: 'Profile',
+            label: tr('Profile'),
             content: (
               <div className="flex flex-col gap-6">
                 <AvatarCard user={user} />
@@ -654,7 +663,7 @@ export function AdminSettingsPage() {
           },
           {
             id: 'security',
-            label: 'Security',
+            label: tr('Security'),
             content: (
               <div className="flex flex-col gap-6">
                 <ChangePasswordCard />
@@ -662,7 +671,7 @@ export function AdminSettingsPage() {
               </div>
             ),
           },
-          { id: 'preferences', label: 'Preferences', content: <PreferencesForm user={user} /> },
+          { id: 'preferences', label: tr('Preferences'), content: <PreferencesForm user={user} /> },
         ]}
       />
     </div>

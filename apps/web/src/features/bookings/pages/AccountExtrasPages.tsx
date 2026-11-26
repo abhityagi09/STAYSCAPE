@@ -59,6 +59,7 @@ import {
   wishlistsApi,
 } from '../api';
 import { formatInstant, formatStayDate } from '../components';
+import { tr, trf } from '@/lib/tr';
 
 // ---------------------------------------------------------------- reviews
 function StarInput({
@@ -87,7 +88,7 @@ function StarInput({
               value={n}
               checked={value === n}
               onChange={() => onChange(n)}
-              aria-label={`${label}: ${n} of 5`}
+              aria-label={trf('{0}: {1} of 5', [label, n])}
             />
             <Star
               className={`size-6 peer-focus-visible:outline-2 peer-focus-visible:outline-ring ${n <= value ? 'fill-gold-500 text-gold-500' : 'text-border-strong'}`}
@@ -158,7 +159,7 @@ export function ReviewEditor({
       setPhotos((p) => [...p, image]);
     } catch (e) {
       toast({
-        title: 'Photo not added',
+        title: tr('Photo not added'),
         description: normalizeApiError(e).message,
         variant: 'error',
       });
@@ -171,15 +172,15 @@ export function ReviewEditor({
       open
       onClose={onClose}
       size="lg"
-      title={review ? 'Edit your review' : `Review ${hotelName}`}
-      description="Reviews are verified: only guests who completed a stay can write one."
+      title={review ? tr('Edit your review') : trf('Review {0}', [hotelName])}
+      description={tr('Reviews are verified: only guests who completed a stay can write one.')}
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>
-            Cancel
+            {tr('Cancel')}
           </Button>
           <Button loading={save.isPending} disabled={!complete} onClick={() => save.mutate()}>
-            {review ? 'Save changes' : 'Publish review'}
+            {review ? tr('Save changes') : tr('Publish review')}
           </Button>
         </>
       }
@@ -189,26 +190,26 @@ export function ReviewEditor({
           {REVIEW_CATEGORIES.map((c) => (
             <StarInput
               key={c}
-              label={REVIEW_CATEGORY_LABELS[c]}
+              label={tr(REVIEW_CATEGORY_LABELS[c])}
               value={ratings[c]}
               onChange={(v) => setRatings((r) => ({ ...r, [c]: v }))}
             />
           ))}
         </div>
         <Input
-          label="Title"
+          label={tr('Title')}
           value={title}
           maxLength={120}
           onChange={(e) => setTitle(e.target.value)}
           error={err?.firstFieldError('title') ?? undefined}
         />
         <Textarea
-          label="Your review"
+          label={tr('Your review')}
           rows={5}
           maxLength={4000}
           value={body}
           onChange={(e) => setBody(e.target.value)}
-          hint="At least 20 characters. Please don't include personal information."
+          hint={tr("At least 20 characters. Please don't include personal information.")}
           error={err?.firstFieldError('body') ?? undefined}
         />
         <div className="flex flex-wrap items-center gap-3">
@@ -218,7 +219,7 @@ export function ReviewEditor({
               <button
                 type="button"
                 className="absolute top-1 right-1 rounded-full bg-surface/90 p-1"
-                aria-label="Remove photo"
+                aria-label={tr('Remove photo')}
                 onClick={() => setPhotos((ps) => ps.filter((x) => x.id !== p.id))}
               >
                 <Trash2 className="size-3.5" aria-hidden="true" />
@@ -232,7 +233,7 @@ export function ReviewEditor({
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 className="sr-only"
-                aria-label="Add a photo"
+                aria-label={tr('Add a photo')}
                 onChange={(e) => e.target.files?.[0] && void upload(e.target.files[0])}
               />
               <Button
@@ -243,7 +244,7 @@ export function ReviewEditor({
                 leftIcon={<ImagePlus className="size-4" aria-hidden="true" />}
                 onClick={() => fileRef.current?.click()}
               >
-                Add photo
+                {tr('Add photo')}
               </Button>
             </>
           )}
@@ -264,17 +265,20 @@ export function ReviewsPage() {
   const [editing, setEditing] = useState<MyReviewDto | null>(null);
   return (
     <div className="flex flex-col gap-8">
-      <PageHeader title="Reviews" description="Share verified reviews of your completed stays." />
+      <PageHeader
+        title={tr('Reviews')}
+        description={tr('Share verified reviews of your completed stays.')}
+      />
       <section aria-labelledby="to-review" className="flex flex-col gap-3">
         <h2 id="to-review" className="text-lg font-semibold">
-          Stays to review
+          {tr('Stays to review')}
         </h2>
         {eligible.isPending ? (
           <PageSpinner />
         ) : eligible.error ? (
           <ErrorState description={normalizeApiError(eligible.error).message} />
         ) : eligible.data.length === 0 ? (
-          <p className="text-sm text-fg-muted">No completed stays waiting for a review.</p>
+          <p className="text-sm text-fg-muted">{tr('No completed stays waiting for a review.')}</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {eligible.data.map((e) => (
@@ -285,7 +289,7 @@ export function ReviewsPage() {
                 <span>
                   <span className="font-medium">{e.hotel.name}</span>{' '}
                   <span className="text-fg-subtle">
-                    · checked out {formatStayDate(e.checkOut)} · review by{' '}
+                    {tr('· checked out')} {formatStayDate(e.checkOut)} {tr('· review by')}{' '}
                     {formatStayDate(e.reviewableUntil)}
                   </span>
                 </span>
@@ -293,7 +297,7 @@ export function ReviewsPage() {
                   size="sm"
                   onClick={() => setWriting({ reference: e.bookingReference, hotel: e.hotel.name })}
                 >
-                  Write review
+                  {tr('Write review')}
                 </Button>
               </li>
             ))}
@@ -302,14 +306,14 @@ export function ReviewsPage() {
       </section>
       <section aria-labelledby="my-reviews" className="flex flex-col gap-3">
         <h2 id="my-reviews" className="text-lg font-semibold">
-          Your reviews
+          {tr('Your reviews')}
         </h2>
         {mine.isPending ? (
           <PageSpinner />
         ) : mine.error ? (
           <ErrorState description={normalizeApiError(mine.error).message} />
         ) : mine.data.length === 0 ? (
-          <EmptyState compact icon={<Star />} title="No reviews yet" />
+          <EmptyState compact icon={<Star />} title={tr('No reviews yet')} />
         ) : (
           <ul className="flex flex-col gap-3">
             {mine.data.map((r) => (
@@ -321,7 +325,7 @@ export function ReviewsPage() {
                   <span className="flex items-center gap-2">
                     {r.status !== 'PUBLISHED' && (
                       <Badge tone={r.status === 'REMOVED' ? 'danger' : 'warning'}>
-                        {r.status === 'REMOVED' ? 'Removed by moderators' : 'Under review'}
+                        {r.status === 'REMOVED' ? tr('Removed by moderators') : tr('Under review')}
                       </Badge>
                     )}
                     <span className="font-semibold">★ {r.overall.toFixed(1)}</span>
@@ -331,17 +335,18 @@ export function ReviewsPage() {
                 <p className="text-fg-muted">{r.body}</p>
                 {r.response && (
                   <p className="mt-2 rounded-lg bg-surface-muted p-3">
-                    <span className="font-medium">Property response:</span> {r.response.body}
+                    <span className="font-medium">{tr('Property response:')}</span>{' '}
+                    {r.response.body}
                   </p>
                 )}
                 <div className="mt-3 flex items-center gap-3 text-xs text-fg-subtle">
                   <span>
                     {formatInstant(r.createdAt)}
-                    {r.editedAt ? ' · edited' : ''}
+                    {r.editedAt ? tr(' · edited') : ''}
                   </span>
                   {r.canEdit && (
                     <Button size="sm" variant="link" onClick={() => setEditing(r)}>
-                      Edit
+                      {tr('Edit')}
                     </Button>
                   )}
                 </div>
@@ -383,11 +388,14 @@ export function WishlistsPage() {
   };
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title="Wishlists" description="Group saved stays into lists and share them." />
+      <PageHeader
+        title={tr('Wishlists')}
+        description={tr('Group saved stays into lists and share them.')}
+      />
       <form onSubmit={submit} className="flex flex-col gap-2 sm:flex-row sm:items-end">
         <Input
-          label="New list"
-          placeholder="e.g. Goa in March"
+          label={tr('New list')}
+          placeholder={tr('e.g. Goa in March')}
           value={name}
           maxLength={60}
           onChange={(e) => setName(e.target.value)}
@@ -399,7 +407,7 @@ export function WishlistsPage() {
           leftIcon={<Plus className="size-4" aria-hidden="true" />}
           loading={create.isPending}
         >
-          Create list
+          {tr('Create list')}
         </Button>
       </form>
       {query.isPending ? (
@@ -429,8 +437,9 @@ export function WishlistsPage() {
                 <div className="flex items-center justify-between p-4">
                   <span className="font-semibold">{l.name}</span>
                   <span className="flex items-center gap-2 text-sm text-fg-muted">
-                    {l.shared && <Badge tone="info">Shared</Badge>}
-                    {l.itemCount} stay{l.itemCount === 1 ? '' : 's'}
+                    {l.shared && <Badge tone="info">{tr('Shared')}</Badge>}
+                    {l.itemCount} {tr('stay')}
+                    {l.itemCount === 1 ? '' : 's'}
                   </span>
                 </div>
               </Link>
@@ -466,27 +475,30 @@ export function WishlistDetailPage() {
   if (query.isPending) return <PageSpinner />;
   if (query.error)
     return (
-      <ErrorState title="List not found" description={normalizeApiError(query.error).message} />
+      <ErrorState
+        title={tr('List not found')}
+        description={normalizeApiError(query.error).message}
+      />
     );
   const list = query.data;
   const copy = async (url: string) => {
     try {
       await navigator.clipboard.writeText(url);
-      toast({ title: 'Link copied', variant: 'success' });
+      toast({ title: tr('Link copied'), variant: 'success' });
     } catch {
-      toast({ title: 'Copy this link', description: url });
+      toast({ title: tr('Copy this link'), description: url });
     }
   };
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        breadcrumb={[{ label: 'Wishlists', to: '/account/wishlists' }, { label: list.name }]}
-        title={renaming === null ? list.name : 'Rename list'}
+        breadcrumb={[{ label: tr('Wishlists'), to: '/account/wishlists' }, { label: list.name }]}
+        title={renaming === null ? list.name : tr('Rename list')}
         actions={
           <div className="flex flex-wrap gap-2">
             {renaming === null && (
               <Button size="sm" variant="outline" onClick={() => setRenaming(list.name)}>
-                Rename
+                {tr('Rename')}
               </Button>
             )}
             {list.shared ? (
@@ -497,10 +509,10 @@ export function WishlistDetailPage() {
                   leftIcon={<Link2 className="size-4" aria-hidden="true" />}
                   onClick={() => list.shareUrl && void copy(list.shareUrl)}
                 >
-                  Copy share link
+                  {tr('Copy share link')}
                 </Button>
                 <Button size="sm" variant="ghost" onClick={() => unshare.mutate(undefined)}>
-                  Stop sharing
+                  {tr('Stop sharing')}
                 </Button>
               </>
             ) : (
@@ -514,7 +526,7 @@ export function WishlistDetailPage() {
                   })
                 }
               >
-                Share
+                {tr('Share')}
               </Button>
             )}
             {!list.isDefault && (
@@ -525,7 +537,7 @@ export function WishlistDetailPage() {
                   remove.mutate(undefined, { onSuccess: () => navigate('/account/wishlists') })
                 }
               >
-                Delete list
+                {tr('Delete list')}
               </Button>
             )}
           </div>
@@ -540,51 +552,56 @@ export function WishlistDetailPage() {
           }}
         >
           <Input
-            label="List name"
+            label={tr('List name')}
             hideLabel
             value={renaming}
             maxLength={60}
             onChange={(e) => setRenaming(e.target.value)}
           />
           <Button type="submit" loading={rename.isPending}>
-            Save
+            {tr('Save')}
           </Button>
           <Button type="button" variant="ghost" onClick={() => setRenaming(null)}>
-            Cancel
+            {tr('Cancel')}
           </Button>
         </form>
       )}
       {list.shared && (
         <p className="text-sm text-fg-muted">
-          Anyone with the link can see the stays in this list — not your notes or account details.
+          {tr(
+            'Anyone with the link can see the stays in this list — not your notes or account details.',
+          )}
         </p>
       )}
       <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-border bg-surface p-4">
         <DatePicker
-          label="Check-in"
+          label={tr('Check-in')}
           min={todayIsoDate()}
           value={dates.checkIn}
           onChange={(e) => setDates((d) => ({ ...d, checkIn: e.target.value }))}
         />
         <DatePicker
-          label="Check-out"
+          label={tr('Check-out')}
           min={dates.checkIn || todayIsoDate(1)}
           value={dates.checkOut}
           onChange={(e) => setDates((d) => ({ ...d, checkOut: e.target.value }))}
         />
-        <p className="text-sm text-fg-muted">Add dates to see live prices and availability.</p>
+        <p className="text-sm text-fg-muted">
+          {tr('Add dates to see live prices and availability.')}
+        </p>
       </div>
       {list.unavailableCount > 0 && (
         <Alert tone="info">
-          {list.unavailableCount} saved stay{list.unavailableCount === 1 ? ' is' : 's are'} no
-          longer listed.
+          {list.unavailableCount}{' '}
+          {list.unavailableCount === 1 ? tr('saved stay is') : tr('saved stays are')}{' '}
+          {tr('no longer listed.')}
         </Alert>
       )}
       {list.items.length === 0 ? (
         <EmptyState
           icon={<Heart />}
-          title="This list is empty"
-          action={<ButtonLink to="/hotels">Find stays</ButtonLink>}
+          title={tr('This list is empty')}
+          action={<ButtonLink to="/hotels">{tr('Find stays')}</ButtonLink>}
         />
       ) : (
         <ul className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
@@ -595,7 +612,9 @@ export function WishlistDetailPage() {
                 href={`/hotels/${item.hotel.slug}${applied.checkIn ? `?checkIn=${applied.checkIn}&checkOut=${applied.checkOut}` : ''}`}
               />
               {item.availableForDates === false && (
-                <p className="text-sm font-medium text-warning">Not available for these dates</p>
+                <p className="text-sm font-medium text-warning">
+                  {tr('Not available for these dates')}
+                </p>
               )}
               <NoteEditor
                 initial={item.note}
@@ -607,7 +626,7 @@ export function WishlistDetailPage() {
                 className="self-start"
                 onClick={() => removeItem.mutate(item.hotel.id)}
               >
-                Remove from list
+                {tr('Remove from list')}
               </Button>
             </li>
           ))}
@@ -628,16 +647,16 @@ function NoteEditor({ initial, onSave }: { initial: string; onSave: (note: strin
       }}
     >
       <Input
-        label="Note"
+        label={tr('Note')}
         hideLabel
-        placeholder="Add a private note"
+        placeholder={tr('Add a private note')}
         value={note}
         maxLength={300}
         onChange={(e) => setNote(e.target.value)}
       />
       {note !== initial && (
         <Button type="submit" size="sm" variant="outline">
-          Save
+          {tr('Save')}
         </Button>
       )}
     </form>
@@ -656,15 +675,18 @@ export function SharedWishlistPage() {
     return (
       <div className="container-page py-16">
         <EmptyState
-          title="This list isn’t available"
-          description="The link may have been turned off by its owner."
-          action={<ButtonLink to="/hotels">Explore stays</ButtonLink>}
+          title={tr('This list isn’t available')}
+          description={tr('The link may have been turned off by its owner.')}
+          action={<ButtonLink to="/hotels">{tr('Explore stays')}</ButtonLink>}
         />
       </div>
     );
   return (
     <div className="container-page flex flex-col gap-6 py-10">
-      <PageHeader eyebrow={`Shared by ${query.data.ownerFirstName}`} title={query.data.name} />
+      <PageHeader
+        eyebrow={trf('Shared by {0}', [query.data.ownerFirstName])}
+        title={query.data.name}
+      />
       <ul className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
         {query.data.items.map((i) => (
           <li key={i.hotel.id}>
@@ -678,21 +700,47 @@ export function SharedWishlistPage() {
 
 // ---------------------------------------------------------------- support
 const CATEGORY_LABELS: Record<TicketCategory, string> = {
-  BOOKING: 'Booking',
-  PAYMENT: 'Payment',
-  REFUND: 'Refund',
-  CANCELLATION: 'Cancellation',
-  PROPERTY: 'Property',
-  ACCOUNT: 'Account',
-  OTHER: 'Something else',
+  get BOOKING() {
+    return tr('Booking');
+  },
+  get PAYMENT() {
+    return tr('Payment');
+  },
+  get REFUND() {
+    return tr('Refund');
+  },
+  get CANCELLATION() {
+    return tr('Cancellation');
+  },
+  get PROPERTY() {
+    return tr('Property');
+  },
+  get ACCOUNT() {
+    return tr('Account');
+  },
+  get OTHER() {
+    return tr('Something else');
+  },
 };
 const STATUS_LABELS: Record<string, string> = {
-  OPEN: 'Open',
-  IN_PROGRESS: 'In progress',
-  WAITING_FOR_CUSTOMER: 'Waiting for you',
-  ESCALATED: 'Escalated',
-  RESOLVED: 'Resolved',
-  CLOSED: 'Closed',
+  get OPEN() {
+    return tr('Open');
+  },
+  get IN_PROGRESS() {
+    return tr('In progress');
+  },
+  get WAITING_FOR_CUSTOMER() {
+    return tr('Waiting for you');
+  },
+  get ESCALATED() {
+    return tr('Escalated');
+  },
+  get RESOLVED() {
+    return tr('Resolved');
+  },
+  get CLOSED() {
+    return tr('Closed');
+  },
 };
 
 /** /account/support */
@@ -704,14 +752,14 @@ export function SupportPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Help & support"
-        description="Questions about a booking, payment or refund."
+        title={tr('Help & support')}
+        description={tr('Questions about a booking, payment or refund.')}
         actions={
           <ButtonLink
             to="/account/support/new"
             leftIcon={<Plus className="size-4" aria-hidden="true" />}
           >
-            New request
+            {tr('New request')}
           </ButtonLink>
         }
       />
@@ -720,7 +768,7 @@ export function SupportPage() {
       ) : query.error ? (
         <ErrorState description={normalizeApiError(query.error).message} />
       ) : query.data.length === 0 ? (
-        <EmptyState icon={<LifeBuoy />} title="No support requests" />
+        <EmptyState icon={<LifeBuoy />} title={tr('No support requests')} />
       ) : (
         <ul className="divide-y divide-border rounded-2xl border border-border bg-surface">
           {query.data.map((t) => (
@@ -732,8 +780,8 @@ export function SupportPage() {
                 <span className="flex flex-col">
                   <span className="font-medium">{t.subject}</span>
                   <span className="text-fg-subtle">
-                    {t.ticketNumber} · {CATEGORY_LABELS[t.category]}
-                    {t.bookingReference ? ` · ${t.bookingReference}` : ''} · updated{' '}
+                    {t.ticketNumber} · {tr(CATEGORY_LABELS[t.category])}
+                    {t.bookingReference ? ` · ${t.bookingReference}` : ''} {tr('· updated')}{' '}
                     {formatInstant(t.lastMessageAt)}
                   </span>
                 </span>
@@ -746,7 +794,7 @@ export function SupportPage() {
                         : 'info'
                   }
                 >
-                  {STATUS_LABELS[t.status]}
+                  {tr(STATUS_LABELS[t.status])}
                 </Badge>
               </Link>
             </li>
@@ -784,8 +832,11 @@ export function NewTicketPage() {
   return (
     <div className="flex max-w-2xl flex-col gap-6">
       <PageHeader
-        breadcrumb={[{ label: 'Support', to: '/account/support' }, { label: 'New request' }]}
-        title="How can we help?"
+        breadcrumb={[
+          { label: tr('Support'), to: '/account/support' },
+          { label: tr('New request') },
+        ]}
+        title={tr('How can we help?')}
       />
       <form
         className="flex flex-col gap-4"
@@ -795,7 +846,7 @@ export function NewTicketPage() {
         }}
       >
         <Input
-          label="Subject"
+          label={tr('Subject')}
           value={subject}
           maxLength={140}
           onChange={(e) => setSubject(e.target.value)}
@@ -803,21 +854,21 @@ export function NewTicketPage() {
           required
         />
         <Select
-          label="Topic"
+          label={tr('Topic')}
           value={category}
           onChange={(e) => setCategory(e.target.value as TicketCategory)}
-          options={TICKET_CATEGORIES.map((c) => ({ value: c, label: CATEGORY_LABELS[c] }))}
+          options={TICKET_CATEGORIES.map((c) => ({ value: c, label: tr(CATEGORY_LABELS[c]) }))}
         />
         <Input
-          label="Booking reference"
+          label={tr('Booking reference')}
           optionalLabel
-          placeholder="SS-XXXXXXXX"
+          placeholder={tr('SS-XXXXXXXX')}
           value={bookingReference}
           onChange={(e) => setBookingReference(e.target.value)}
           error={err?.firstFieldError('bookingReference') ?? undefined}
         />
         <Textarea
-          label="Message"
+          label={tr('Message')}
           rows={6}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
@@ -826,7 +877,7 @@ export function NewTicketPage() {
         />
         <label className="flex items-center gap-2 text-sm">
           <Paperclip className="size-4" aria-hidden="true" />
-          <span>Attachment (PDF, JPEG or PNG, up to 5 MB)</span>
+          <span>{tr('Attachment (PDF, JPEG or PNG, up to 5 MB)')}</span>
           <input
             type="file"
             accept="application/pdf,image/jpeg,image/png"
@@ -838,7 +889,7 @@ export function NewTicketPage() {
           !err.firstFieldError('message') &&
           !err.firstFieldError('bookingReference') && <Alert tone="danger">{err.message}</Alert>}
         <Button type="submit" className="self-start" loading={create.isPending}>
-          Send
+          {tr('Send')}
         </Button>
       </form>
     </div>
@@ -875,19 +926,22 @@ export function TicketPage() {
   if (query.isPending) return <PageSpinner />;
   if (query.error)
     return (
-      <ErrorState title="Request not found" description={normalizeApiError(query.error).message} />
+      <ErrorState
+        title={tr('Request not found')}
+        description={normalizeApiError(query.error).message}
+      />
     );
   const t = query.data;
   return (
     <div className="flex max-w-3xl flex-col gap-6">
       <PageHeader
-        breadcrumb={[{ label: 'Support', to: '/account/support' }, { label: t.ticketNumber }]}
+        breadcrumb={[{ label: tr('Support'), to: '/account/support' }, { label: t.ticketNumber }]}
         title={t.subject}
         description={`${STATUS_LABELS[t.status]}${t.bookingReference ? ` · booking ${t.bookingReference}` : ''}`}
         actions={
           t.status !== 'CLOSED' ? (
             <Button size="sm" variant="ghost" onClick={() => close.mutate()}>
-              Close request
+              {tr('Close request')}
             </Button>
           ) : undefined
         }
@@ -929,7 +983,7 @@ export function TicketPage() {
           }}
         >
           <Textarea
-            label="Reply"
+            label={tr('Reply')}
             rows={4}
             value={body}
             onChange={(e) => setBody(e.target.value)}
@@ -937,7 +991,7 @@ export function TicketPage() {
           />
           <label className="flex items-center gap-2 text-sm">
             <Paperclip className="size-4" aria-hidden="true" />
-            <span>Attachment</span>
+            <span>{tr('Attachment')}</span>
             <input
               type="file"
               accept="application/pdf,image/jpeg,image/png"
@@ -950,7 +1004,7 @@ export function TicketPage() {
             disabled={!body.trim()}
             loading={reply.isPending}
           >
-            Send reply
+            {tr('Send reply')}
           </Button>
         </form>
       )}
@@ -965,15 +1019,19 @@ export function SettingsPage() {
   if (!user) return <PageSpinner />;
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title="Settings" description="Notifications, language, currency and security." />
+      <PageHeader
+        title={tr('Settings')}
+        description={tr('Notifications, language, currency and security.')}
+      />
       <PersonalizationCard />
       <Card>
         <CardHeader>
-          <CardTitle as="h2">Notifications</CardTitle>
+          <CardTitle as="h2">{tr('Notifications')}</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-fg-muted">
-          Booking confirmations, payment receipts, cancellations and refunds are always emailed.
-          Reminders (check-in, reviews) follow your “booking updates” preference below.
+          {tr(
+            'Booking confirmations, payment receipts, cancellations and refunds are always emailed. Reminders (check-in, reviews) follow your “booking updates” preference below.',
+          )}
         </CardContent>
       </Card>
       <PreferencesForm user={user} />

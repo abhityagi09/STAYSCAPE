@@ -71,6 +71,7 @@ import {
   money,
 } from '../components';
 import { ReviewEditor } from './AccountExtrasPages';
+import { tr, trf } from '@/lib/tr';
 
 function StatTile({
   label,
@@ -116,7 +117,8 @@ export function BookingRow({ booking }: { booking: BookingSummaryDto }) {
           </div>
           <span className="text-fg-muted">
             {formatStayDate(booking.checkIn)} → {formatStayDate(booking.checkOut)} ·{' '}
-            {booking.nights} night{booking.nights === 1 ? '' : 's'} · {booking.guests} guest
+            {booking.nights} {tr('night')}
+            {booking.nights === 1 ? '' : 's'} · {booking.guests} {tr('guest')}
             {booking.guests === 1 ? '' : 's'}
           </span>
           <span className="text-fg-subtle">
@@ -128,10 +130,10 @@ export function BookingRow({ booking }: { booking: BookingSummaryDto }) {
             {money(booking.totalMinor, booking.currency)}
           </span>
           {booking.actions.canPay && (
-            <span className="text-xs font-semibold text-warning">Payment due</span>
+            <span className="text-xs font-semibold text-warning">{tr('Payment due')}</span>
           )}
           {booking.actions.canReview && (
-            <span className="text-xs font-semibold text-primary">Write a review</span>
+            <span className="text-xs font-semibold text-primary">{tr('Write a review')}</span>
           )}
         </div>
       </Link>
@@ -143,7 +145,7 @@ export function BookingRow({ booking }: { booking: BookingSummaryDto }) {
 export function AccountOverviewPage() {
   const { user } = useAuth();
   const query = useOverview();
-  if (!user || query.isPending) return <PageSpinner label="Loading your account" />;
+  if (!user || query.isPending) return <PageSpinner label={tr('Loading your account')} />;
   if (query.error)
     return (
       <ErrorState
@@ -156,51 +158,51 @@ export function AccountOverviewPage() {
   return (
     <div className="flex flex-col gap-8">
       <PageHeader
-        eyebrow="Your account"
-        title={`Hello, ${user.firstName}`}
-        description="Trips, payments and everything you have saved."
+        eyebrow={tr('Your account')}
+        title={trf('Hello, {0}', [user.firstName])}
+        description={tr('Trips, payments and everything you have saved.')}
       />
       <EmailVerificationBanner user={user} />
       <RecommendationsPanel />
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatTile
-          label="Upcoming stays"
+          label={tr('Upcoming stays')}
           value={o.counts.upcoming}
           icon={CalendarCheck}
           to="/account/bookings?view=upcoming"
         />
         <StatTile
-          label="Awaiting payment"
+          label={tr('Awaiting payment')}
           value={o.counts.pending}
           icon={Clock}
           to="/account/bookings?view=pending"
         />
         <StatTile
-          label="Completed stays"
+          label={tr('Completed stays')}
           value={o.counts.completed}
           icon={ReceiptText}
           to="/account/bookings?view=past"
         />
         <StatTile
-          label="Cancelled"
+          label={tr('Cancelled')}
           value={o.counts.cancelled}
           icon={CircleAlert}
           to="/account/bookings?view=cancelled"
         />
         <StatTile
-          label="Reviews to write"
+          label={tr('Reviews to write')}
           value={o.counts.pendingReviews}
           icon={Star}
           to="/account/reviews"
         />
         <StatTile
-          label="Saved hotels"
+          label={tr('Saved hotels')}
           value={o.counts.savedHotels}
           icon={Heart}
           to="/account/wishlists"
         />
         <StatTile
-          label="Open support requests"
+          label={tr('Open support requests')}
           value={o.counts.openTickets}
           icon={LifeBuoy}
           to="/account/support"
@@ -209,7 +211,7 @@ export function AccountOverviewPage() {
       {o.pending.length > 0 && (
         <section aria-labelledby="pending-title" className="flex flex-col gap-3">
           <h2 id="pending-title" className="text-lg font-semibold">
-            Needs your attention
+            {tr('Needs your attention')}
           </h2>
           <ul className="flex flex-col gap-3">
             {o.pending.map((b) => (
@@ -220,7 +222,7 @@ export function AccountOverviewPage() {
       )}
       <section aria-labelledby="upcoming-title" className="flex flex-col gap-3">
         <h2 id="upcoming-title" className="text-lg font-semibold">
-          Upcoming stays
+          {tr('Upcoming stays')}
         </h2>
         {o.upcoming.length ? (
           <ul className="flex flex-col gap-3">
@@ -232,11 +234,11 @@ export function AccountOverviewPage() {
           <EmptyState
             compact
             icon={<CalendarCheck />}
-            title="No upcoming stays"
-            description="When you book, your trip will appear here."
+            title={tr('No upcoming stays')}
+            description={tr('When you book, your trip will appear here.')}
             action={
               <ButtonLink size="sm" to="/hotels">
-                Find a stay
+                {tr('Find a stay')}
               </ButtonLink>
             }
           />
@@ -245,7 +247,7 @@ export function AccountOverviewPage() {
       {o.pendingReviews.length > 0 && (
         <section aria-labelledby="reviews-title" className="flex flex-col gap-3">
           <h2 id="reviews-title" className="text-lg font-semibold">
-            Tell us about your stay
+            {tr('Tell us about your stay')}
           </h2>
           <ul className="flex flex-col gap-3">
             {o.pendingReviews.map((b) => (
@@ -257,7 +259,7 @@ export function AccountOverviewPage() {
       {!setupDone && <AccountChecklist user={user} />}
       <section aria-labelledby="activity-title" className="flex flex-col gap-3">
         <h2 id="activity-title" className="text-lg font-semibold">
-          Recent activity
+          {tr('Recent activity')}
         </h2>
         {o.recentActivity.length ? (
           <ul className="divide-y divide-border rounded-2xl border border-border bg-surface">
@@ -278,7 +280,7 @@ export function AccountOverviewPage() {
             ))}
           </ul>
         ) : (
-          <p className="text-sm text-fg-muted">No activity yet.</p>
+          <p className="text-sm text-fg-muted">{tr('No activity yet.')}</p>
         )}
       </section>
     </div>
@@ -286,11 +288,36 @@ export function AccountOverviewPage() {
 }
 
 const VIEWS = [
-  { id: 'all', label: 'All' },
-  { id: 'upcoming', label: 'Upcoming' },
-  { id: 'pending', label: 'Awaiting payment' },
-  { id: 'past', label: 'Past' },
-  { id: 'cancelled', label: 'Cancelled' },
+  {
+    id: 'all',
+    get label() {
+      return tr('All');
+    },
+  },
+  {
+    id: 'upcoming',
+    get label() {
+      return tr('Upcoming');
+    },
+  },
+  {
+    id: 'pending',
+    get label() {
+      return tr('Awaiting payment');
+    },
+  },
+  {
+    id: 'past',
+    get label() {
+      return tr('Past');
+    },
+  },
+  {
+    id: 'cancelled',
+    get label() {
+      return tr('Cancelled');
+    },
+  },
 ];
 
 /** /account/bookings — history with search, view tabs and status filter (all in the URL). */
@@ -329,13 +356,15 @@ export function BookingsListPage() {
       ) : query.data.items.length === 0 ? (
         <EmptyState
           icon={<CalendarCheck />}
-          title="No bookings here"
+          title={tr('No bookings here')}
           description={
-            q || status ? 'Try another search or filter.' : 'Bookings you make will appear here.'
+            q || status
+              ? tr('Try another search or filter.')
+              : tr('Bookings you make will appear here.')
           }
           action={
             <ButtonLink size="sm" to="/hotels">
-              Find a stay
+              {tr('Find a stay')}
             </ButtonLink>
           }
         />
@@ -357,29 +386,29 @@ export function BookingsListPage() {
   );
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title="Bookings" description="Every reservation on your account." />
+      <PageHeader title={tr('Bookings')} description={tr('Every reservation on your account.')} />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
         <SearchInput
-          label="Search bookings"
-          placeholder="Reference, property or city"
+          label={tr('Search bookings')}
+          placeholder={tr('Reference, property or city')}
           value={search}
           onValueChange={setSearch}
           onSearch={(value: string) => set({ q: value.trim() || null })}
           containerClassName="sm:max-w-sm"
         />
         <Select
-          label="Status"
+          label={tr('Status')}
           value={status ?? ''}
           onChange={(e) => set({ status: e.target.value || null })}
           options={[
-            { value: '', label: 'Any status' },
-            ...BOOKING_STATUSES.map((s) => ({ value: s, label: BOOKING_STATUS_LABELS[s] })),
+            { value: '', label: tr('Any status') },
+            ...BOOKING_STATUSES.map((s) => ({ value: s, label: tr(BOOKING_STATUS_LABELS[s]) })),
           ]}
           containerClassName="sm:w-56"
         />
       </div>
       <Tabs
-        label="Booking views"
+        label={tr('Booking views')}
         value={view}
         onValueChange={(id) => set({ view: id === 'all' ? null : id })}
         items={VIEWS.map((v) => ({
@@ -411,7 +440,7 @@ function CancelDialog({
     onSuccess: (result) => {
       invalidate(booking.reference);
       toast({
-        title: 'Booking cancelled',
+        title: tr('Booking cancelled'),
         description:
           result.refundableMinor > 0
             ? `${money(result.refundableMinor, booking.currency)} will be refunded.`
@@ -422,7 +451,7 @@ function CancelDialog({
     },
     onError: (e) =>
       toast({
-        title: 'Could not cancel',
+        title: tr('Could not cancel'),
         description: normalizeApiError(e).message,
         variant: 'error',
       }),
@@ -436,10 +465,10 @@ function CancelDialog({
   return (
     <ConfirmationDialog
       open={open}
-      title="Cancel this booking?"
+      title={tr('Cancel this booking?')}
       tone="danger"
-      confirmLabel="Cancel booking"
-      cancelLabel="Keep booking"
+      confirmLabel={tr('Cancel booking')}
+      cancelLabel={tr('Keep booking')}
       loading={cancel.isPending}
       onCancel={onClose}
       onConfirm={() => q?.eligible && cancel.mutate()}
@@ -448,7 +477,7 @@ function CancelDialog({
         quote.isError ? (
           <Alert tone="danger">{normalizeApiError(quote.error).message}</Alert>
         ) : (
-          <p className="text-sm">Checking the cancellation policy…</p>
+          <p className="text-sm">{tr('Checking the cancellation policy…')}</p>
         )
       ) : !q.eligible ? (
         <Alert tone="warning">{q.reason}</Alert>
@@ -456,17 +485,17 @@ function CancelDialog({
         <div className="flex flex-col gap-3 text-sm">
           <p>{q.policySummary}</p>
           <dl className="grid grid-cols-2 gap-2 rounded-xl bg-surface-muted p-3">
-            <dt>Paid</dt>
+            <dt>{tr('Paid')}</dt>
             <dd className="text-right tabular-nums">{money(q.paidMinor, q.currency)}</dd>
-            <dt>Cancellation charge</dt>
+            <dt>{tr('Cancellation charge')}</dt>
             <dd className="text-right tabular-nums">{money(q.chargeMinor, q.currency)}</dd>
-            <dt className="font-semibold">Refund</dt>
+            <dt className="font-semibold">{tr('Refund')}</dt>
             <dd className="text-right font-semibold tabular-nums">
               {money(q.refundableMinor, q.currency)}
             </dd>
           </dl>
           <Textarea
-            label="Reason (optional)"
+            label={tr('Reason (optional)')}
             rows={2}
             value={reason}
             onChange={(e) => setReason(e.target.value)}
@@ -494,8 +523,8 @@ function RefundRequestDialog({
     onSuccess: () => {
       invalidate(booking.reference);
       toast({
-        title: 'Refund request sent',
-        description: 'Our team will review it and email you.',
+        title: tr('Refund request sent'),
+        description: tr('Our team will review it and email you.'),
         variant: 'success',
       });
       onClose();
@@ -505,28 +534,30 @@ function RefundRequestDialog({
     <Modal
       open={open}
       onClose={onClose}
-      title="Request a refund"
+      title={tr('Request a refund')}
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>
-            Close
+            {tr('Close')}
           </Button>
           <Button
             loading={request.isPending}
             disabled={reason.trim().length < 10}
             onClick={() => request.mutate()}
           >
-            Send request
+            {tr('Send request')}
           </Button>
         </>
       }
     >
       <div className="flex flex-col gap-3 text-sm">
         <p>
-          Requests outside the cancellation policy are reviewed by our team. Explain what happened.
+          {tr(
+            'Requests outside the cancellation policy are reviewed by our team. Explain what happened.',
+          )}
         </p>
         <Textarea
-          label="Reason"
+          label={tr('Reason')}
           rows={4}
           value={reason}
           onChange={(e) => setReason(e.target.value)}
@@ -547,17 +578,20 @@ export function BookingDetailPage() {
   const [cancelOpen, setCancelOpen] = useState(false);
   const [refundOpen, setRefundOpen] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(params.get('review') === '1');
-  if (query.isPending) return <PageSpinner label="Loading booking" />;
+  if (query.isPending) return <PageSpinner label={tr('Loading booking')} />;
   if (query.error)
     return (
-      <ErrorState title="Booking not found" description={normalizeApiError(query.error).message} />
+      <ErrorState
+        title={tr('Booking not found')}
+        description={normalizeApiError(query.error).message}
+      />
     );
   const b = query.data;
   const download = (kind: 'confirmation' | 'invoice') =>
     downloadFile(`/bookings/${b.reference}/documents/${kind}`, `${b.reference}-${kind}.pdf`).catch(
       (e: unknown) =>
         toast({
-          title: 'Download failed',
+          title: tr('Download failed'),
           description: normalizeApiError(e).message,
           variant: 'error',
         }),
@@ -565,9 +599,9 @@ export function BookingDetailPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        eyebrow={`Booking ${b.reference}`}
+        eyebrow={trf('Booking {0}', [b.reference])}
         title={b.hotel.name}
-        description={`Booked ${formatInstant(b.createdAt)}`}
+        description={trf('Booked {0}', [formatInstant(b.createdAt)])}
         actions={
           <div className="flex flex-wrap gap-2">
             <BookingStatusBadge status={b.status} />
@@ -576,14 +610,17 @@ export function BookingDetailPage() {
         }
       />
       {b.status === 'RECONCILIATION_REQUIRED' && (
-        <Alert tone="warning" title="We are refunding this booking">
-          Your payment arrived after the hold expired and the rooms had been taken. A full refund is
-          in progress.
+        <Alert tone="warning" title={tr('We are refunding this booking')}>
+          {tr(
+            'Your payment arrived after the hold expired and the rooms had been taken. A full refund is in progress.',
+          )}
         </Alert>
       )}
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Booking actions">
+      <div className="flex flex-wrap gap-2" role="group" aria-label={tr('Booking actions')}>
         {b.actions.canPay && (
-          <ButtonLink to={`/checkout/payment?booking=${b.reference}`}>Complete payment</ButtonLink>
+          <ButtonLink to={`/checkout/payment?booking=${b.reference}`}>
+            {tr('Complete payment')}
+          </ButtonLink>
         )}
         {b.actions.canDownloadConfirmation && (
           <Button
@@ -591,7 +628,7 @@ export function BookingDetailPage() {
             leftIcon={<Download className="size-4" aria-hidden="true" />}
             onClick={() => void download('confirmation')}
           >
-            Confirmation
+            {tr('Confirmation')}
           </Button>
         )}
         {b.actions.canDownloadInvoice && (
@@ -600,7 +637,7 @@ export function BookingDetailPage() {
             leftIcon={<Download className="size-4" aria-hidden="true" />}
             onClick={() => void download('invoice')}
           >
-            Invoice
+            {tr('Invoice')}
           </Button>
         )}
         {b.actions.canReview && (
@@ -609,20 +646,20 @@ export function BookingDetailPage() {
             leftIcon={<Star className="size-4" aria-hidden="true" />}
             onClick={() => setReviewOpen(true)}
           >
-            Write a review
+            {tr('Write a review')}
           </Button>
         )}
         {b.actions.canRequestRefund && (
           <Button variant="outline" onClick={() => setRefundOpen(true)}>
-            Request a refund
+            {tr('Request a refund')}
           </Button>
         )}
         <ButtonLink variant="ghost" to={`/account/support/new?booking=${b.reference}`}>
-          Get help
+          {tr('Get help')}
         </ButtonLink>
         {b.actions.canCancel && (
           <Button variant="danger" onClick={() => setCancelOpen(true)}>
-            Cancel booking
+            {tr('Cancel booking')}
           </Button>
         )}
       </div>
@@ -631,7 +668,7 @@ export function BookingDetailPage() {
         <div className="flex flex-col gap-6">
           <Card>
             <CardHeader>
-              <CardTitle as="h2">Stay</CardTitle>
+              <CardTitle as="h2">{tr('Stay')}</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
               <StaySummary
@@ -650,13 +687,13 @@ export function BookingDetailPage() {
                 to={`/hotels/${b.hotel.slug}`}
                 className="self-start text-sm font-semibold text-primary hover:underline"
               >
-                View property
+                {tr('View property')}
               </Link>
             </CardContent>
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle as="h2">Rooms</CardTitle>
+              <CardTitle as="h2">{tr('Rooms')}</CardTitle>
             </CardHeader>
             <CardContent>
               <ul className="flex flex-col gap-2 text-sm">
@@ -666,9 +703,12 @@ export function BookingDetailPage() {
                       {i.rooms} × {i.roomTypeName}
                     </p>
                     <p className="text-fg-muted">
-                      {i.ratePlanName} · {i.adults} adult{i.adults === 1 ? '' : 's'}
-                      {i.children ? `, ${i.children} child${i.children === 1 ? '' : 'ren'}` : ''}
-                      {i.extraBeds ? ` · ${i.extraBeds} extra bed(s)` : ''}
+                      {i.ratePlanName} · {i.adults} {tr('adult')}
+                      {i.adults === 1 ? '' : 's'}
+                      {i.children
+                        ? trf(', {0} child{1}', [i.children, i.children === 1 ? '' : 'ren'])
+                        : ''}
+                      {i.extraBeds ? trf(' · {0} extra bed(s)', [i.extraBeds]) : ''}
                     </p>
                   </li>
                 ))}
@@ -677,7 +717,7 @@ export function BookingDetailPage() {
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle as="h2">Guests</CardTitle>
+              <CardTitle as="h2">{tr('Guests')}</CardTitle>
             </CardHeader>
             <CardContent className="text-sm">
               <p className="font-medium">
@@ -688,31 +728,35 @@ export function BookingDetailPage() {
               </p>
               {b.guestDetails.additionalGuests.length > 0 && (
                 <p className="mt-2">
-                  Also travelling:{' '}
+                  {tr('Also travelling:')}{' '}
                   {b.guestDetails.additionalGuests
                     .map((g) => `${g.firstName} ${g.lastName}`)
                     .join(', ')}
                 </p>
               )}
               {b.guestDetails.specialRequests && (
-                <p className="mt-2">Requests: {b.guestDetails.specialRequests}</p>
+                <p className="mt-2">
+                  {tr('Requests:')} {b.guestDetails.specialRequests}
+                </p>
               )}
               {b.guestDetails.estimatedArrivalTime && (
-                <p>Estimated arrival: {b.guestDetails.estimatedArrivalTime}</p>
+                <p>
+                  {tr('Estimated arrival:')} {b.guestDetails.estimatedArrivalTime}
+                </p>
               )}
             </CardContent>
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle as="h2">Payments and refunds</CardTitle>
+              <CardTitle as="h2">{tr('Payments and refunds')}</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-3 text-sm">
-              {b.payments.length === 0 && <p className="text-fg-muted">No payment yet.</p>}
+              {b.payments.length === 0 && <p className="text-fg-muted">{tr('No payment yet.')}</p>}
               {b.payments.map((p) => (
                 <div key={p.id} className="flex flex-wrap items-center justify-between gap-2">
                   <span>
                     {formatInstant(p.createdAt)} ·{' '}
-                    {p.provider === 'SANDBOX' ? 'Sandbox (test)' : 'Razorpay'}
+                    {p.provider === 'SANDBOX' ? tr('Sandbox (test)') : tr('Razorpay')}
                     {p.failureReason ? ` — ${p.failureReason}` : ''}
                   </span>
                   <span className="flex items-center gap-2 tabular-nums">
@@ -723,7 +767,7 @@ export function BookingDetailPage() {
               {b.refunds.map((r) => (
                 <div key={r.id} className="flex flex-wrap items-center justify-between gap-2">
                   <span>
-                    Refund · {r.reason}
+                    {tr('Refund ·')} {r.reason}
                     {r.failureReason ? ` — ${r.failureReason}` : ''}
                   </span>
                   <span className="flex items-center gap-2 tabular-nums">
@@ -733,16 +777,17 @@ export function BookingDetailPage() {
               ))}
               {b.cancellation && (
                 <p className="rounded-xl bg-surface-muted p-3">
-                  Cancelled {formatInstant(b.cancellation.createdAt)} · charge{' '}
-                  {money(b.cancellation.cancellationChargeMinor, b.cancellation.currency)} ·
-                  refundable {money(b.cancellation.refundableAmountMinor, b.cancellation.currency)}
+                  {tr('Cancelled')} {formatInstant(b.cancellation.createdAt)} {tr('· charge')}{' '}
+                  {money(b.cancellation.cancellationChargeMinor, b.cancellation.currency)}{' '}
+                  {tr('· refundable')}{' '}
+                  {money(b.cancellation.refundableAmountMinor, b.cancellation.currency)}
                 </p>
               )}
             </CardContent>
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle as="h2">Timeline</CardTitle>
+              <CardTitle as="h2">{tr('Timeline')}</CardTitle>
             </CardHeader>
             <CardContent>
               <ol className="flex flex-col gap-2 border-l border-border pl-4 text-sm">
@@ -756,22 +801,22 @@ export function BookingDetailPage() {
             </CardContent>
           </Card>
         </div>
-        <aside className="flex flex-col gap-6" aria-label="Price and policy">
+        <aside className="flex flex-col gap-6" aria-label={tr('Price and policy')}>
           <Card>
             <CardHeader>
-              <CardTitle as="h2">Price</CardTitle>
+              <CardTitle as="h2">{tr('Price')}</CardTitle>
             </CardHeader>
             <CardContent>
               <PriceBreakdown
                 quote={breakdownSource(b.price, b.items, b.nights)}
-                note="Prices are fixed at booking."
+                note={tr('Prices are fixed at booking.')}
               />
             </CardContent>
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle as="h2">Cancellation policy</CardTitle>
-              <CardDescription>Applied as it was when you booked.</CardDescription>
+              <CardTitle as="h2">{tr('Cancellation policy')}</CardTitle>
+              <CardDescription>{tr('Applied as it was when you booked.')}</CardDescription>
             </CardHeader>
             <CardContent className="text-sm">
               {b.items.map((i) => (
@@ -800,7 +845,10 @@ export function PaymentsPage() {
   const query = usePayments();
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title="Payments" description="Every payment attempt on your bookings." />
+      <PageHeader
+        title={tr('Payments')}
+        description={tr('Every payment attempt on your bookings.')}
+      />
       {query.isPending ? (
         <PageSpinner />
       ) : query.error ? (
@@ -809,7 +857,7 @@ export function PaymentsPage() {
           onRetry={() => void query.refetch()}
         />
       ) : query.data.length === 0 ? (
-        <EmptyState icon={<Wallet />} title="No payments yet" />
+        <EmptyState icon={<Wallet />} title={tr('No payments yet')} />
       ) : (
         <ul className="divide-y divide-border rounded-2xl border border-border bg-surface">
           {query.data.map((p) => (
@@ -826,8 +874,10 @@ export function PaymentsPage() {
                 </Link>
                 <span className="text-fg-subtle">
                   {formatInstant(p.createdAt)}
-                  {p.provider === 'SANDBOX' ? ' · sandbox (test)' : ''}
-                  {p.refundedMinor ? ` · ${money(p.refundedMinor, p.currency)} refunded` : ''}
+                  {p.provider === 'SANDBOX' ? tr(' · sandbox (test)') : ''}
+                  {p.refundedMinor
+                    ? trf(' · {0} refunded', [money(p.refundedMinor, p.currency)])
+                    : ''}
                 </span>
               </span>
               <span className="flex items-center gap-2 font-semibold tabular-nums">
@@ -847,8 +897,10 @@ export function RefundsPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Refunds"
-        description="Refunds are marked complete only when the payment provider confirms them."
+        title={tr('Refunds')}
+        description={tr(
+          'Refunds are marked complete only when the payment provider confirms them.',
+        )}
       />
       {query.isPending ? (
         <PageSpinner />
@@ -858,7 +910,7 @@ export function RefundsPage() {
           onRetry={() => void query.refetch()}
         />
       ) : query.data.length === 0 ? (
-        <EmptyState icon={<ReceiptText />} title="No refunds" />
+        <EmptyState icon={<ReceiptText />} title={tr('No refunds')} />
       ) : (
         <ul className="divide-y divide-border rounded-2xl border border-border bg-surface">
           {query.data.map((r) => (
@@ -874,8 +926,8 @@ export function RefundsPage() {
                   {r.hotelName} · {r.bookingReference}
                 </Link>
                 <span className="text-fg-subtle">
-                  {r.reason} · requested {formatInstant(r.requestedAt)}
-                  {r.completedAt ? ` · completed ${formatInstant(r.completedAt)}` : ''}
+                  {r.reason} {tr('· requested')} {formatInstant(r.requestedAt)}
+                  {r.completedAt ? trf(' · completed {0}', [formatInstant(r.completedAt)]) : ''}
                 </span>
                 {r.failureReason && <span className="text-danger">{r.failureReason}</span>}
               </span>

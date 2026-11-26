@@ -34,60 +34,145 @@ import {
   Wallet,
 } from 'lucide-react';
 import { DashboardShell, type NavSection } from './DashboardShell';
+import { tr } from '@/lib/tr';
 
 const customerSections: NavSection[] = [
   {
     items: [
       {
         to: '/account',
-        label: 'Overview',
+        get label() {
+          return tr('Overview');
+        },
         labelKey: 'nav.overview',
         icon: LayoutDashboard,
         end: true,
       },
       {
         to: '/account/notifications',
-        label: 'Notifications',
+        get label() {
+          return tr('Notifications');
+        },
         labelKey: 'nav.notifications',
         icon: Bell,
       },
     ],
   },
   {
-    title: 'Travel',
+    get title() {
+      return tr('Travel');
+    },
     titleKey: 'nav.travel',
     items: [
-      { to: '/account/bookings', label: 'Bookings', labelKey: 'nav.bookings', icon: CalendarCheck },
-      { to: '/trips', label: 'TripSpace', labelKey: 'nav.trips', icon: Map },
-      { to: '/account/assistant', label: 'Travel assistant', labelKey: 'nav.assistant', icon: Bot },
+      {
+        to: '/account/bookings',
+        get label() {
+          return tr('Bookings');
+        },
+        labelKey: 'nav.bookings',
+        icon: CalendarCheck,
+      },
+      {
+        to: '/trips',
+        get label() {
+          return tr('TripSpace');
+        },
+        labelKey: 'nav.trips',
+        icon: Map,
+      },
+      {
+        to: '/account/assistant',
+        get label() {
+          return tr('Travel assistant');
+        },
+        labelKey: 'nav.assistant',
+        icon: Bot,
+      },
       {
         to: '/account/price-alerts',
-        label: 'Price alerts',
+        get label() {
+          return tr('Price alerts');
+        },
         labelKey: 'nav.priceAlerts',
         icon: TrendingDown,
       },
-      { to: '/account/rewards', label: 'Rewards', labelKey: 'nav.rewards', icon: Gift },
-      { to: '/account/payments', label: 'Payments', labelKey: 'nav.payments', icon: CreditCard },
-      { to: '/account/refunds', label: 'Refunds', labelKey: 'nav.refunds', icon: Wallet },
-      { to: '/account/wishlists', label: 'Wishlists', labelKey: 'nav.wishlists', icon: Heart },
-      { to: '/account/reviews', label: 'Reviews', labelKey: 'nav.reviews', icon: Star },
+      {
+        to: '/account/rewards',
+        get label() {
+          return tr('Rewards');
+        },
+        labelKey: 'nav.rewards',
+        icon: Gift,
+      },
+      {
+        to: '/account/payments',
+        get label() {
+          return tr('Payments');
+        },
+        labelKey: 'nav.payments',
+        icon: CreditCard,
+      },
+      {
+        to: '/account/refunds',
+        get label() {
+          return tr('Refunds');
+        },
+        labelKey: 'nav.refunds',
+        icon: Wallet,
+      },
+      {
+        to: '/account/wishlists',
+        get label() {
+          return tr('Wishlists');
+        },
+        labelKey: 'nav.wishlists',
+        icon: Heart,
+      },
+      {
+        to: '/account/reviews',
+        get label() {
+          return tr('Reviews');
+        },
+        labelKey: 'nav.reviews',
+        icon: Star,
+      },
       {
         to: '/account/corporate',
-        label: 'Corporate travel',
+        get label() {
+          return tr('Corporate travel');
+        },
         labelKey: 'nav.corporate',
         icon: Briefcase,
       },
-      { to: '/account/support', label: 'Help & support', labelKey: 'nav.support', icon: LifeBuoy },
+      {
+        to: '/account/support',
+        get label() {
+          return tr('Help & support');
+        },
+        labelKey: 'nav.support',
+        icon: LifeBuoy,
+      },
     ],
   },
   {
-    title: 'Account',
+    get title() {
+      return tr('Account');
+    },
     titleKey: 'nav.account',
     items: [
-      { to: '/account/profile', label: 'Profile', labelKey: 'nav.profile', icon: UserRound },
+      {
+        to: '/account/profile',
+        get label() {
+          return tr('Profile');
+        },
+        labelKey: 'nav.profile',
+        icon: UserRound,
+      },
       {
         to: '/account/settings',
-        label: 'Settings',
+        get label() {
+          return tr('Settings');
+        },
         labelKey: 'nav.settings',
         icon: SlidersHorizontal,
       },
@@ -97,7 +182,11 @@ const customerSections: NavSection[] = [
 
 export function CustomerLayout() {
   return (
-    <DashboardShell workspace="Traveller account" sections={customerSections} homeLink="/account" />
+    <DashboardShell
+      workspace={tr('Traveller account')}
+      sections={customerSections}
+      homeLink="/account"
+    />
   );
 }
 
@@ -106,85 +195,130 @@ const partnerSections: NavSection[] = [
     items: [
       {
         to: '/partner',
-        label: 'Overview',
+        get label() {
+          return tr('Overview');
+        },
         icon: LayoutDashboard,
         end: true,
         permissions: ['partner:access'],
       },
       {
         to: '/partner/dashboard',
-        label: 'Performance',
+        get label() {
+          return tr('Performance');
+        },
         icon: LineChart,
         permissions: ['partner:access'],
       },
-      { to: '/partner/onboarding', label: 'Onboarding', icon: ClipboardList },
+      {
+        to: '/partner/onboarding',
+        get label() {
+          return tr('Onboarding');
+        },
+        icon: ClipboardList,
+      },
     ],
   },
   {
-    title: 'Property management',
+    get title() {
+      return tr('Property management');
+    },
     items: [
       {
         to: '/partner/properties',
-        label: 'Properties',
+        get label() {
+          return tr('Properties');
+        },
         icon: Building2,
         permissions: ['partner:access'],
       },
       {
         to: '/partner/inventory',
-        label: 'Inventory calendar',
+        get label() {
+          return tr('Inventory calendar');
+        },
         icon: BedDouble,
         end: true,
         permissions: ['partner:access'],
       },
       {
         to: '/partner/inventory/blocks',
-        label: 'Blocks & closures',
+        get label() {
+          return tr('Blocks & closures');
+        },
         icon: Ban,
         permissions: ['partner:access'],
       },
       {
         to: '/partner/bookings',
-        label: 'Reservations',
+        get label() {
+          return tr('Reservations');
+        },
         icon: CalendarCheck,
         permissions: ['partner:access'],
       },
       {
         to: '/partner/reviews',
-        label: 'Guest reviews',
+        get label() {
+          return tr('Guest reviews');
+        },
         icon: Star,
         permissions: ['partner:access'],
       },
       {
         to: '/partner/accessibility',
-        label: 'Accessibility',
+        get label() {
+          return tr('Accessibility');
+        },
         icon: Accessibility,
         permissions: ['partner:access'],
       },
       {
         to: '/partner/channels',
-        label: 'Channel manager',
+        get label() {
+          return tr('Channel manager');
+        },
         icon: Network,
         permissions: ['partner:access'],
       },
       {
         to: '/partner/support',
-        label: 'Guest support',
+        get label() {
+          return tr('Guest support');
+        },
         icon: LifeBuoy,
         permissions: ['partner:access'],
       },
     ],
   },
   {
-    title: 'Business',
+    get title() {
+      return tr('Business');
+    },
     items: [
       {
         to: '/partner/settlements',
-        label: 'Settlements',
+        get label() {
+          return tr('Settlements');
+        },
         icon: Wallet,
         permissions: ['partner:access'],
       },
-      { to: '/partner/staff', label: 'Team', icon: Users, permissions: ['staff:manage'] },
-      { to: '/account/profile', label: 'Profile & security', icon: Settings },
+      {
+        to: '/partner/staff',
+        get label() {
+          return tr('Team');
+        },
+        icon: Users,
+        permissions: ['staff:manage'],
+      },
+      {
+        to: '/account/profile',
+        get label() {
+          return tr('Profile & security');
+        },
+        icon: Settings,
+      },
     ],
   },
 ];
@@ -192,7 +326,7 @@ const partnerSections: NavSection[] = [
 export function PartnerLayout() {
   return (
     <DashboardShell
-      workspace="Partner workspace"
+      workspace={tr('Partner workspace')}
       sections={partnerSections}
       homeLink="/partner/onboarding"
     />
@@ -202,114 +336,200 @@ export function PartnerLayout() {
 const adminSections: NavSection[] = [
   {
     items: [
-      { to: '/admin', label: 'Overview', icon: LayoutDashboard, end: true },
+      {
+        to: '/admin',
+        get label() {
+          return tr('Overview');
+        },
+        icon: LayoutDashboard,
+        end: true,
+      },
       {
         to: '/admin/dashboard',
-        label: 'Platform dashboard',
+        get label() {
+          return tr('Platform dashboard');
+        },
         icon: LineChart,
         permissions: ['reports:view'],
       },
       {
         to: '/admin/reports',
-        label: 'Reports & analytics',
+        get label() {
+          return tr('Reports & analytics');
+        },
         icon: LineChart,
         permissions: ['analytics:platform'],
       },
-      { to: '/admin/users', label: 'Users & roles', icon: Users, permissions: ['users:read'] },
-      { to: '/admin/customers', label: 'Customers', icon: UserRound, permissions: ['users:read'] },
+      {
+        to: '/admin/users',
+        get label() {
+          return tr('Users & roles');
+        },
+        icon: Users,
+        permissions: ['users:read'],
+      },
+      {
+        to: '/admin/customers',
+        get label() {
+          return tr('Customers');
+        },
+        icon: UserRound,
+        permissions: ['users:read'],
+      },
       {
         to: '/admin/audit-logs',
-        label: 'Audit log',
+        get label() {
+          return tr('Audit log');
+        },
         icon: ScrollText,
         permissions: ['audit:read'],
       },
     ],
   },
   {
-    title: 'Marketplace',
+    get title() {
+      return tr('Marketplace');
+    },
     items: [
       {
         to: '/admin/partners',
-        label: 'Partner approvals',
+        get label() {
+          return tr('Partner approvals');
+        },
         icon: ShieldCheck,
         permissions: ['partners:approve'],
       },
       {
         to: '/admin/properties',
-        label: 'Property moderation',
+        get label() {
+          return tr('Property moderation');
+        },
         icon: House,
         permissions: ['hotels:moderate'],
       },
-      { to: '/admin/catalog', label: 'Catalogue', icon: Tags, permissions: ['catalog:manage'] },
+      {
+        to: '/admin/catalog',
+        get label() {
+          return tr('Catalogue');
+        },
+        icon: Tags,
+        permissions: ['catalog:manage'],
+      },
       {
         to: '/admin/bookings',
-        label: 'Bookings & escalations',
+        get label() {
+          return tr('Bookings & escalations');
+        },
         icon: CalendarCheck,
         permissions: ['bookings:read-all'],
       },
       {
         to: '/admin/reviews',
-        label: 'Review moderation',
+        get label() {
+          return tr('Review moderation');
+        },
         icon: Star,
         permissions: ['reviews:moderate'],
       },
       {
         to: '/admin/support',
-        label: 'Support queue',
+        get label() {
+          return tr('Support queue');
+        },
         icon: LifeBuoy,
         permissions: ['support:manage'],
       },
-      { to: '/admin/content', label: 'Content', icon: FileText, permissions: ['content:manage'] },
+      {
+        to: '/admin/content',
+        get label() {
+          return tr('Content');
+        },
+        icon: FileText,
+        permissions: ['content:manage'],
+      },
       {
         to: '/admin/organizations',
-        label: 'Corporate accounts',
+        get label() {
+          return tr('Corporate accounts');
+        },
         icon: Briefcase,
         permissions: ['users:manage'],
       },
     ],
   },
   {
-    title: 'Finance',
+    get title() {
+      return tr('Finance');
+    },
     items: [
       {
         to: '/admin/operations',
-        label: 'Payments & operations',
+        get label() {
+          return tr('Payments & operations');
+        },
         icon: CreditCard,
         permissions: ['payments:read'],
       },
       {
         to: '/admin/payments',
-        label: 'Payments',
+        get label() {
+          return tr('Payments');
+        },
         icon: ReceiptIndianRupee,
         permissions: ['payments:read'],
       },
-      { to: '/admin/refunds', label: 'Refunds', icon: Wallet, permissions: ['payments:read'] },
+      {
+        to: '/admin/refunds',
+        get label() {
+          return tr('Refunds');
+        },
+        icon: Wallet,
+        permissions: ['payments:read'],
+      },
       {
         to: '/admin/commissions',
-        label: 'Commissions',
+        get label() {
+          return tr('Commissions');
+        },
         icon: Percent,
         permissions: ['payments:read'],
       },
       {
         to: '/admin/settlements',
-        label: 'Settlements',
+        get label() {
+          return tr('Settlements');
+        },
         icon: Landmark,
         permissions: ['payments:read'],
       },
       {
         to: '/admin/coupons',
-        label: 'Coupons',
+        get label() {
+          return tr('Coupons');
+        },
         icon: TicketPercent,
         permissions: ['coupons:manage'],
       },
     ],
   },
   {
-    title: 'You',
-    items: [{ to: '/admin/settings', label: 'Account & security', icon: Settings }],
+    get title() {
+      return tr('You');
+    },
+    items: [
+      {
+        to: '/admin/settings',
+        get label() {
+          return tr('Account & security');
+        },
+        icon: Settings,
+      },
+    ],
   },
 ];
 
 export function AdminLayout() {
-  return <DashboardShell workspace="Administration" sections={adminSections} homeLink="/admin" />;
+  return (
+    <DashboardShell workspace={tr('Administration')} sections={adminSections} homeLink="/admin" />
+  );
 }

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { CURRENCIES } from '../constants/account';
 import { BOOKING_STATUSES, PAYMENT_STATUSES, REFUND_STATUSES } from '../constants/booking';
-import { AMENITY_CATEGORIES, PROPERTY_TYPES } from '../constants/marketplace';
+import { AMENITY_CATEGORIES, DISCOUNT_RULE_TYPES, PROPERTY_TYPES } from '../constants/marketplace';
 import { objectIdSchema } from './common';
 import { localDateSchema } from './marketplace';
 
@@ -299,6 +299,42 @@ export const adminRefundsQuerySchema = z.object({
   ...listBase,
   status: z.enum(REFUND_STATUSES).optional(),
 });
+/** Marketplace-wide view of partner discounts (promotional, early-bird, last-minute, long-stay). */
+export const PROMOTION_STATES = ['ACTIVE', 'UPCOMING', 'ENDED', 'PAUSED'] as const;
+export type PromotionState = (typeof PROMOTION_STATES)[number];
+export const adminPromotionsQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(25),
+  q: z.string().trim().max(80).optional(),
+  type: z.enum(DISCOUNT_RULE_TYPES).optional(),
+  state: z.enum(PROMOTION_STATES).optional(),
+});
+export interface AdminPromotionDto {
+  id: string;
+  name: string;
+  ruleType: (typeof DISCOUNT_RULE_TYPES)[number];
+  hotelId: string;
+  hotelName: string;
+  hotelCity: string;
+  partnerName: string | null;
+  adjustmentType: 'PERCENT' | 'AMOUNT' | 'FIXED_PRICE';
+  /** PERCENT: basis points; AMOUNT/FIXED_PRICE: minor units of `currency`. */
+  adjustmentValue: number;
+  currency: string;
+  /** Booking window for PROMOTIONAL, stay window otherwise; property-local dates, null = open. */
+  windowFrom: string | null;
+  windowTo: string | null;
+  windowKind: 'BOOKING' | 'STAY';
+  state: PromotionState;
+  updatedAt: string;
+}
+export interface AdminPromotionSummaryDto {
+  ACTIVE: number;
+  UPCOMING: number;
+  ENDED: number;
+  PAUSED: number;
+}
+
 export const adminUsersQuerySchema = z.object({
   ...listBase,
   role: z.string().max(30).optional(),

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import {
   adminBookingsQuerySchema,
   adminPaymentsQuerySchema,
+  adminPromotionsQuerySchema,
   adminRefundsQuerySchema,
   adminUsersQuerySchema,
   amenityUpsertSchema,
@@ -35,7 +36,7 @@ export function createAdminManagementRouter(container: Container): Router {
   const router = Router();
   const { adminManagement: admin } = container.services;
   router.use(
-    ['/customers', '/catalog', '/bookings', '/payments', '/refunds', '/escalations'],
+    ['/customers', '/catalog', '/bookings', '/payments', '/refunds', '/escalations', '/promotions'],
     container.authenticate,
     requirePermission('admin:access'),
   );
@@ -163,6 +164,13 @@ export function createAdminManagementRouter(container: Container): Router {
     requirePermission('payments:read'),
     validate({ query: adminPaymentsQuerySchema }),
     async (req, res) => sendSuccess(res, await admin.listPayments(validatedQuery(req))),
+  );
+  // Partner discounts across the marketplace (read-only oversight; partners own their rules).
+  router.get(
+    '/promotions',
+    requirePermission('coupons:manage'),
+    validate({ query: adminPromotionsQuerySchema }),
+    async (req, res) => sendSuccess(res, await admin.listPromotions(validatedQuery(req))),
   );
   router.get(
     '/refunds',

@@ -9,6 +9,7 @@ import type {
 import { getMapProvider } from '@/lib/map/provider';
 import { Spinner } from '@/components/ui';
 import { cn } from '@/lib/cn';
+import { tr } from '@/lib/tr';
 
 export interface MapMarker {
   id: string;
@@ -316,7 +317,7 @@ export function MapView({
       />
       {status === 'loading' && (
         <div className="absolute inset-0 flex items-center justify-center text-primary">
-          <Spinner label="Loading map" />
+          <Spinner label={tr('Loading map')} />
         </div>
       )}
       {status === 'error' && (
@@ -324,7 +325,7 @@ export function MapView({
           className="absolute inset-0 flex items-center justify-center p-6 text-center text-sm text-fg-muted"
           role="alert"
         >
-          The map could not be loaded. Results are still available in the list.
+          {tr('The map could not be loaded. Results are still available in the list.')}
         </div>
       )}
     </div>

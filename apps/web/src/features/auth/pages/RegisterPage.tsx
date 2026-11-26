@@ -7,6 +7,7 @@ import { Alert, Button, Checkbox, Input, PasswordInput, useToast } from '@/compo
 import { applyServerErrors, safeRedirect } from '@/lib/forms';
 import { authApi } from '../api';
 import { useEstablishSession } from '../use-auth';
+import { tr, trf } from '@/lib/tr';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -40,8 +41,8 @@ export default function RegisterPage() {
       const session = await authApi.register(values);
       establish(session);
       toast({
-        title: 'Account created',
-        description: `We sent a verification link to ${session.user.email}.`,
+        title: tr('Account created'),
+        description: trf('We sent a verification link to {0}.', [session.user.email]),
         variant: 'success',
       });
       navigate(safeRedirect(params.get('redirect'), '/account'), { replace: true });
@@ -62,23 +63,25 @@ export default function RegisterPage() {
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <h1 className="font-display text-3xl font-semibold tracking-tight">Create your account</h1>
+        <h1 className="font-display text-3xl font-semibold tracking-tight">
+          {tr('Create your account')}
+        </h1>
         <p className="mt-2 text-fg-muted">
-          Save stays, manage bookings and travel with confidence.
+          {tr('Save stays, manage bookings and travel with confidence.')}
         </p>
       </div>
       {formError && <Alert tone="danger">{formError}</Alert>}
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
         <div className="grid gap-5 sm:grid-cols-2">
           <Input
-            label="First name"
+            label={tr('First name')}
             autoComplete="given-name"
             required
             error={errors.firstName?.message}
             {...register('firstName')}
           />
           <Input
-            label="Last name"
+            label={tr('Last name')}
             autoComplete="family-name"
             required
             error={errors.lastName?.message}
@@ -86,7 +89,7 @@ export default function RegisterPage() {
           />
         </div>
         <Input
-          label="Email"
+          label={tr('Email')}
           type="email"
           autoComplete="email"
           required
@@ -94,17 +97,17 @@ export default function RegisterPage() {
           {...register('email')}
         />
         <Input
-          label="Mobile number"
+          label={tr('Mobile number')}
           type="tel"
           autoComplete="tel"
           optionalLabel
           placeholder="+91 98765 43210"
-          hint="International format, e.g. +919876543210"
+          hint={tr('International format, e.g. +919876543210')}
           error={errors.phone?.message}
           {...register('phone', { setValueAs: (v: string) => v.replace(/[\s-]/g, '') })}
         />
         <PasswordInput
-          label="Password"
+          label={tr('Password')}
           autoComplete="new-password"
           required
           showRequirements
@@ -112,7 +115,7 @@ export default function RegisterPage() {
           {...register('password')}
         />
         <PasswordInput
-          label="Confirm password"
+          label={tr('Confirm password')}
           autoComplete="new-password"
           required
           error={errors.confirmPassword?.message}
@@ -121,13 +124,13 @@ export default function RegisterPage() {
         <Checkbox
           label={
             <>
-              I agree to the{' '}
+              {tr('I agree to the')}{' '}
               <Link to="/terms" target="_blank" className="text-primary underline">
-                Terms of service
+                {tr('Terms of service')}
               </Link>{' '}
-              and{' '}
+              {tr('and')}{' '}
               <Link to="/privacy" target="_blank" className="text-primary underline">
-                Privacy policy
+                {tr('Privacy policy')}
               </Link>
             </>
           }
@@ -141,13 +144,13 @@ export default function RegisterPage() {
           loading={isSubmitting}
           loadingText="Creating account…"
         >
-          Create account
+          {tr('Create account')}
         </Button>
       </form>
       <p className="text-center text-sm text-fg-muted">
-        Already have an account?{' '}
+        {tr('Already have an account?')}{' '}
         <Link to="/login" className="font-semibold text-primary hover:underline">
-          Sign in
+          {tr('Sign in')}
         </Link>
       </p>
     </div>

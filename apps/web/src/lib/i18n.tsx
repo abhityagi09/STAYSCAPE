@@ -1,4 +1,5 @@
 import {
+  Fragment,
   createContext,
   useCallback,
   useContext,
@@ -8,6 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 import { http } from '@/lib/api/client';
+import { activateLanguage } from '@/lib/tr';
 import { useAppSelector } from '@/app/store';
 
 export type Language = 'en' | 'hi';
@@ -174,8 +176,18 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (userLanguage === 'en' || userLanguage === 'hi') setState(userLanguage);
   }, [userLanguage]);
+  // The language whose dictionary is loaded; the tree re-renders under it (see the key below).
+  const [applied, setApplied] = useState<Language>('en');
   useEffect(() => {
-    document.documentElement.lang = language;
+    let cancelled = false;
+    void activateLanguage(language).then(() => {
+      if (cancelled) return;
+      setApplied(language);
+      document.documentElement.lang = language;
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [language]);
   const setLanguage = useCallback(
     (l: Language) => {
@@ -190,10 +202,16 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     [signedIn],
   );
   const value = useMemo<I18nValue>(
-    () => ({ language, setLanguage, t: (key) => dictionaries[language][key] ?? en[key] }),
-    [language, setLanguage],
+    () => ({ language, setLanguage, t: (key) => dictionaries[applied][key] ?? en[key] }),
+    [language, applied, setLanguage],
   );
-  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
+  // Re-render everything under the new language so every tr() call is evaluated again. The router
+  // instance and the data cache live outside this provider, so the page and its data are kept.
+  return (
+    <I18nContext.Provider value={value}>
+      <Fragment key={applied}>{children}</Fragment>
+    </I18nContext.Provider>
+  );
 }
 
 export const useI18n = () => useContext(I18nContext);

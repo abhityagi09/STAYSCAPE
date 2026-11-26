@@ -3,6 +3,7 @@ import { Navigate, Outlet, useLocation } from 'react-router';
 import type { Permission } from '@stayscape/shared';
 import { PageSpinner } from '@/components/ui';
 import { homeFor, useAuth } from './use-auth';
+import { tr } from '@/lib/tr';
 
 interface RequireAuthProps {
   /** Every listed permission is required. */
@@ -20,7 +21,7 @@ export function RequireAuth({ permissions, anyPermissions, children }: RequireAu
   const { status, can, canAny, sessionExpired } = useAuth();
   const location = useLocation();
 
-  if (status === 'initializing') return <PageSpinner label="Checking your session" />;
+  if (status === 'initializing') return <PageSpinner label={tr('Checking your session')} />;
   if (status === 'unauthenticated') {
     const params = new URLSearchParams({ redirect: `${location.pathname}${location.search}` });
     if (sessionExpired) params.set('reason', 'expired');
@@ -35,7 +36,7 @@ export function RequireAuth({ permissions, anyPermissions, children }: RequireAu
 export function RedirectIfAuthenticated({ children }: { children?: ReactNode }) {
   const { status, user } = useAuth();
   const location = useLocation();
-  if (status === 'initializing') return <PageSpinner label="Checking your session" />;
+  if (status === 'initializing') return <PageSpinner label={tr('Checking your session')} />;
   if (status === 'authenticated' && user) {
     const redirect = new URLSearchParams(location.search).get('redirect');
     return (

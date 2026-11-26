@@ -9,6 +9,7 @@ import { ThemeToggle } from '@/features/ui/ThemeToggle';
 import { LanguageSwitcher, useI18n, type MessageKey } from '@/lib/i18n';
 import { cn } from '@/lib/cn';
 import { UserMenu } from './UserMenu';
+import { tr } from '@/lib/tr';
 
 export interface NavItem {
   to: string;
@@ -33,7 +34,7 @@ function SideNav({ sections }: { sections: NavSection[] }) {
   const { can } = useAuth();
   const { t } = useI18n();
   return (
-    <nav aria-label="Workspace" className="flex flex-col gap-6">
+    <nav aria-label={tr('Workspace')} className="flex flex-col gap-6">
       {sections.map((section, index) => {
         const items = section.items.filter((item) => !item.permissions || can(...item.permissions));
         if (items.length === 0) return null;
@@ -103,7 +104,7 @@ export function DashboardShell({ workspace, sections, homeLink, footer }: Dashbo
         href="#main"
         className="sr-only z-50 rounded-md bg-surface px-4 py-2 focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
       >
-        Skip to content
+        {tr('Skip to content')}
       </a>
       <aside className="sticky top-0 hidden h-dvh flex-col gap-8 border-r border-border bg-surface px-4 py-6 lg:flex">
         <div className="px-2">
@@ -118,12 +119,16 @@ export function DashboardShell({ workspace, sections, homeLink, footer }: Dashbo
       <div className="flex min-w-0 flex-col">
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b border-border bg-bg/85 px-4 backdrop-blur-md sm:px-6 lg:px-10">
           <div className="flex items-center gap-2 lg:hidden">
-            <IconButton label="Open navigation" icon={<Menu />} onClick={() => setOpen(true)} />
+            <IconButton
+              label={tr('Open navigation')}
+              icon={<Menu />}
+              onClick={() => setOpen(true)}
+            />
             <Logo to={homeLink} />
           </div>
           <p className="hidden text-sm text-fg-subtle lg:block">
             <Link to="/" className="hover:text-fg">
-              ← Back to STAYSCAPE
+              {tr('← Back to STAYSCAPE')}
             </Link>
           </p>
           <div className="flex items-center gap-2">

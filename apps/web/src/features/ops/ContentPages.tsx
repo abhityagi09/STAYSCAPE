@@ -23,6 +23,7 @@ import { normalizeApiError } from '@/lib/api/errors';
 import { useI18n } from '@/lib/i18n';
 import { api, useApiMutation, useApiQuery, type Page } from './api';
 import { QueryState, SectionCard, StatusBadge, fmtDate, fmtDateTime } from './components';
+import { tr, trf } from '@/lib/tr';
 
 // ------------------------------------------------------------------ safe Markdown
 /** Inline: **bold**, *italic*, `code`, [text](/path or https://). Everything else is plain text. */
@@ -166,7 +167,9 @@ function Article({ c }: { c: PublicContentDto }) {
         <h1 className="font-display text-4xl text-fg">{c.title}</h1>
         {c.summary && <p className="text-lg text-fg-muted">{c.summary}</p>}
         {c.publishedAt && (
-          <p className="text-sm text-fg-subtle">Published {fmtDate(c.publishedAt)}</p>
+          <p className="text-sm text-fg-subtle">
+            {tr('Published')} {fmtDate(c.publishedAt)}
+          </p>
         )}
       </header>
       {img && (
@@ -212,8 +215,8 @@ export function ContentPreviewPage() {
   );
   return (
     <QueryState query={q}>
-      <Alert tone="warning" title="Preview" className="mx-auto mt-6 max-w-3xl">
-        This is an unpublished draft. The link expires after one hour.
+      <Alert tone="warning" title={tr('Preview')} className="mx-auto mt-6 max-w-3xl">
+        {tr('This is an unpublished draft. The link expires after one hour.')}
       </Alert>
       {q.data && <Article c={q.data} />}
     </QueryState>
@@ -228,7 +231,7 @@ export function GuidesIndexPage() {
   });
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-10">
-      <PageHeader title="Travel guides" />
+      <PageHeader title={tr('Travel guides')} />
       <QueryState query={q}>
         {q.data?.length ? (
           <ul className="grid gap-4 sm:grid-cols-2">
@@ -242,7 +245,7 @@ export function GuidesIndexPage() {
             ))}
           </ul>
         ) : (
-          <EmptyState title="No guides published yet" />
+          <EmptyState title={tr('No guides published yet')} />
         )}
       </QueryState>
     </div>
@@ -261,7 +264,7 @@ export function FaqPage() {
     groups.set(f.faqCategory ?? 'General', [...(groups.get(f.faqCategory ?? 'General') ?? []), f]);
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-10">
-      <PageHeader title="Frequently asked questions" />
+      <PageHeader title={tr('Frequently asked questions')} />
       <QueryState query={q}>
         {groups.size ? (
           [...groups].map(([cat, items]) => (
@@ -278,7 +281,7 @@ export function FaqPage() {
             </section>
           ))
         ) : (
-          <EmptyState title="No questions published yet" />
+          <EmptyState title={tr('No questions published yet')} />
         )}
       </QueryState>
     </div>
@@ -296,7 +299,7 @@ export function CmsBanners() {
   if (!q.data?.length) return null;
   return (
     <section
-      aria-label="Promotions"
+      aria-label={tr('Promotions')}
       className="mx-auto grid w-full max-w-6xl gap-4 px-4 py-6 md:grid-cols-3"
     >
       {q.data.map((b) => (
@@ -430,18 +433,18 @@ function Editor({ entry, onDone }: { entry: AdminContentDto | null; onDone: () =
     setF({ ...f, [k]: e.target.value });
   return (
     <SectionCard
-      title={entry ? `Edit: ${entry.draft.title}` : 'New content'}
+      title={entry ? trf('Edit: {0}', [entry.draft.title]) : tr('New content')}
       description={
         entry && (
           <>
-            State: <StatusBadge status={entry.state} /> · version {entry.version}
-            {entry.hasUnpublishedChanges && ' · unpublished changes'}
+            {tr('State:')} <StatusBadge status={entry.state} /> {tr('· version')} {entry.version}
+            {entry.hasUnpublishedChanges && tr(' · unpublished changes')}
           </>
         )
       }
       actions={
         <Button size="sm" variant="ghost" onClick={onDone}>
-          Close
+          {tr('Close')}
         </Button>
       }
     >
@@ -451,7 +454,7 @@ function Editor({ entry, onDone }: { entry: AdminContentDto | null; onDone: () =
           e.preventDefault();
           save.mutate(undefined, {
             onSuccess: () => {
-              toast({ title: 'Draft saved', variant: 'success' });
+              toast({ title: tr('Draft saved'), variant: 'success' });
               onDone();
             },
             onError: fail('Could not save'),
@@ -460,7 +463,7 @@ function Editor({ entry, onDone }: { entry: AdminContentDto | null; onDone: () =
       >
         <div className="flex flex-wrap gap-3">
           <Select
-            label="Type"
+            label={tr('Type')}
             value={f.type}
             disabled={Boolean(entry)}
             onChange={set('type')}
@@ -471,39 +474,39 @@ function Editor({ entry, onDone }: { entry: AdminContentDto | null; onDone: () =
             containerClassName="w-52"
           />
           <Select
-            label="Language"
+            label={tr('Language')}
             value={f.locale}
             disabled={Boolean(entry)}
             onChange={set('locale')}
             options={[
-              { value: 'en', label: 'English' },
-              { value: 'hi', label: 'Hindi' },
+              { value: 'en', label: tr('English') },
+              { value: 'hi', label: tr('Hindi') },
             ]}
             containerClassName="w-36"
           />
           <Input
-            label="Slug"
+            label={tr('Slug')}
             value={f.slug}
             disabled={Boolean(entry)}
             onChange={set('slug')}
             containerClassName="w-64"
           />
         </div>
-        <Input label="Title" value={f.title} onChange={set('title')} />
-        <Input label="Summary" value={f.summary} onChange={set('summary')} />
+        <Input label={tr('Title')} value={f.title} onChange={set('title')} />
+        <Input label={tr('Summary')} value={f.summary} onChange={set('summary')} />
         <Textarea
-          label="Body (Markdown: headings, lists, **bold**, links)"
+          label={tr('Body (Markdown: headings, lists, **bold**, links)')}
           value={f.body}
           onChange={set('body')}
           rows={12}
         />
         <fieldset className="flex flex-col gap-2 rounded-xl border border-border p-3">
-          <legend className="px-1 text-sm font-medium">Images</legend>
+          <legend className="px-1 text-sm font-medium">{tr('Images')}</legend>
           {images.map((img, i) => (
             <div key={img.id} className="flex flex-wrap items-end gap-2">
               <img src={img.url} alt="" className="h-14 w-20 rounded object-cover" />
               <Input
-                label={`Alt text for image ${i + 1} (required)`}
+                label={trf('Alt text for image {0} (required)', [i + 1])}
                 value={img.alt}
                 onChange={(e) =>
                   setImages(
@@ -517,12 +520,12 @@ function Editor({ entry, onDone }: { entry: AdminContentDto | null; onDone: () =
                 variant="ghost"
                 onClick={() => setImages(images.filter((x) => x.id !== img.id))}
               >
-                Remove
+                {tr('Remove')}
               </Button>
             </div>
           ))}
           <label className="flex flex-col gap-1 text-sm">
-            Add an image (JPEG, PNG, WebP or AVIF, up to 10 MB)
+            {tr('Add an image (JPEG, PNG, WebP or AVIF, up to 10 MB)')}
             <input
               type="file"
               accept="image/jpeg,image/png,image/webp,image/avif"
@@ -537,7 +540,7 @@ function Editor({ entry, onDone }: { entry: AdminContentDto | null; onDone: () =
         </fieldset>
         <div className="flex flex-wrap gap-3">
           <Input
-            label="Button label"
+            label={tr('Button label')}
             value={f.ctaLabel}
             onChange={set('ctaLabel')}
             containerClassName="w-48"
@@ -550,35 +553,35 @@ function Editor({ entry, onDone }: { entry: AdminContentDto | null; onDone: () =
           />
           {f.type === 'FAQ' && (
             <Input
-              label="FAQ group"
+              label={tr('FAQ group')}
               value={f.faqCategory}
               onChange={set('faqCategory')}
               containerClassName="w-48"
             />
           )}
           <Input
-            label="Tags (comma separated)"
+            label={tr('Tags (comma separated)')}
             value={f.tags}
             onChange={set('tags')}
             containerClassName="w-72"
           />
         </div>
         <fieldset className="flex flex-wrap items-end gap-3 rounded-xl border border-border p-3">
-          <legend className="px-1 text-sm font-medium">Search engines</legend>
+          <legend className="px-1 text-sm font-medium">{tr('Search engines')}</legend>
           <Input
-            label="SEO title"
+            label={tr('SEO title')}
             value={f.seoTitle}
             onChange={set('seoTitle')}
             containerClassName="w-72"
           />
           <Input
-            label="SEO description"
+            label={tr('SEO description')}
             value={f.seoDescription}
             onChange={set('seoDescription')}
             containerClassName="w-96"
           />
           <Checkbox
-            label="Hide from search engines"
+            label={tr('Hide from search engines')}
             checked={f.noindex}
             onChange={(e) => setF({ ...f, noindex: e.target.checked })}
           />
@@ -593,7 +596,7 @@ function Editor({ entry, onDone }: { entry: AdminContentDto | null; onDone: () =
             images.some((i) => i.alt.trim().length < 2)
           }
         >
-          Save draft
+          {tr('Save draft')}
         </Button>
       </form>
       {entry && (
@@ -601,7 +604,7 @@ function Editor({ entry, onDone }: { entry: AdminContentDto | null; onDone: () =
           <div className="flex flex-wrap items-end gap-2">
             <Input
               type="datetime-local"
-              label="Publish at (blank = now)"
+              label={tr('Publish at (blank = now)')}
               value={publishAt}
               onChange={(e) => setPublishAt(e.target.value)}
               containerClassName="w-60"
@@ -623,7 +626,7 @@ function Editor({ entry, onDone }: { entry: AdminContentDto | null; onDone: () =
                 )
               }
             >
-              {publishAt ? 'Schedule' : 'Publish'}
+              {publishAt ? tr('Schedule') : tr('Publish')}
             </Button>
             {entry.publishedAt && (
               <Button
@@ -635,7 +638,7 @@ function Editor({ entry, onDone }: { entry: AdminContentDto | null; onDone: () =
                   )
                 }
               >
-                Unpublish
+                {tr('Unpublish')}
               </Button>
             )}
             <Button
@@ -651,7 +654,7 @@ function Editor({ entry, onDone }: { entry: AdminContentDto | null; onDone: () =
                 )
               }
             >
-              Preview link
+              {tr('Preview link')}
             </Button>
             <Button
               variant="ghost"
@@ -662,22 +665,23 @@ function Editor({ entry, onDone }: { entry: AdminContentDto | null; onDone: () =
                 )
               }
             >
-              {entry.archivedAt ? 'Restore' : 'Archive'}
+              {entry.archivedAt ? tr('Restore') : tr('Archive')}
             </Button>
           </div>
           {preview && (
-            <Alert tone="info" title="Preview ready">
+            <Alert tone="info" title={tr('Preview ready')}>
               <Link to={preview} className="underline" target="_blank">
-                Open the draft preview
+                {tr('Open the draft preview')}
               </Link>{' '}
-              (valid for one hour)
+              {tr('(valid for one hour)')}
             </Alert>
           )}
           <QueryState query={revisions}>
-            <ol className="flex flex-col gap-1 text-sm" aria-label="Revision history">
+            <ol className="flex flex-col gap-1 text-sm" aria-label={tr('Revision history')}>
               {revisions.data?.map((r) => (
                 <li key={r.id}>
-                  {fmtDateTime(r.createdAt)} · {r.action.toLowerCase()} · v{r.version} · {r.title}
+                  {fmtDateTime(r.createdAt)} · {r.action.toLowerCase()} {tr('· v')}
+                  {r.version} · {r.title}
                 </li>
               ))}
             </ol>
@@ -699,9 +703,11 @@ export function AdminContentPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Content"
-        description="Banners, guides, blog posts, FAQs and legal pages. Edits stay in draft until you publish them."
-        actions={<Button onClick={() => setEditing('new')}>New content</Button>}
+        title={tr('Content')}
+        description={tr(
+          'Banners, guides, blog posts, FAQs and legal pages. Edits stay in draft until you publish them.',
+        )}
+        actions={<Button onClick={() => setEditing('new')}>{tr('New content')}</Button>}
       />
       {editing && (
         <Editor
@@ -712,17 +718,17 @@ export function AdminContentPage() {
       )}
       <div className="flex flex-wrap gap-3">
         <Select
-          label="Type"
+          label={tr('Type')}
           value={type}
           onChange={(e) => setType(e.target.value)}
           options={[
-            { value: '', label: 'All types' },
+            { value: '', label: tr('All types') },
             ...CONTENT_TYPES.map((t) => ({ value: t, label: t.replace('_', ' ').toLowerCase() })),
           ]}
           containerClassName="w-52"
         />
         <Select
-          label="State"
+          label={tr('State')}
           value={state}
           onChange={(e) => setState(e.target.value)}
           options={['', 'DRAFT', 'SCHEDULED', 'LIVE', 'EXPIRED', 'ARCHIVED'].map((s) => ({
@@ -733,15 +739,15 @@ export function AdminContentPage() {
         />
       </div>
       <DataTable
-        caption="Content entries"
+        caption={tr('Content entries')}
         rows={list.data?.items}
         loading={list.isPending}
         getRowId={(e) => e.id}
-        empty={<EmptyState compact title="No content yet" />}
+        empty={<EmptyState compact title={tr('No content yet')} />}
         columns={[
           {
             id: 't',
-            header: 'Title',
+            header: tr('Title'),
             cell: (e) => (
               <button
                 type="button"
@@ -755,25 +761,25 @@ export function AdminContentPage() {
               </button>
             ),
           },
-          { id: 'y', header: 'Type', cell: (e) => e.type.replace('_', ' ').toLowerCase() },
+          { id: 'y', header: tr('Type'), cell: (e) => e.type.replace('_', ' ').toLowerCase() },
           {
             id: 's',
-            header: 'State',
+            header: tr('State'),
             cell: (e) => (
               <span className="flex flex-col gap-1">
                 <StatusBadge status={e.state} />
                 {e.hasUnpublishedChanges && e.state !== 'DRAFT' && (
-                  <span className="text-xs text-warning">Unpublished changes</span>
+                  <span className="text-xs text-warning">{tr('Unpublished changes')}</span>
                 )}
               </span>
             ),
           },
           {
             id: 'p',
-            header: 'Publish',
+            header: tr('Publish'),
             cell: (e) => (e.publishAt ? fmtDateTime(e.publishAt) : '—'),
           },
-          { id: 'u', header: 'Updated', cell: (e) => fmtDateTime(e.updatedAt) },
+          { id: 'u', header: tr('Updated'), cell: (e) => fmtDateTime(e.updatedAt) },
         ]}
       />
     </div>

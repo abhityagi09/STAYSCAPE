@@ -28,6 +28,7 @@ import { useSignOut } from '@/features/auth/use-auth';
 import { errorMessage, normalizeApiError } from '@/lib/api/errors';
 import { applyServerErrors } from '@/lib/forms';
 import { useRevokeSession, useSessions } from '../api';
+import { tr, trf } from '@/lib/tr';
 
 const dateTime = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 
@@ -50,7 +51,7 @@ export function ChangePasswordCard() {
     try {
       const result = await authApi.changePassword({ currentPassword, newPassword });
       reset();
-      toast({ title: 'Password changed', description: result.message, variant: 'success' });
+      toast({ title: tr('Password changed'), description: result.message, variant: 'success' });
     } catch (error) {
       setFormError(applyServerErrors(error, setError, ['currentPassword', 'newPassword']));
     }
@@ -59,21 +60,23 @@ export function ChangePasswordCard() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Change password</CardTitle>
-        <CardDescription>Changing your password signs out every other device.</CardDescription>
+        <CardTitle>{tr('Change password')}</CardTitle>
+        <CardDescription>
+          {tr('Changing your password signs out every other device.')}
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
           {formError && <Alert tone="danger">{formError}</Alert>}
           <PasswordInput
-            label="Current password"
+            label={tr('Current password')}
             autoComplete="current-password"
             required
             error={errors.currentPassword?.message}
             {...register('currentPassword')}
           />
           <PasswordInput
-            label="New password"
+            label={tr('New password')}
             autoComplete="new-password"
             required
             showRequirements
@@ -81,7 +84,7 @@ export function ChangePasswordCard() {
             {...register('newPassword')}
           />
           <PasswordInput
-            label="Confirm new password"
+            label={tr('Confirm new password')}
             autoComplete="new-password"
             required
             error={errors.confirmPassword?.message}
@@ -89,7 +92,7 @@ export function ChangePasswordCard() {
           />
           <div className="flex justify-end">
             <Button type="submit" loading={isSubmitting} loadingText="Updating…">
-              Update password
+              {tr('Update password')}
             </Button>
           </div>
         </form>
@@ -116,18 +119,18 @@ function SessionRow({
         <div>
           <p className="flex flex-wrap items-center gap-2 text-sm font-medium text-fg">
             {session.deviceLabel}
-            {session.current && <Badge tone="success">This device</Badge>}
+            {session.current && <Badge tone="success">{tr('This device')}</Badge>}
           </p>
           <p className="text-xs text-fg-subtle">
-            Signed in {dateTime.format(new Date(session.signedInAt))} · Last active{' '}
+            {tr('Signed in')} {dateTime.format(new Date(session.signedInAt))} {tr('· Last active')}{' '}
             {dateTime.format(new Date(session.lastActiveAt))}
-            {session.ipAddress ? ` · IP ${session.ipAddress}` : ''}
+            {session.ipAddress ? trf(' · IP {0}', [session.ipAddress]) : ''}
           </p>
         </div>
       </div>
       {!session.current && (
         <Button variant="outline" size="sm" onClick={() => onRevoke(session)}>
-          Sign out
+          {tr('Sign out')}
         </Button>
       )}
     </li>
@@ -148,9 +151,9 @@ export function SessionsCard() {
     <Card>
       <CardHeader className="sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <CardTitle>Active sessions</CardTitle>
+          <CardTitle>{tr('Active sessions')}</CardTitle>
           <CardDescription>
-            Devices currently signed in to your account. Sign out any you don&apos;t recognise.
+            {tr("Devices currently signed in to your account. Sign out any you don't recognise.")}
           </CardDescription>
         </div>
         <Button
@@ -159,7 +162,7 @@ export function SessionsCard() {
           leftIcon={<LogOut className="size-4" aria-hidden="true" />}
           onClick={() => setConfirmAll(true)}
         >
-          Sign out everywhere
+          {tr('Sign out everywhere')}
         </Button>
       </CardHeader>
       <CardContent>
@@ -182,9 +185,11 @@ export function SessionsCard() {
 
       <ConfirmationDialog
         open={target !== null}
-        title="Sign out this device?"
-        description={target ? `${target.deviceLabel} will need to sign in again.` : undefined}
-        confirmLabel="Sign out device"
+        title={tr('Sign out this device?')}
+        description={
+          target ? trf('{0} will need to sign in again.', [target.deviceLabel]) : undefined
+        }
+        confirmLabel={tr('Sign out device')}
         tone="danger"
         loading={revoke.isPending}
         onCancel={() => setTarget(null)}
@@ -192,12 +197,12 @@ export function SessionsCard() {
           if (!target) return;
           revoke.mutate(target.id, {
             onSuccess: () => {
-              toast({ title: 'Device signed out', variant: 'success' });
+              toast({ title: tr('Device signed out'), variant: 'success' });
               setTarget(null);
             },
             onError: (error) =>
               toast({
-                title: 'Could not sign out device',
+                title: tr('Could not sign out device'),
                 description: errorMessage(error),
                 variant: 'error',
               }),
@@ -206,9 +211,11 @@ export function SessionsCard() {
       />
       <ConfirmationDialog
         open={confirmAll}
-        title="Sign out of all devices?"
-        description="Every session, including this one, will end. You'll need to sign in again."
-        confirmLabel="Sign out everywhere"
+        title={tr('Sign out of all devices?')}
+        description={tr(
+          "Every session, including this one, will end. You'll need to sign in again.",
+        )}
+        confirmLabel={tr('Sign out everywhere')}
         tone="danger"
         loading={signingOutAll}
         onCancel={() => setConfirmAll(false)}
@@ -217,7 +224,7 @@ export function SessionsCard() {
           void signOut('all').finally(() => {
             setSigningOutAll(false);
             setConfirmAll(false);
-            toast({ title: 'Signed out of all devices', variant: 'success' });
+            toast({ title: tr('Signed out of all devices'), variant: 'success' });
             navigate('/login');
           });
         }}

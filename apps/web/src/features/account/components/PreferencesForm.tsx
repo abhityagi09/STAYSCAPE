@@ -24,6 +24,7 @@ import {
 } from '@/components/ui';
 import { errorMessage } from '@/lib/api/errors';
 import { useUpdatePreferences } from '../api';
+import { tr, trf } from '@/lib/tr';
 
 interface PreferencesValues {
   language: Language;
@@ -32,11 +33,21 @@ interface PreferencesValues {
 }
 
 const currencyLabels: Record<CurrencyCode, string> = {
-  INR: 'Indian rupee (₹ INR)',
-  USD: 'US dollar ($ USD)',
-  EUR: 'Euro (€ EUR)',
-  GBP: 'British pound (£ GBP)',
-  AED: 'UAE dirham (AED)',
+  get INR() {
+    return tr('Indian rupee (₹ INR)');
+  },
+  get USD() {
+    return tr('US dollar ($ USD)');
+  },
+  get EUR() {
+    return tr('Euro (€ EUR)');
+  },
+  get GBP() {
+    return tr('British pound (£ GBP)');
+  },
+  get AED() {
+    return tr('UAE dirham (AED)');
+  },
 };
 
 const notificationOptions: Array<{
@@ -47,28 +58,48 @@ const notificationOptions: Array<{
 }> = [
   {
     key: 'emailBookingUpdates',
-    label: 'Booking updates by email',
-    description: 'Confirmations, changes and reminders for your stays.',
+    get label() {
+      return tr('Booking updates by email');
+    },
+    get description() {
+      return tr('Confirmations, changes and reminders for your stays.');
+    },
   },
   {
     key: 'emailSecurityAlerts',
-    label: 'Security alerts by email',
-    description: 'Password changes and unusual sign-in activity. Strongly recommended.',
+    get label() {
+      return tr('Security alerts by email');
+    },
+    get description() {
+      return tr('Password changes and unusual sign-in activity. Strongly recommended.');
+    },
   },
   {
     key: 'emailPromotions',
-    label: 'Offers and travel inspiration',
-    description: 'Occasional curated deals. Unsubscribe any time.',
+    get label() {
+      return tr('Offers and travel inspiration');
+    },
+    get description() {
+      return tr('Occasional curated deals. Unsubscribe any time.');
+    },
   },
   {
     key: 'smsBookingUpdates',
-    label: 'Booking updates by SMS',
-    description: 'Requires a mobile number on your profile.',
+    get label() {
+      return tr('Booking updates by SMS');
+    },
+    get description() {
+      return tr('Requires a mobile number on your profile.');
+    },
   },
   {
     key: 'pushEnabled',
-    label: 'Push notifications',
-    description: 'For the mobile app when it launches.',
+    get label() {
+      return tr('Push notifications');
+    },
+    get description() {
+      return tr('For the mobile app when it launches.');
+    },
   },
 ];
 
@@ -87,7 +118,7 @@ export function PreferencesForm({ user }: { user: UserDto }) {
       const { language, currency, notifications } = values;
       const updated = await update.mutateAsync({ language, currency, notifications });
       reset(updated.preferences);
-      toast({ title: 'Preferences saved', variant: 'success' });
+      toast({ title: tr('Preferences saved'), variant: 'success' });
     } catch (error) {
       setFormError(errorMessage(error));
     }
@@ -98,10 +129,11 @@ export function PreferencesForm({ user }: { user: UserDto }) {
       {formError && <Alert tone="danger">{formError}</Alert>}
       <Card>
         <CardHeader>
-          <CardTitle>Language &amp; currency</CardTitle>
+          <CardTitle>{tr('Language & currency')}</CardTitle>
           <CardDescription>
-            Prices are always charged in the property&apos;s currency; your choice controls how
-            estimates are displayed.
+            {tr(
+              "Prices are always charged in the property's currency; your choice controls how estimates are displayed.",
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-6 md:grid-cols-2">
@@ -110,13 +142,13 @@ export function PreferencesForm({ user }: { user: UserDto }) {
             name="language"
             render={({ field }) => (
               <RadioGroup
-                legend="Display language"
+                legend={tr('Display language')}
                 name="language"
                 value={field.value}
                 onChange={field.onChange}
                 options={LANGUAGES.map((code) => ({
                   value: code,
-                  label: LANGUAGE_LABELS[code],
+                  label: tr(LANGUAGE_LABELS[code]),
                   description:
                     code === 'en'
                       ? 'Fully translated'
@@ -126,17 +158,17 @@ export function PreferencesForm({ user }: { user: UserDto }) {
             )}
           />
           <Select
-            label="Display currency"
-            options={CURRENCIES.map((code) => ({ value: code, label: currencyLabels[code] }))}
+            label={tr('Display currency')}
+            options={CURRENCIES.map((code) => ({ value: code, label: tr(currencyLabels[code]) }))}
             {...register('currency')}
           />
         </CardContent>
       </Card>
       <Card>
         <CardHeader>
-          <CardTitle>Notifications</CardTitle>
+          <CardTitle>{tr('Notifications')}</CardTitle>
           <CardDescription>
-            Choose how STAYSCAPE keeps in touch. In-app notifications are always on.
+            {tr('Choose how STAYSCAPE keeps in touch. In-app notifications are always on.')}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
@@ -146,7 +178,7 @@ export function PreferencesForm({ user }: { user: UserDto }) {
               label={option.label}
               description={
                 option.key === 'smsBookingUpdates' && !user.phone
-                  ? `${option.description} Add one on your profile first.`
+                  ? trf('{0} Add one on your profile first.', [option.description])
                   : option.description
               }
               {...register(`notifications.${option.key}`)}
@@ -156,7 +188,7 @@ export function PreferencesForm({ user }: { user: UserDto }) {
       </Card>
       <div className="flex justify-end gap-2">
         <Button variant="ghost" disabled={!formState.isDirty} onClick={() => reset()}>
-          Discard
+          {tr('Discard')}
         </Button>
         <Button
           type="submit"
@@ -164,7 +196,7 @@ export function PreferencesForm({ user }: { user: UserDto }) {
           loading={formState.isSubmitting}
           loadingText="Saving…"
         >
-          Save preferences
+          {tr('Save preferences')}
         </Button>
       </div>
     </form>

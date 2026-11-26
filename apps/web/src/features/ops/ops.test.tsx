@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -15,11 +16,13 @@ import { I18nProvider, LanguageSwitcher, useI18n } from '@/lib/i18n';
 import { AdminContentPage, SafeMarkdown } from './ContentPages';
 import {
   AdminPlatformDashboardPage,
+  AdminPromotionsPage,
   AdminSettlementsPage,
   AdminSupportPage,
 } from './AdminOpsPages';
 import { AssistantPage, RewardsPage, TripDetailPage, TripsPage } from './CustomerPages';
 import { HotelInsights } from './HotelInsights';
+import { StayPicker } from './StayPicker';
 import { PreferencesForm } from '@/features/account/components/PreferencesForm';
 import { PartnerAnalyticsPage, PartnerChannelsPage, PartnerStaffPage } from './PartnerOpsPages';
 
@@ -707,5 +710,157 @@ describe('audit additions', () => {
     await waitFor(() =>
       expect(calls.find((c) => c.method === 'post')?.body).toEqual({ body: 'VIP guest' }),
     );
+  });
+});
+
+describe('admin pickers and promotions', () => {
+  it('creates a settlement for a partner chosen by name, not by typed id', async () => {
+    on('get', /\/admin\/settlements/, () => page([]));
+    on('get', /\/admin\/partners/, (url) =>
+      page(
+        url.includes('search=lake')
+          ? [
+              {
+                id: '64b0000000000000000000p1',
+                businessName: 'Lakeview Hospitality',
+                ownerEmail: 'owner@lakeview.test',
+                ownerName: 'Ravi',
+                verificationStatus: 'APPROVED',
+                city: 'Udaipur',
+                submittedAt: null,
+                hotelCount: 1,
+                createdAt: '2026-01-01T00:00:00Z',
+              },
+            ]
+          : [],
+      ),
+    );
+    on('post', /\/admin\/settlements$/, () => ({}));
+    renderWithProviders(<AdminSettlementsPage />, { user: admin });
+    const create = await screen.findByRole('button', { name: 'Create from eligible entries' });
+    expect(create).toBeDisabled();
+    await userEvent.type(screen.getByLabelText('Find partner'), 'lake');
+    const option = await screen.findByRole('option', {
+      name: 'Lakeview Hospitality · owner@lakeview.test',
+    });
+    expect(calls.some((c) => c.url.includes('status=APPROVED'))).toBe(true);
+    await userEvent.selectOptions(screen.getByLabelText('Partner'), option);
+    await userEvent.click(create);
+    await waitFor(() =>
+      expect(calls.find((c) => c.method === 'post')?.body).toEqual({
+        partnerId: '64b0000000000000000000p1',
+      }),
+    );
+  });
+
+  it('picks property, room and rate from the catalogue for a trip request', async () => {
+    on('get', /\/destinations\/suggestions/, () => [
+      {
+        type: 'destination',
+        label: 'Udaipur',
+        sublabel: 'Rajasthan',
+        value: 'Udaipur',
+        slug: 'udaipur',
+      },
+      {
+        type: 'hotel',
+        label: 'Lakeview Haveli',
+        sublabel: 'Udaipur',
+        value: 'x',
+        slug: 'lakeview-haveli',
+      },
+    ]);
+    on('get', /\/hotels\/lakeview-haveli$/, () => ({
+      id: '64b0000000000000000000a1',
+      name: 'Lakeview Haveli',
+      city: 'Udaipur',
+      roomTypes: [
+        {
+          id: 'room1',
+          name: 'Lake suite',
+          ratePlans: [
+            {
+              id: 'rate1',
+              name: 'Flexible',
+              mealPlan: 'BREAKFAST_INCLUDED',
+              cancellationPolicy: {
+                type: 'FLEXIBLE',
+                freeCancellationHours: 48,
+                refundBasisPointsAfterDeadline: 0,
+              },
+            },
+          ],
+        },
+      ],
+    }));
+    const onChange = vi.fn();
+    function Harness() {
+      const [value, setValue] = useState({ hotelId: '', roomTypeId: '', ratePlanId: '' });
+      return (
+        <StayPicker
+          value={value}
+          onChange={(next) => {
+            setValue(next);
+            onChange(next);
+          }}
+        />
+      );
+    }
+    renderWithProviders(<Harness />, { user: admin });
+    await userEvent.type(screen.getByLabelText('Find a property'), 'lake');
+    const hotel = await screen.findByRole('option', { name: 'Lakeview Haveli · Udaipur' });
+    expect(screen.queryByRole('option', { name: /Rajasthan/ })).not.toBeInTheDocument();
+    await userEvent.selectOptions(screen.getByLabelText('Property'), hotel);
+    await userEvent.selectOptions(
+      screen.getByLabelText('Room'),
+      await screen.findByRole('option', { name: 'Lake suite' }),
+    );
+    await userEvent.selectOptions(
+      screen.getByLabelText('Rate'),
+      screen.getByRole('option', { name: /^Flexible/ }),
+    );
+    expect(onChange).toHaveBeenLastCalledWith({
+      hotelId: '64b0000000000000000000a1',
+      roomTypeId: 'room1',
+      ratePlanId: 'rate1',
+    });
+  });
+
+  it('shows partner promotions with state, window and discount', async () => {
+    on('get', /\/admin\/coupons/, () => page([{ _id: 'c1', active: true }]));
+    on('get', /\/admin\/promotions/, () => ({
+      ...page([
+        {
+          id: 'r1',
+          name: 'Monsoon flash sale',
+          ruleType: 'PROMOTIONAL',
+          hotelId: 'h1',
+          hotelName: 'Lakeview Haveli',
+          hotelCity: 'Udaipur',
+          partnerName: 'Lakeview Hospitality',
+          adjustmentType: 'PERCENT',
+          adjustmentValue: -1500,
+          currency: 'INR',
+          windowFrom: '2026-11-20',
+          windowTo: '2026-11-30',
+          windowKind: 'BOOKING',
+          state: 'ACTIVE',
+          updatedAt: '2026-11-20T00:00:00Z',
+        },
+      ]),
+      summary: { ACTIVE: 1, UPCOMING: 2, ENDED: 0, PAUSED: 0 },
+      truncated: false,
+    }));
+    renderWithProviders(<AdminPromotionsPage />, { user: admin });
+    const table = await screen.findByRole('table', { name: 'Partner promotions' });
+    expect(await within(table).findByText('Monsoon flash sale')).toBeInTheDocument();
+    expect(within(table).getByText('15% off')).toBeInTheDocument();
+    expect(within(table).getByText('2026-11-20 → 2026-11-30')).toBeInTheDocument();
+    expect(within(table).getByText('Booking dates')).toBeInTheDocument();
+    expect(within(table).getByRole('link', { name: 'Lakeview Haveli' })).toHaveAttribute(
+      'href',
+      '/admin/properties/h1',
+    );
+    expect(calls.some((c) => c.url.includes('/admin/promotions?page=1&state=ACTIVE'))).toBe(true);
   });
 });

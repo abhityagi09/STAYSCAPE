@@ -4,6 +4,7 @@ import { Badge, Button, EmptyState, ErrorState, SkeletonText } from '@/component
 import { errorMessage } from '@/lib/api/errors';
 import { cn } from '@/lib/cn';
 import { useMarkNotificationRead } from '../api';
+import { tr, trf } from '@/lib/tr';
 
 const relative = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
 export function timeAgo(iso: string): string {
@@ -36,8 +37,8 @@ export function NotificationList({
       <EmptyState
         compact
         icon={<Bell />}
-        title="You're all caught up"
-        description="Account and booking updates will appear here."
+        title={tr("You're all caught up")}
+        description={tr('Account and booking updates will appear here.')}
       />
     );
   }
@@ -55,7 +56,7 @@ export function NotificationList({
           <div className="min-w-0 flex-1">
             <p className="flex flex-wrap items-center gap-2 text-sm font-medium text-fg">
               {item.title}
-              {!item.readAt && <Badge tone="accent">New</Badge>}
+              {!item.readAt && <Badge tone="accent">{tr('New')}</Badge>}
             </p>
             <p className="mt-0.5 text-sm text-fg-muted">{item.body}</p>
             <p className="mt-1 text-xs text-fg-subtle">
@@ -69,9 +70,9 @@ export function NotificationList({
               leftIcon={<CheckCheck className="size-4" aria-hidden="true" />}
               loading={markRead.isPending && markRead.variables === item.id}
               onClick={() => markRead.mutate(item.id)}
-              aria-label={`Mark "${item.title}" as read`}
+              aria-label={trf('Mark "{0}" as read', [item.title])}
             >
-              Mark read
+              {tr('Mark read')}
             </Button>
           )}
         </li>

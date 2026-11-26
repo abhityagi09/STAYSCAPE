@@ -24,6 +24,7 @@ import {
 import { normalizeApiError } from '@/lib/api/errors';
 import { cn } from '@/lib/cn';
 import { partnerApi, usePartnerHotels, useRoomTypes } from '../api';
+import { tr, trf } from '@/lib/tr';
 
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const monthStart = (d: string) => `${d.slice(0, 7)}-01`;
@@ -51,7 +52,15 @@ function DayCell({
       onClick={onClick}
       disabled={past}
       aria-pressed={selected}
-      aria-label={`${day.date}: ${day.available} available, ${day.blockedRooms} blocked, ${day.bookedRooms} booked, ${day.heldRooms} held${day.closedToArrival ? ', closed to arrival' : ''}${day.closedToDeparture ? ', closed to departure' : ''}`}
+      aria-label={trf('{0}: {1} available, {2} blocked, {3} booked, {4} held{5}{6}', [
+        day.date,
+        day.available,
+        day.blockedRooms,
+        day.bookedRooms,
+        day.heldRooms,
+        day.closedToArrival ? ', closed to arrival' : '',
+        day.closedToDeparture ? ', closed to departure' : '',
+      ])}
       className={cn(
         'flex min-h-20 flex-col items-start gap-0.5 rounded-lg border p-1.5 text-left text-[11px] transition-colors',
         selected ? 'border-primary bg-primary-soft' : 'border-border hover:border-border-strong',
@@ -61,18 +70,35 @@ function DayCell({
     >
       <span className="text-xs font-semibold">{Number(day.date.slice(8))}</span>
       <span className={cn('font-medium', soldOut ? 'text-danger' : 'text-success')}>
-        {day.available} avail
+        {day.available} {tr('avail')}
       </span>
-      {day.blockedRooms > 0 && <span className="text-fg-muted">{day.blockedRooms} blocked</span>}
-      {day.bookedRooms > 0 && <span className="text-fg-muted">{day.bookedRooms} booked</span>}
-      {day.heldRooms > 0 && <span className="text-warning">{day.heldRooms} held</span>}
+      {day.blockedRooms > 0 && (
+        <span className="text-fg-muted">
+          {day.blockedRooms} {tr('blocked')}
+        </span>
+      )}
+      {day.bookedRooms > 0 && (
+        <span className="text-fg-muted">
+          {day.bookedRooms} {tr('booked')}
+        </span>
+      )}
+      {day.heldRooms > 0 && (
+        <span className="text-warning">
+          {day.heldRooms} {tr('held')}
+        </span>
+      )}
       {(day.closedToArrival || day.closedToDeparture) && (
         <span className="text-info">
-          {day.closedToArrival ? 'CTA ' : ''}
+          {day.closedToArrival ? tr('CTA ') : ''}
           {day.closedToDeparture ? 'CTD' : ''}
         </span>
       )}
-      {day.minimumStay && <span className="text-fg-subtle">min {day.minimumStay}n</span>}
+      {day.minimumStay && (
+        <span className="text-fg-subtle">
+          {tr('min')} {day.minimumStay}
+          {tr('n')}
+        </span>
+      )}
     </button>
   );
 }
@@ -132,7 +158,7 @@ export function InventoryPage() {
     if (minStay !== '') set.minimumStay = minStay === '0' ? null : Number(minStay);
     if (maxStay !== '') set.maximumStay = maxStay === '0' ? null : Number(maxStay);
     if (Object.keys(set).length === 0)
-      return toast({ title: 'Choose at least one change', variant: 'warning' });
+      return toast({ title: tr('Choose at least one change'), variant: 'warning' });
     setSaving(true);
     try {
       await partnerApi.updateInventory(hotelId, {
@@ -143,7 +169,7 @@ export function InventoryPage() {
         set,
       });
       toast({
-        title: 'Inventory updated',
+        title: tr('Inventory updated'),
         description: `${range.from} → ${range.to}`,
         variant: 'success',
       });
@@ -163,34 +189,36 @@ export function InventoryPage() {
     return (
       <EmptyState
         icon={<CalendarRange />}
-        title="No properties yet"
-        description="Create a property and room categories to manage inventory."
+        title={tr('No properties yet')}
+        description={tr('Create a property and room categories to manage inventory.')}
       />
     );
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Inventory calendar"
-        description="Rooms by date. Select a date, then a second date to choose a range, and apply changes. Booked and held rooms can never be blocked."
+        title={tr('Inventory calendar')}
+        description={tr(
+          'Rooms by date. Select a date, then a second date to choose a range, and apply changes. Booked and held rooms can never be blocked.',
+        )}
       />
       <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
         <Select
-          label="Property"
+          label={tr('Property')}
           value={hotelId}
           onChange={(e) => setParams({ property: e.target.value })}
           options={(hotels.data ?? []).map((h) => ({ value: h.id, label: h.name }))}
         />
         <Select
-          label="Room category"
+          label={tr('Room category')}
           value={roomTypeId}
           onChange={(e) => setParams({ property: hotelId, room: e.target.value })}
           options={(rooms.data ?? [])
             .filter((r) => r.status !== 'ARCHIVED')
             .map((r) => ({ value: r.id, label: `${r.name} (${r.totalInventory})` }))}
-          placeholder={rooms.data?.length ? undefined : 'No room categories'}
+          placeholder={rooms.data?.length ? undefined : tr('No room categories')}
         />
-        <div className="flex items-end gap-1" role="group" aria-label="Calendar view">
+        <div className="flex items-end gap-1" role="group" aria-label={tr('Calendar view')}>
           {(['month', 'week'] as const).map((v) => (
             <Button
               key={v}
@@ -202,7 +230,7 @@ export function InventoryPage() {
                 setAnchor(v === 'month' ? monthStart(anchor) : today);
               }}
             >
-              {v === 'month' ? 'Month' : 'Week'}
+              {v === 'month' ? tr('Month') : tr('Week')}
             </Button>
           ))}
         </div>
@@ -214,7 +242,7 @@ export function InventoryPage() {
             <Button
               variant="ghost"
               size="sm"
-              aria-label="Previous"
+              aria-label={tr('Previous')}
               onClick={() =>
                 setAnchor(view === 'month' ? monthStart(addDays(from, -1)) : addDays(anchor, -7))
               }
@@ -225,7 +253,7 @@ export function InventoryPage() {
             <Button
               variant="ghost"
               size="sm"
-              aria-label="Next"
+              aria-label={tr('Next')}
               onClick={() => setAnchor(view === 'month' ? addDays(to, 1) : addDays(anchor, 7))}
             >
               <ChevronRight className="size-4" aria-hidden="true" />
@@ -233,7 +261,7 @@ export function InventoryPage() {
           </CardHeader>
           <CardContent>
             {!roomTypeId ? (
-              <EmptyState compact title="Choose a room category" />
+              <EmptyState compact title={tr('Choose a room category')} />
             ) : calendar.isPending ? (
               <SkeletonText lines={8} />
             ) : calendar.isError ? (
@@ -242,7 +270,11 @@ export function InventoryPage() {
                 onRetry={() => void calendar.refetch()}
               />
             ) : (
-              <div className="grid grid-cols-7 gap-1.5" role="grid" aria-label="Inventory by date">
+              <div
+                className="grid grid-cols-7 gap-1.5"
+                role="grid"
+                aria-label={tr('Inventory by date')}
+              >
                 {DOW.map((d) => (
                   <div
                     key={d}
@@ -271,68 +303,75 @@ export function InventoryPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle as="h2">Update range</CardTitle>
+            <CardTitle as="h2">{tr('Update range')}</CardTitle>
             <CardDescription>
               {range
-                ? `${range.from} → ${range.to} (${dateRange(range.from, range.to).length} days)`
-                : 'Select dates on the calendar.'}
+                ? trf('{0} → {1} ({2} days)', [
+                    range.from,
+                    range.to,
+                    dateRange(range.from, range.to).length,
+                  ])
+                : tr('Select dates on the calendar.')}
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             {conflict && (
               <Alert tone="danger">
                 {conflict.message}
-                {conflict.dates.length > 0 && ` Conflicting dates: ${conflict.dates.join(', ')}.`}
+                {conflict.dates.length > 0 &&
+                  trf(' Conflicting dates: {0}.', [conflict.dates.join(', ')])}
               </Alert>
             )}
             <Input
-              label="Blocked rooms"
+              label={tr('Blocked rooms')}
               type="number"
               min={0}
-              hint="Leave empty to keep. Set 0 to unblock."
+              hint={tr('Leave empty to keep. Set 0 to unblock.')}
               value={blocked}
               onChange={(e) => setBlocked(e.target.value)}
             />
             <Select
-              label="Closed to arrival"
+              label={tr('Closed to arrival')}
               value={cta}
               onChange={(e) => setCta(e.target.value as 'keep')}
               options={[
-                { value: 'keep', label: 'No change' },
-                { value: 'on', label: 'Close' },
-                { value: 'off', label: 'Open' },
+                { value: 'keep', label: tr('No change') },
+                { value: 'on', label: tr('Close') },
+                { value: 'off', label: tr('Open') },
               ]}
             />
             <Select
-              label="Closed to departure"
+              label={tr('Closed to departure')}
               value={ctd}
               onChange={(e) => setCtd(e.target.value as 'keep')}
               options={[
-                { value: 'keep', label: 'No change' },
-                { value: 'on', label: 'Close' },
-                { value: 'off', label: 'Open' },
+                { value: 'keep', label: tr('No change') },
+                { value: 'on', label: tr('Close') },
+                { value: 'off', label: tr('Open') },
               ]}
             />
             <div className="grid grid-cols-2 gap-3">
               <Input
-                label="Min stay"
+                label={tr('Min stay')}
                 type="number"
                 min={0}
-                hint="0 clears"
+                hint={tr('0 clears')}
                 value={minStay}
                 onChange={(e) => setMinStay(e.target.value)}
               />
               <Input
-                label="Max stay"
+                label={tr('Max stay')}
                 type="number"
                 min={0}
-                hint="0 clears"
+                hint={tr('0 clears')}
                 value={maxStay}
                 onChange={(e) => setMaxStay(e.target.value)}
               />
             </div>
             <fieldset>
-              <legend className="mb-2 text-sm font-medium">Only these days (optional)</legend>
+              <legend className="mb-2 text-sm font-medium">
+                {tr('Only these days (optional)')}
+              </legend>
               <div className="flex flex-wrap gap-2">
                 {DOW.map((d, i) => (
                   <Checkbox
@@ -347,7 +386,7 @@ export function InventoryPage() {
               </div>
             </fieldset>
             <Button disabled={!range} loading={saving} onClick={() => void apply()}>
-              Apply to range
+              {tr('Apply to range')}
             </Button>
           </CardContent>
         </Card>

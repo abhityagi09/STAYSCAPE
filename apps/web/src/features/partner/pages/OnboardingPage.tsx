@@ -42,6 +42,7 @@ import { errorMessage, normalizeApiError } from '@/lib/api/errors';
 import { applyServerErrors } from '@/lib/forms';
 import { cn } from '@/lib/cn';
 import { partnerApi, useApplication, useApplicationMutation } from '../api';
+import { tr, trf } from '@/lib/tr';
 
 const STEPS = [
   'Business',
@@ -65,32 +66,36 @@ function StatusPanel({ app }: { app: PartnerApplicationDto }) {
   const map = {
     REGISTERED: {
       tone: 'info' as const,
-      title: 'Application in progress',
-      body: 'Complete every step and submit for review. Your progress is saved as you go.',
+      title: tr('Application in progress'),
+      body: tr('Complete every step and submit for review. Your progress is saved as you go.'),
     },
     DOCUMENTS_PENDING: {
       tone: 'warning' as const,
-      title: 'More information needed',
+      title: tr('More information needed'),
       body: app.rejectionReason ?? 'Update the requested documents and resubmit.',
     },
     UNDER_REVIEW: {
       tone: 'info' as const,
-      title: 'Under review',
-      body: 'Our verification team is reviewing your application. You will be notified of the decision.',
+      title: tr('Under review'),
+      body: tr(
+        'Our verification team is reviewing your application. You will be notified of the decision.',
+      ),
     },
     APPROVED: {
       tone: 'success' as const,
-      title: 'Approved',
-      body: 'Your partner account is active. You can now add properties.',
+      title: tr('Approved'),
+      body: tr('Your partner account is active. You can now add properties.'),
     },
     REJECTED: {
       tone: 'danger' as const,
-      title: 'Not approved',
-      body: `${app.rejectionReason ?? 'See the reason from our team.'} You can update your application and resubmit.`,
+      title: tr('Not approved'),
+      body: trf('{0} You can update your application and resubmit.', [
+        app.rejectionReason ?? 'See the reason from our team.',
+      ]),
     },
     SUSPENDED: {
       tone: 'danger' as const,
-      title: 'Suspended',
+      title: tr('Suspended'),
       body: app.rejectionReason ?? 'Contact support.',
     },
   }[app.verificationStatus];
@@ -101,7 +106,7 @@ function StatusPanel({ app }: { app: PartnerApplicationDto }) {
       action={
         app.verificationStatus === 'APPROVED' ? (
           <ButtonLink to="/partner/properties" size="sm">
-            Manage properties
+            {tr('Manage properties')}
           </ButtonLink>
         ) : undefined
       }
@@ -152,26 +157,26 @@ function BusinessStep({
     >
       {error && <Alert tone="danger">{error}</Alert>}
       <Input
-        label="Owner / authorised signatory name"
+        label={tr('Owner / authorised signatory name')}
         required
         error={formState.errors.ownerName?.message}
         {...register('ownerName')}
       />
       <Input
-        label="Registered business name"
+        label={tr('Registered business name')}
         required
         error={formState.errors.businessName?.message}
         {...register('businessName')}
       />
       <Select
-        label="Business type"
+        label={tr('Business type')}
         required
-        options={BUSINESS_TYPES.map((t) => ({ value: t, label: BUSINESS_TYPE_LABELS[t] }))}
+        options={BUSINESS_TYPES.map((t) => ({ value: t, label: tr(BUSINESS_TYPE_LABELS[t]) }))}
         {...register('businessType')}
       />
       <div className="flex justify-end">
         <Button type="submit" loading={save.isPending}>
-          Save and continue
+          {tr('Save and continue')}
         </Button>
       </div>
     </form>
@@ -212,60 +217,60 @@ function ContactStep({ app, onSaved }: { app: PartnerApplicationDto | null; onSa
         </Alert>
       )}
       <Input
-        label="Address line 1"
+        label={tr('Address line 1')}
         required
         containerClassName="sm:col-span-2"
         error={e.businessAddress?.line1?.message}
         {...register('businessAddress.line1')}
       />
       <Input
-        label="Address line 2"
+        label={tr('Address line 2')}
         optionalLabel
         containerClassName="sm:col-span-2"
         {...register('businessAddress.line2')}
       />
       <Input
-        label="City"
+        label={tr('City')}
         required
         error={e.businessAddress?.city?.message}
         {...register('businessAddress.city')}
       />
       <Input
-        label="State"
+        label={tr('State')}
         required
         error={e.businessAddress?.state?.message}
         {...register('businessAddress.state')}
       />
       <Input
-        label="Postal code"
+        label={tr('Postal code')}
         required
         error={e.businessAddress?.postalCode?.message}
         {...register('businessAddress.postalCode')}
       />
       <Input
-        label="Country code"
+        label={tr('Country code')}
         required
-        hint="2 letters, e.g. IN"
+        hint={tr('2 letters, e.g. IN')}
         error={e.businessAddress?.country?.message}
         {...register('businessAddress.country')}
       />
       <Input
-        label="Business email"
+        label={tr('Business email')}
         type="email"
         required
         error={e.contactDetails?.email?.message}
         {...register('contactDetails.email')}
       />
       <Input
-        label="Business phone"
+        label={tr('Business phone')}
         type="tel"
         required
-        hint="International format"
+        hint={tr('International format')}
         error={e.contactDetails?.phone?.message}
         {...register('contactDetails.phone')}
       />
       <Input
-        label="Website"
+        label={tr('Website')}
         optionalLabel
         containerClassName="sm:col-span-2"
         error={e.contactDetails?.website?.message}
@@ -273,7 +278,7 @@ function ContactStep({ app, onSaved }: { app: PartnerApplicationDto | null; onSa
       />
       <div className="flex justify-end sm:col-span-2">
         <Button type="submit" loading={save.isPending}>
-          Save and continue
+          {tr('Save and continue')}
         </Button>
       </div>
     </form>
@@ -301,9 +306,9 @@ function TaxStep({ app, onSaved }: { app: PartnerApplicationDto | null; onSaved:
     >
       {save.error && <Alert tone="danger">{errorMessage(save.error)}</Alert>}
       <Input
-        label="Business registration number"
+        label={tr('Business registration number')}
         required
-        hint="e.g. CIN, LLPIN or Udyam number"
+        hint={tr('e.g. CIN, LLPIN or Udyam number')}
         error={e.registrationNumber?.message}
         {...register('registrationNumber')}
       />
@@ -318,13 +323,13 @@ function TaxStep({ app, onSaved }: { app: PartnerApplicationDto | null; onSaved:
         label="GSTIN"
         optionalLabel
         autoCapitalize="characters"
-        hint="Required if your business is GST-registered"
+        hint={tr('Required if your business is GST-registered')}
         error={e.taxDetails?.gstin?.message}
         {...register('taxDetails.gstin')}
       />
       <div className="flex justify-end">
         <Button type="submit" loading={save.isPending}>
-          Save and continue
+          {tr('Save and continue')}
         </Button>
       </div>
     </form>
@@ -355,7 +360,7 @@ function DocumentsStep({
       a.click();
       URL.revokeObjectURL(url);
     } catch (error) {
-      toast({ title: 'Download failed', description: errorMessage(error), variant: 'error' });
+      toast({ title: tr('Download failed'), description: errorMessage(error), variant: 'error' });
     }
   };
   return (
@@ -370,17 +375,22 @@ function DocumentsStep({
           >
             <div>
               <p className="flex items-center gap-2 text-sm font-medium">
-                {PARTNER_DOCUMENT_LABELS[type]}{' '}
-                {required ? <Badge tone="warning">Required</Badge> : <Badge>Optional</Badge>}
+                {tr(PARTNER_DOCUMENT_LABELS[type])}{' '}
+                {required ? (
+                  <Badge tone="warning">{tr('Required')}</Badge>
+                ) : (
+                  <Badge>{tr('Optional')}</Badge>
+                )}
               </p>
               {doc ? (
                 <p className="text-xs text-success">
-                  ✓ {doc.fileName} · {(doc.size / 1024).toFixed(0)} KB
+                  ✓ {doc.fileName} · {(doc.size / 1024).toFixed(0)} {tr('KB')}
                 </p>
               ) : (
                 <p className="text-xs text-fg-subtle">
-                  PDF, JPEG or PNG up to 5 MB. Stored privately; visible only to you and our
-                  verification team.
+                  {tr(
+                    'PDF, JPEG or PNG up to 5 MB. Stored privately; visible only to you and our verification team.',
+                  )}
                 </p>
               )}
             </div>
@@ -392,7 +402,7 @@ function DocumentsStep({
                   leftIcon={<Download className="size-4" aria-hidden="true" />}
                   onClick={() => void download(doc.id, doc.fileName)}
                 >
-                  Download
+                  {tr('Download')}
                 </Button>
               )}
               {doc && editable && (
@@ -403,7 +413,7 @@ function DocumentsStep({
                   loading={remove.isPending && remove.variables === doc.id}
                   onClick={() => remove.mutate(doc.id)}
                 >
-                  Remove
+                  {tr('Remove')}
                 </Button>
               )}
               {editable && (
@@ -414,12 +424,12 @@ function DocumentsStep({
                   )}
                 >
                   <FileUp className="size-4" aria-hidden="true" />
-                  {busy === type ? 'Uploading…' : doc ? 'Replace' : 'Upload'}
+                  {busy === type ? tr('Uploading…') : doc ? tr('Replace') : tr('Upload')}
                   <input
                     type="file"
                     className="sr-only"
                     accept="application/pdf,image/jpeg,image/png"
-                    aria-label={`Upload ${PARTNER_DOCUMENT_LABELS[type]}`}
+                    aria-label={trf('Upload {0}', [PARTNER_DOCUMENT_LABELS[type]])}
                     disabled={busy !== null}
                     onChange={async (e) => {
                       const file = e.target.files?.[0];
@@ -427,17 +437,17 @@ function DocumentsStep({
                       if (!file) return;
                       if (file.size > DOCUMENT_MAX_BYTES)
                         return toast({
-                          title: 'File too large',
-                          description: 'Documents must be 5 MB or smaller.',
+                          title: tr('File too large'),
+                          description: tr('Documents must be 5 MB or smaller.'),
                           variant: 'error',
                         });
                       setBusy(type);
                       try {
                         await upload.mutateAsync({ type, file });
-                        toast({ title: 'Document uploaded', variant: 'success' });
+                        toast({ title: tr('Document uploaded'), variant: 'success' });
                       } catch (error) {
                         toast({
-                          title: 'Upload failed',
+                          title: tr('Upload failed'),
                           description: errorMessage(error),
                           variant: 'error',
                         });
@@ -486,18 +496,24 @@ function SettlementStep({
     >
       {app?.settlementAccount && (
         <Alert tone="success">
-          Account ending {app.settlementAccount.accountNumberLast4} saved (reference{' '}
-          {app.settlementAccount.reference}). Enter details again only to change it.
+          {tr('Account ending')} {app.settlementAccount.accountNumberLast4} {tr('saved (reference')}{' '}
+          {app.settlementAccount.reference}
+          {tr('). Enter details again only to change it.')}
         </Alert>
       )}
       {save.error && <Alert tone="danger">{errorMessage(save.error)}</Alert>}
       <Input
-        label="Account holder name"
+        label={tr('Account holder name')}
         required
         error={e.accountHolderName?.message}
         {...register('accountHolderName')}
       />
-      <Input label="Bank name" required error={e.bankName?.message} {...register('bankName')} />
+      <Input
+        label={tr('Bank name')}
+        required
+        error={e.bankName?.message}
+        {...register('bankName')}
+      />
       <Input
         label="IFSC"
         required
@@ -506,17 +522,17 @@ function SettlementStep({
         {...register('ifsc')}
       />
       <Input
-        label="Account number"
+        label={tr('Account number')}
         required
         inputMode="numeric"
         autoComplete="off"
-        hint="Encrypted at rest. Only the last 4 digits are ever shown."
+        hint={tr('Encrypted at rest. Only the last 4 digits are ever shown.')}
         error={e.accountNumber?.message}
         {...register('accountNumber')}
       />
       <div className="flex justify-end">
         <Button type="submit" loading={save.isPending}>
-          Save and continue
+          {tr('Save and continue')}
         </Button>
       </div>
     </form>
@@ -535,7 +551,7 @@ export function PartnerOnboardingPage() {
     if (app && !editable) setStep(5);
   }, [app, editable]);
 
-  if (application.isPending) return <PageSpinner label="Loading your application" />;
+  if (application.isPending) return <PageSpinner label={tr('Loading your application')} />;
   if (application.isError)
     return (
       <ErrorState
@@ -557,17 +573,19 @@ export function PartnerOnboardingPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        eyebrow="Partner onboarding"
-        title="Become a STAYSCAPE partner"
-        description="Tell us about your business. Your progress is saved after each step, so you can return any time."
+        eyebrow={tr('Partner onboarding')}
+        title={tr('Become a STAYSCAPE partner')}
+        description={tr(
+          'Tell us about your business. Your progress is saved after each step, so you can return any time.',
+        )}
       />
       {app && <StatusPanel app={app} />}
       {!user?.emailVerified && (
         <Alert tone="warning">
-          Verify your email address before submitting — we use it for verification updates.
+          {tr('Verify your email address before submitting — we use it for verification updates.')}
         </Alert>
       )}
-      <nav aria-label="Onboarding progress">
+      <nav aria-label={tr('Onboarding progress')}>
         <ol className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
           {STEPS.map((label, i) => (
             <li key={label}>
@@ -591,7 +609,9 @@ export function PartnerOnboardingPage() {
                   {complete[i] ? <Check className="size-3.5" aria-hidden="true" /> : i + 1}
                 </span>
                 {label}
-                <span className="sr-only">{complete[i] ? '(complete)' : '(incomplete)'}</span>
+                <span className="sr-only">
+                  {complete[i] ? tr('(complete)') : tr('(incomplete)')}
+                </span>
               </button>
             </li>
           ))}
@@ -600,7 +620,7 @@ export function PartnerOnboardingPage() {
       <div
         className="h-1.5 overflow-hidden rounded-full bg-surface-muted"
         role="progressbar"
-        aria-label="Application completeness"
+        aria-label={tr('Application completeness')}
         aria-valuemin={0}
         aria-valuemax={5}
         aria-valuenow={complete.slice(0, 5).filter(Boolean).length}
@@ -615,8 +635,8 @@ export function PartnerOnboardingPage() {
         {step === 0 && (
           <>
             <StepHeader
-              title="Owner and business information"
-              description="As it appears on your registration documents."
+              title={tr('Owner and business information')}
+              description={tr('As it appears on your registration documents.')}
             />
             <CardContent>
               {editable ? <BusinessStep app={app} onSaved={next} /> : <ReadOnly />}
@@ -626,8 +646,8 @@ export function PartnerOnboardingPage() {
         {step === 1 && (
           <>
             <StepHeader
-              title="Business address and contact details"
-              description="Where your business is registered and how we can reach you."
+              title={tr('Business address and contact details')}
+              description={tr('Where your business is registered and how we can reach you.')}
             />
             <CardContent>
               {editable ? <ContactStep app={app} onSaved={next} /> : <ReadOnly />}
@@ -637,8 +657,8 @@ export function PartnerOnboardingPage() {
         {step === 2 && (
           <>
             <StepHeader
-              title="Registration and tax information"
-              description="Used to verify your business and issue tax-compliant invoices."
+              title={tr('Registration and tax information')}
+              description={tr('Used to verify your business and issue tax-compliant invoices.')}
             />
             <CardContent>
               {editable ? <TaxStep app={app} onSaved={next} /> : <ReadOnly />}
@@ -648,14 +668,14 @@ export function PartnerOnboardingPage() {
         {step === 3 && (
           <>
             <StepHeader
-              title="Verification documents"
-              description="Upload clear scans or photos. Required documents are marked."
+              title={tr('Verification documents')}
+              description={tr('Upload clear scans or photos. Required documents are marked.')}
             />
             <CardContent>
               {app ? (
                 <DocumentsStep app={app} editable={editable} />
               ) : (
-                <Alert tone="info">Save the business step first.</Alert>
+                <Alert tone="info">{tr('Save the business step first.')}</Alert>
               )}
             </CardContent>
           </>
@@ -663,8 +683,8 @@ export function PartnerOnboardingPage() {
         {step === 4 && (
           <>
             <StepHeader
-              title="Settlement account"
-              description="Where payouts for your bookings will be sent."
+              title={tr('Settlement account')}
+              description={tr('Where payouts for your bookings will be sent.')}
             />
             <CardContent>
               {editable ? <SettlementStep app={app} onSaved={next} /> : <ReadOnly />}
@@ -674,12 +694,14 @@ export function PartnerOnboardingPage() {
         {step === 5 && (
           <>
             <StepHeader
-              title="Review and submit"
-              description="Check everything is complete. Our team usually reviews applications within a few working days."
+              title={tr('Review and submit')}
+              description={tr(
+                'Check everything is complete. Our team usually reviews applications within a few working days.',
+              )}
             />
             <CardContent className="flex flex-col gap-4">
               {app?.missingRequirements.length ? (
-                <Alert tone="warning" title="Still needed">
+                <Alert tone="warning" title={tr('Still needed')}>
                   <ul className="list-disc pl-5">
                     {app.missingRequirements.map((m) => (
                       <li key={m}>{m}</li>
@@ -687,30 +709,32 @@ export function PartnerOnboardingPage() {
                   </ul>
                 </Alert>
               ) : app ? (
-                <Alert tone="success">All steps are complete.</Alert>
+                <Alert tone="success">{tr('All steps are complete.')}</Alert>
               ) : (
-                <Alert tone="info">Start with the business step.</Alert>
+                <Alert tone="info">{tr('Start with the business step.')}</Alert>
               )}
               {app && (
                 <dl className="grid gap-3 text-sm sm:grid-cols-2">
                   <div>
-                    <dt className="text-fg-subtle">Business</dt>
+                    <dt className="text-fg-subtle">{tr('Business')}</dt>
                     <dd>{app.business.businessName ?? '—'}</dd>
                   </div>
                   <div>
-                    <dt className="text-fg-subtle">City</dt>
+                    <dt className="text-fg-subtle">{tr('City')}</dt>
                     <dd>{app.contact.businessAddress?.city ?? '—'}</dd>
                   </div>
                   <div>
-                    <dt className="text-fg-subtle">PAN</dt>
+                    <dt className="text-fg-subtle">{tr('PAN')}</dt>
                     <dd>{app.tax.taxDetails?.pan ?? '—'}</dd>
                   </div>
                   <div>
-                    <dt className="text-fg-subtle">Documents</dt>
-                    <dd>{app.documents.length} uploaded</dd>
+                    <dt className="text-fg-subtle">{tr('Documents')}</dt>
+                    <dd>
+                      {app.documents.length} {tr('uploaded')}
+                    </dd>
                   </div>
                   <div>
-                    <dt className="text-fg-subtle">Settlement account</dt>
+                    <dt className="text-fg-subtle">{tr('Settlement account')}</dt>
                     <dd>
                       {app.settlementAccount
                         ? `•••• ${app.settlementAccount.accountNumberLast4}`
@@ -718,7 +742,7 @@ export function PartnerOnboardingPage() {
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-fg-subtle">Status</dt>
+                    <dt className="text-fg-subtle">{tr('Status')}</dt>
                     <dd className="flex items-center gap-1">
                       {app.verificationStatus === 'UNDER_REVIEW' ? (
                         <Clock className="size-4" aria-hidden="true" />
@@ -739,20 +763,20 @@ export function PartnerOnboardingPage() {
                       submit.mutate(undefined, {
                         onSuccess: () =>
                           toast({
-                            title: 'Application submitted',
-                            description: 'We will notify you when it has been reviewed.',
+                            title: tr('Application submitted'),
+                            description: tr('We will notify you when it has been reviewed.'),
                             variant: 'success',
                           }),
                         onError: (e) =>
                           toast({
-                            title: 'Could not submit',
+                            title: tr('Could not submit'),
                             description: normalizeApiError(e).message,
                             variant: 'error',
                           }),
                       })
                     }
                   >
-                    Submit for review
+                    {tr('Submit for review')}
                   </Button>
                 </div>
               )}
@@ -767,7 +791,7 @@ export function PartnerOnboardingPage() {
 function ReadOnly() {
   return (
     <p className="text-sm text-fg-muted">
-      This application has been submitted and can't be edited while it is reviewed.
+      {tr("This application has been submitted and can't be edited while it is reviewed.")}
     </p>
   );
 }

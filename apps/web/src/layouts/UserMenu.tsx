@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router';
 import { Building2, LayoutDashboard, LogOut, Shield, UserRound } from 'lucide-react';
 import { Avatar, Dropdown, useToast, type DropdownItem } from '@/components/ui';
 import { useAuth, useSignOut } from '@/features/auth/use-auth';
+import { tr, trf } from '@/lib/tr';
 
 export function UserMenu() {
   const { user, can } = useAuth();
@@ -14,13 +15,13 @@ export function UserMenu() {
   const items: DropdownItem[] = [
     {
       id: 'account',
-      label: 'My account',
+      label: tr('My account'),
       icon: <LayoutDashboard />,
       onSelect: () => navigate('/account'),
     },
     {
       id: 'profile',
-      label: 'Profile & security',
+      label: tr('Profile & security'),
       icon: <UserRound />,
       onSelect: () => navigate('/account/profile'),
     },
@@ -28,27 +29,27 @@ export function UserMenu() {
   if (can('partner:access'))
     items.push({
       id: 'partner',
-      label: 'Partner workspace',
+      label: tr('Partner workspace'),
       icon: <Building2 />,
       onSelect: () => navigate('/partner'),
     });
   if (can('admin:access'))
     items.push({
       id: 'admin',
-      label: 'Administration',
+      label: tr('Administration'),
       icon: <Shield />,
       onSelect: () => navigate('/admin'),
     });
   items.push({
     id: 'logout',
-    label: 'Sign out',
+    label: tr('Sign out'),
     icon: <LogOut />,
     danger: true,
     onSelect: () => {
       void signOut().then(() => {
         toast({
-          title: 'Signed out',
-          description: 'See you on your next journey.',
+          title: tr('Signed out'),
+          description: tr('See you on your next journey.'),
           variant: 'success',
         });
         navigate('/');
@@ -68,7 +69,7 @@ export function UserMenu() {
         <button
           {...props}
           type="button"
-          aria-label={`Account menu for ${name}`}
+          aria-label={trf('Account menu for {0}', [name])}
           className="rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
           <Avatar name={name} src={user.avatarUrl} size="md" />

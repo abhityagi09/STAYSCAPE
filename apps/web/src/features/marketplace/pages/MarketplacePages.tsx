@@ -21,14 +21,15 @@ import {
 } from '../components/HotelCard';
 import { parseSearch } from '../search-state';
 import { useQuery } from '@tanstack/react-query';
+import { tr } from '@/lib/tr';
 
 const yes = (v: boolean | null | undefined) =>
   v === null || v === undefined ? (
     <span className="text-fg-subtle">—</span>
   ) : v ? (
-    <Check className="size-4 text-success" aria-label="Yes" />
+    <Check className="size-4 text-success" aria-label={tr('Yes')} />
   ) : (
-    <Minus className="size-4 text-fg-subtle" aria-label="No" />
+    <Minus className="size-4 text-fg-subtle" aria-label={tr('No')} />
   );
 
 export function ComparePage() {
@@ -52,67 +53,67 @@ export function ComparePage() {
       <div className="container-page py-16">
         <EmptyState
           icon={<GitCompareArrows />}
-          title="Nothing to compare yet"
-          description="Use the Compare button on up to four stays in your search results."
-          action={<ButtonLink to="/hotels">Browse stays</ButtonLink>}
+          title={tr('Nothing to compare yet')}
+          description={tr('Use the Compare button on up to four stays in your search results.')}
+          action={<ButtonLink to="/hotels">{tr('Browse stays')}</ButtonLink>}
         />
       </div>
     );
   }
   const hotels = query.data ?? [];
   const rows: Array<{ label: string; render: (h: (typeof hotels)[number]) => React.ReactNode }> = [
-    { label: 'Property type', render: (h) => PROPERTY_TYPE_LABELS[h.propertyType] },
-    { label: 'Location', render: (h) => `${h.city}, ${h.state}` },
+    { label: tr('Property type'), render: (h) => PROPERTY_TYPE_LABELS[h.propertyType] },
+    { label: tr('Location'), render: (h) => `${h.city}, ${h.state}` },
     {
-      label: 'Star category',
+      label: tr('Star category'),
       render: (h) => (h.starCategory ? '★'.repeat(h.starCategory) : 'Unrated'),
     },
-    { label: 'Guest rating', render: (h) => <RatingBadge rating={h.ratingSummary} /> },
-    { label: 'Review count', render: (h) => h.ratingSummary.count },
+    { label: tr('Guest rating'), render: (h) => <RatingBadge rating={h.ratingSummary} /> },
+    { label: tr('Review count'), render: (h) => h.ratingSummary.count },
     {
       label: search.checkIn ? `Price for ${search.checkIn} → ${search.checkOut}` : 'Price',
       render: (h) =>
         !search.checkIn ? (
-          <span className="text-fg-subtle">Add dates</span>
+          <span className="text-fg-subtle">{tr('Add dates')}</span>
         ) : h.price ? (
           <span className="font-semibold">
             {formatMinorUnits(h.price.totalMinor, h.price.currency)}
             <span className="block text-xs font-normal text-fg-subtle">
-              incl. taxes · {h.price.roomTypeName}
+              {tr('incl. taxes ·')} {h.price.roomTypeName}
             </span>
           </span>
         ) : (
-          <span className="text-warning">Not available</span>
+          <span className="text-warning">{tr('Not available')}</span>
         ),
     },
     {
-      label: 'Rooms available',
+      label: tr('Rooms available'),
       render: (h) =>
         h.price
           ? `${h.price.roomsLeft} for these dates`
           : `${h.roomCategories} categories · ${h.totalRooms} rooms`,
     },
-    { label: 'Breakfast', render: (h) => yes(h.breakfastAvailable) },
-    { label: 'Parking', render: (h) => yes(h.parking) },
-    { label: 'Pool', render: (h) => yes(h.pool) },
-    { label: 'Free cancellation available', render: (h) => yes(h.freeCancellationAvailable) },
-    { label: 'Check-in / out', render: (h) => `${h.checkInTime} / ${h.checkOutTime}` },
-    { label: 'Pets', render: (h) => yes(h.policies.petsAllowed) },
-    { label: 'Minimum check-in age', render: (h) => h.policies.minimumCheckInAge },
+    { label: tr('Breakfast'), render: (h) => yes(h.breakfastAvailable) },
+    { label: tr('Parking'), render: (h) => yes(h.parking) },
+    { label: tr('Pool'), render: (h) => yes(h.pool) },
+    { label: tr('Free cancellation available'), render: (h) => yes(h.freeCancellationAvailable) },
+    { label: tr('Check-in / out'), render: (h) => `${h.checkInTime} / ${h.checkOutTime}` },
+    { label: tr('Pets'), render: (h) => yes(h.policies.petsAllowed) },
+    { label: tr('Minimum check-in age'), render: (h) => h.policies.minimumCheckInAge },
   ];
 
   return (
     <div className="container-page py-10">
       <PageHeader
-        title="Compare stays"
+        title={tr('Compare stays')}
         description={
           search.checkIn
-            ? 'Prices are live quotes for your dates, including taxes.'
-            : 'Add dates in your search to compare real prices.'
+            ? tr('Prices are live quotes for your dates, including taxes.')
+            : tr('Add dates in your search to compare real prices.')
         }
         actions={
           <Button variant="outline" size="sm" onClick={() => dispatch(clearCompare())}>
-            Clear all
+            {tr('Clear all')}
           </Button>
         }
       />
@@ -124,18 +125,20 @@ export function ComparePage() {
         <div
           className="overflow-x-auto rounded-2xl border border-border bg-surface"
           role="region"
-          aria-label="Comparison table"
+          aria-label={tr('Comparison table')}
           tabIndex={0}
         >
           <table className="w-full min-w-[720px] text-sm">
-            <caption className="sr-only">Comparison of {hotels.length} stays</caption>
+            <caption className="sr-only">
+              {tr('Comparison of')} {hotels.length} {tr('stays')}
+            </caption>
             <thead>
               <tr>
                 <th
                   scope="col"
                   className="w-48 p-4 text-left align-bottom text-xs font-semibold tracking-wide text-fg-muted uppercase"
                 >
-                  Property
+                  {tr('Property')}
                 </th>
                 {hotels.map((h) => (
                   <th key={h.id} scope="col" className="p-4 text-left align-top font-normal">
@@ -157,7 +160,7 @@ export function ComparePage() {
                         leftIcon={<X className="size-3.5" aria-hidden="true" />}
                         onClick={() => dispatch(removeCompare(h.id))}
                       >
-                        Remove
+                        {tr('Remove')}
                       </Button>
                     </div>
                   </th>
@@ -183,7 +186,7 @@ export function ComparePage() {
       )}
       {items.length > hotels.length && query.isSuccess && (
         <p className="mt-4 text-sm text-fg-subtle">
-          Some saved comparisons are no longer available and were skipped.
+          {tr('Some saved comparisons are no longer available and were skipped.')}
         </p>
       )}
     </div>
@@ -199,8 +202,8 @@ export function SavedStaysPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Saved stays"
-        description="Properties you've saved. Only currently published listings are shown."
+        title={tr('Saved stays')}
+        description={tr("Properties you've saved. Only currently published listings are shown.")}
       />
       {query.isPending ? (
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
@@ -213,9 +216,9 @@ export function SavedStaysPage() {
       ) : query.data.length === 0 ? (
         <EmptyState
           icon={<Heart />}
-          title="No saved stays yet"
-          description="Tap the heart on any property to save it here."
-          action={<ButtonLink to="/hotels">Explore stays</ButtonLink>}
+          title={tr('No saved stays yet')}
+          description={tr('Tap the heart on any property to save it here.')}
+          action={<ButtonLink to="/hotels">{tr('Explore stays')}</ButtonLink>}
         />
       ) : (
         <ul className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
