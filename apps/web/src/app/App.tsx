@@ -6,6 +6,7 @@ import { ToastProvider } from '@/components/ui';
 import { SessionManager } from '@/features/auth/SessionManager';
 import { ThemeSync } from '@/features/ui/ThemeToggle';
 import { createQueryClient } from '@/lib/query-client';
+import { I18nProvider } from '@/lib/i18n';
 import { createRouter } from './router';
 import { createStore } from './store';
 import { AppErrorBoundary } from './AppErrorBoundary';
@@ -18,7 +19,9 @@ export function AppProviders({ children }: { children: ReactNode }) {
       <QueryClientProvider client={queryClient}>
         <ToastProvider>
           <ThemeSync />
-          <SessionManager>{children}</SessionManager>
+          <SessionManager>
+            <I18nProvider>{children}</I18nProvider>
+          </SessionManager>
         </ToastProvider>
       </QueryClientProvider>
     </ReduxProvider>

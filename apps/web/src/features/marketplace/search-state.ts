@@ -1,4 +1,6 @@
 import {
+  ACCESSIBILITY_FEATURES,
+  type AccessibilityFeature,
   PROPERTY_TYPES,
   SEARCH_SORTS,
   addDays,
@@ -29,6 +31,8 @@ export interface SearchState {
   wifi: boolean;
   petFriendly: boolean;
   accessible: boolean;
+  accessibilityFeatures: AccessibilityFeature[];
+  accessibilityVerifiedOnly: boolean;
   freeCancellation: boolean;
   instantConfirmation: boolean;
   bbox: [number, number, number, number] | null;
@@ -57,6 +61,8 @@ export const DEFAULT_SEARCH: SearchState = {
   wifi: false,
   petFriendly: false,
   accessible: false,
+  accessibilityFeatures: [],
+  accessibilityVerifiedOnly: false,
   freeCancellation: false,
   instantConfirmation: false,
   bbox: null,
@@ -71,6 +77,7 @@ const FLAGS = [
   'wifi',
   'petFriendly',
   'accessible',
+  'accessibilityVerifiedOnly',
   'freeCancellation',
   'instantConfirmation',
 ] as const;
@@ -82,6 +89,7 @@ export const FLAG_LABELS: Record<FlagKey, string> = {
   wifi: 'Free Wi-Fi',
   petFriendly: 'Pet-friendly',
   accessible: 'Wheelchair accessible',
+  accessibilityVerifiedOnly: 'Accessibility checked by Stayscape',
   freeCancellation: 'Free cancellation',
   instantConfirmation: 'Instant confirmation',
 };
@@ -129,6 +137,7 @@ export function parseSearch(params: URLSearchParams): SearchState {
     minPrice: validDates && params.get('minPrice') ? int(params.get('minPrice'), 0, 0, 1e9) : null,
     maxPrice: validDates && params.get('maxPrice') ? int(params.get('maxPrice'), 0, 0, 1e9) : null,
     amenities: list(params.get('amenities')),
+    accessibilityFeatures: list(params.get('accessibilityFeatures')).filter((f): f is AccessibilityFeature => (ACCESSIBILITY_FEATURES as readonly string[]).includes(f)),
     ...Object.fromEntries(FLAGS.map((f) => [f, params.get(f) === 'true'])),
     bbox:
       bbox.length === 4 && bbox.every(Number.isFinite)
@@ -167,6 +176,7 @@ export function toSearchParams(state: Partial<SearchState>): URLSearchParams {
   if (full.minPrice !== null) out.set('minPrice', String(full.minPrice));
   if (full.maxPrice !== null) out.set('maxPrice', String(full.maxPrice));
   set('amenities', full.amenities.join(','));
+  set('accessibilityFeatures', full.accessibilityFeatures.join(','));
   for (const flag of FLAGS) if (full[flag]) out.set(flag, 'true');
   if (full.bbox) out.set('bbox', full.bbox.map((n) => n.toFixed(4)).join(','));
   if (full.sort !== 'recommended') out.set('sort', full.sort);
@@ -181,6 +191,7 @@ export function activeFilterCount(state: SearchState): number {
     state.propertyTypes.length +
     state.stars.length +
     state.amenities.length +
+    state.accessibilityFeatures.length +
     (state.minRating !== null ? 1 : 0) +
     (state.minPrice !== null || state.maxPrice !== null ? 1 : 0) +
     FLAGS.filter((f) => state[f]).length

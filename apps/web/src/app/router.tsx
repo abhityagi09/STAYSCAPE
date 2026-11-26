@@ -22,6 +22,10 @@ const trips = () => import('@/features/bookings/pages/AccountBookingPages');
 const extras = () => import('@/features/bookings/pages/AccountExtrasPages');
 const reservations = () => import('@/features/partner/pages/ReservationsPages');
 const operations = () => import('@/features/admin/pages/OperationsPage');
+const partnerOps = () => import('@/features/ops/PartnerOpsPages');
+const adminOps = () => import('@/features/ops/AdminOpsPages');
+const contentPages = () => import('@/features/ops/ContentPages');
+const customerOps = () => import('@/features/ops/CustomerPages');
 
 /** Old /search links keep working. */
 function SearchRedirect() {
@@ -67,6 +71,13 @@ export const routes: RouteObject[] = [
           },
           { path: 'checkout/failure', lazy: lazy(checkout, (m) => m.CheckoutFailurePage) },
           { path: 'wishlists/shared/:token', lazy: lazy(extras, (m) => m.SharedWishlistPage) },
+          { path: 'trips/shared/:token', lazy: lazy(customerOps, (m) => m.SharedTripPage) },
+          { path: 'guides', lazy: lazy(contentPages, (m) => m.GuidesIndexPage) },
+          { path: 'guides/:slug', lazy: lazy(contentPages, (m) => () => <m.ContentEntryPage type="GUIDE" />) },
+          { path: 'blog/:slug', lazy: lazy(contentPages, (m) => () => <m.ContentEntryPage type="BLOG" />) },
+          { path: 'legal/:slug', lazy: lazy(contentPages, (m) => () => <m.ContentEntryPage type="LEGAL" />) },
+          { path: 'help/faq', lazy: lazy(contentPages, (m) => m.FaqPage) },
+          { path: 'content/preview/:token', lazy: lazy(contentPages, (m) => m.ContentPreviewPage) },
           { path: 'partners', lazy: lazy(legal, (m) => m.PartnersLandingPage) },
           { path: 'terms', lazy: lazy(legal, (m) => m.TermsPage) },
           { path: 'privacy', lazy: lazy(legal, (m) => m.PrivacyPage) },
@@ -140,6 +151,27 @@ export const routes: RouteObject[] = [
               { path: 'trips', element: <Navigate to="/account/bookings" replace /> },
               { path: 'notifications', lazy: lazy(account, (m) => m.NotificationsPage) },
               { path: 'saved', lazy: lazy(market, (m) => m.SavedStaysPage) },
+              { path: 'rewards', lazy: lazy(customerOps, (m) => m.RewardsPage) },
+              { path: 'price-alerts', lazy: lazy(customerOps, (m) => m.PriceAlertsPage) },
+              { path: 'assistant', lazy: lazy(customerOps, (m) => m.AssistantPage) },
+              { path: 'corporate', lazy: lazy(customerOps, (m) => m.CorporatePage) },
+              { path: 'corporate/reports', lazy: lazy(customerOps, (m) => m.CorporateReportsPage) },
+            ],
+          },
+        ],
+      },
+      {
+        path: 'trips',
+        element: <RequireAuth />,
+        children: [
+          {
+            lazy: lazy(workspaces, (m) => m.CustomerLayout),
+            children: [
+              { index: true, lazy: lazy(customerOps, (m) => m.TripsPage) },
+              { path: 'new', lazy: lazy(customerOps, (m) => m.TripFormPage) },
+              { path: 'join', lazy: lazy(customerOps, (m) => m.TripJoinPage) },
+              { path: ':id', lazy: lazy(customerOps, (m) => m.TripDetailPage) },
+              { path: ':id/edit', lazy: lazy(customerOps, (m) => m.TripFormPage) },
             ],
           },
         ],
@@ -162,10 +194,20 @@ export const routes: RouteObject[] = [
                     lazy: lazy(partner, (m) => () => <m.PropertyFormPage mode="create" />),
                   },
                   { path: 'inventory', lazy: lazy(partner, (m) => m.InventoryPage) },
-                  {
-                    path: 'reservations',
-                    lazy: lazy(reservations, (m) => m.PartnerReservationsPage),
-                  },
+                  { path: 'bookings', lazy: lazy(reservations, (m) => m.PartnerReservationsPage) },
+                  { path: 'reservations', element: <Navigate to="/partner/bookings" replace /> },
+                  { path: 'guests', element: <Navigate to="/partner/bookings" replace /> },
+                  { path: 'rooms', element: <Navigate to="/partner/properties" replace /> },
+                  { path: 'rates', element: <Navigate to="/partner/properties" replace /> },
+                  { path: 'settings', element: <Navigate to="/account/profile" replace /> },
+                  { path: 'dashboard', lazy: lazy(partnerOps, (m) => m.PartnerAnalyticsPage) },
+                  { path: 'analytics', lazy: lazy(partnerOps, (m) => m.PartnerAnalyticsPage) },
+                  { path: 'staff', lazy: lazy(partnerOps, (m) => m.PartnerStaffPage) },
+                  { path: 'settlements', lazy: lazy(partnerOps, (m) => m.PartnerSettlementsPage) },
+                  { path: 'payouts', element: <Navigate to="/partner/settlements" replace /> },
+                  { path: 'channels', lazy: lazy(partnerOps, (m) => m.PartnerChannelsPage) },
+                  { path: 'inventory/blocks', lazy: lazy(partnerOps, (m) => m.PartnerBlocksPage) },
+                  { path: 'support', lazy: lazy(partnerOps, (m) => m.PartnerSupportPage) },
                   { path: 'reviews', lazy: lazy(reservations, (m) => m.PartnerReviewsPage) },
                   {
                     path: 'properties/:id',
@@ -204,9 +246,37 @@ export const routes: RouteObject[] = [
                 children: [{ index: true, lazy: lazy(admin, (m) => m.AdminUsersPage) }],
               },
               {
-                path: 'audit',
+                path: 'audit-logs',
                 element: <RequireAuth permissions={['audit:read']} />,
                 children: [{ index: true, lazy: lazy(admin, (m) => m.AdminAuditPage) }],
+              },
+              { path: 'audit', element: <Navigate to="/admin/audit-logs" replace /> },
+              ...(
+                [
+                  ['dashboard', 'reports:view', 'AdminPlatformDashboardPage'],
+                  ['reports', 'analytics:platform', 'AdminReportsPage'],
+                  ['customers', 'users:read', 'AdminCustomersPage'],
+                  ['catalog', 'catalog:manage', 'AdminCatalogPage'],
+                  ['bookings', 'bookings:read-all', 'AdminBookingsPage'],
+                  ['payments', 'payments:read', 'AdminPaymentsPage'],
+                  ['refunds', 'payments:read', 'AdminRefundsPage'],
+                  ['commissions', 'payments:read', 'AdminCommissionsPage'],
+                  ['settlements', 'payments:read', 'AdminSettlementsPage'],
+                  ['coupons', 'coupons:manage', 'AdminCouponsPage'],
+                  ['promotions', 'coupons:manage', 'AdminCouponsPage'],
+                  ['support', 'support:manage', 'AdminSupportPage'],
+                  ['reviews', 'reviews:moderate', 'AdminReviewsPage'],
+                  ['organizations', 'users:manage', 'AdminOrganizationsPage'],
+                ] as const
+              ).map(([path, permission, page]) => ({
+                path,
+                element: <RequireAuth permissions={[permission]} />,
+                children: [{ index: true, lazy: lazy(adminOps, (m) => m[page]) }],
+              })),
+              {
+                path: 'content',
+                element: <RequireAuth permissions={['content:manage']} />,
+                children: [{ index: true, lazy: lazy(contentPages, (m) => m.AdminContentPage) }],
               },
               { path: 'settings', lazy: lazy(admin, (m) => m.AdminSettingsPage) },
               {

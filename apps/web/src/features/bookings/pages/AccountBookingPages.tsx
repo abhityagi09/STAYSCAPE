@@ -1,3 +1,4 @@
+import { RecommendationsPanel } from '@/features/ops/CustomerPages';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useMutation } from '@tanstack/react-query';
@@ -160,6 +161,7 @@ export function AccountOverviewPage() {
         description="Trips, payments and everything you have saved."
       />
       <EmailVerificationBanner user={user} />
+      <RecommendationsPanel />
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatTile
           label="Upcoming stays"

@@ -1,3 +1,4 @@
+import { PersonalizationCard } from '@/features/ops/PersonalizationCard';
 import { useId, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -965,6 +966,7 @@ export function SettingsPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title="Settings" description="Notifications, language, currency and security." />
+      <PersonalizationCard />
       <Card>
         <CardHeader>
           <CardTitle as="h2">Notifications</CardTitle>

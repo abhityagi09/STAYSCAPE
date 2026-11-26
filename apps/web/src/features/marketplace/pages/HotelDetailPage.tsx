@@ -43,6 +43,7 @@ import { PhotoGrid, Lightbox } from '../components/Gallery';
 import { HotelCard, RatingBadge, ResponsiveImage } from '../components/HotelCard';
 import { PriceBreakdown } from '../components/PriceBreakdown';
 import { HotelReviews } from '@/features/bookings/HotelReviews';
+import { ApproxPrice, HotelInsights } from '@/features/ops/HotelInsights';
 import { parseSearch, toSearchParams } from '../search-state';
 
 export const SELECTION_STORAGE_KEY = 'stayscape.selection';
@@ -244,6 +245,7 @@ function RoomOfferCard({
                       <span className="text-xs text-fg-subtle">
                         {q.nights} night{q.nights === 1 ? '' : 's'}, incl. taxes
                       </span>
+                      <ApproxPrice amountMinor={q.totals.totalMinor} currency={q.currency} />
                       <Button
                         size="sm"
                         variant={isSelected ? 'primary' : 'outline'}
@@ -400,6 +402,7 @@ function Overview({ hotel }: { hotel: HotelDetailDto }) {
           )}
         </dl>
       </section>
+      <HotelInsights hotel={hotel} />
       <section aria-labelledby="reviews">
         <h2 id="reviews" className="font-display text-2xl font-semibold">
           Guest reviews

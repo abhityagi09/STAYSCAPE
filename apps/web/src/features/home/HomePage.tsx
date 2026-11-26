@@ -1,3 +1,4 @@
+import { CmsBanners } from '@/features/ops/ContentPages';
 import type { ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router';
 import {
@@ -472,6 +473,7 @@ export default function HomePage() {
       </section>
 
       <Newsletter />
+      <CmsBanners />
     </>
   );
 }

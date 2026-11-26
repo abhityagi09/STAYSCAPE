@@ -15,6 +15,8 @@ import {
   SEARCH_SORTS,
   formatMinorUnits,
   type SearchSort,
+  ACCESSIBILITY_FEATURES,
+  ACCESSIBILITY_FEATURE_LABELS,
 } from '@stayscape/shared';
 import { useAppDispatch, useAppSelector } from '@/app/store';
 import {
@@ -104,6 +106,23 @@ function FiltersPanel({
             label={FLAG_LABELS[flag]}
             checked={state[flag]}
             onChange={() => update({ [flag]: !state[flag] })}
+          />
+        ))}
+      </fieldset>
+      <fieldset className="flex flex-col gap-2.5">
+        <legend className="mb-2 text-sm font-semibold">Accessibility</legend>
+        {ACCESSIBILITY_FEATURES.map((f) => (
+          <Checkbox
+            key={f}
+            label={ACCESSIBILITY_FEATURE_LABELS[f]}
+            checked={state.accessibilityFeatures.includes(f)}
+            onChange={() =>
+              update({
+                accessibilityFeatures: state.accessibilityFeatures.includes(f)
+                  ? state.accessibilityFeatures.filter((x) => x !== f)
+                  : [...state.accessibilityFeatures, f],
+              })
+            }
           />
         ))}
       </fieldset>

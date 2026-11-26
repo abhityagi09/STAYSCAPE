@@ -216,6 +216,8 @@ describe('hotel detail page', () => {
   const detail: HotelDetailDto = {
     ...hotelCard(),
     description: 'A restored haveli on the lake.',
+    accessibility: [{ code: 'STEP_FREE_ENTRANCE', label: 'Step-free entrance', note: '', source: 'ADMIN_VERIFIED', verifiedAt: '2026-11-20T00:00:00.000Z' }],
+    trustScore: null,
     address: { line1: '12 Lake Road' },
     postalCode: '313001',
     timeZone: 'Asia/Kolkata',

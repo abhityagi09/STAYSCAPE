@@ -84,7 +84,7 @@ describe('responsive navigation', () => {
     }
   });
 
-  it('labels partner payouts as not yet available instead of linking to them', async () => {
+  it('links partner settlements now that they exist, with no placeholder entries left', async () => {
     renderWithProviders(
       [
         {
@@ -99,7 +99,8 @@ describe('responsive navigation', () => {
       },
     );
     const sidebar = (await screen.findAllByRole('navigation', { name: 'Workspace' }))[0]!;
-    expect(within(sidebar).queryByRole('link', { name: /Payouts/ })).not.toBeInTheDocument();
-    expect(within(sidebar).getByText('Payouts').closest('[aria-disabled="true"]')).not.toBeNull();
+    expect(within(sidebar).getByRole('link', { name: /Settlements/ })).toHaveAttribute('href', '/partner/settlements');
+    expect(within(sidebar).getByRole('link', { name: /Performance/ })).toHaveAttribute('href', '/partner/dashboard');
+    expect(sidebar.querySelector('[aria-disabled="true"]')).toBeNull();
   });
 });

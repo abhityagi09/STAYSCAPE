@@ -6,12 +6,15 @@ import { Logo } from '@/components/brand/Logo';
 import { Badge, Drawer, IconButton } from '@/components/ui';
 import { useAuth } from '@/features/auth/use-auth';
 import { ThemeToggle } from '@/features/ui/ThemeToggle';
+import { LanguageSwitcher, useI18n, type MessageKey } from '@/lib/i18n';
 import { cn } from '@/lib/cn';
 import { UserMenu } from './UserMenu';
 
 export interface NavItem {
   to: string;
   label: string;
+  /** Translation key; falls back to `label`. */
+  labelKey?: MessageKey;
   icon: ComponentType<{ className?: string }>;
   end?: boolean;
   /** Hidden unless the user holds every listed permission. */
@@ -22,11 +25,13 @@ export interface NavItem {
 
 export interface NavSection {
   title?: string;
+  titleKey?: MessageKey;
   items: NavItem[];
 }
 
 function SideNav({ sections }: { sections: NavSection[] }) {
   const { can } = useAuth();
+  const { t } = useI18n();
   return (
     <nav aria-label="Workspace" className="flex flex-col gap-6">
       {sections.map((section, index) => {
@@ -36,7 +41,7 @@ function SideNav({ sections }: { sections: NavSection[] }) {
           <div key={section.title ?? index} className="flex flex-col gap-1">
             {section.title && (
               <p className="px-3 pb-1 text-[11px] font-semibold tracking-[0.16em] text-fg-subtle uppercase">
-                {section.title}
+                {section.titleKey ? t(section.titleKey) : section.title}
               </p>
             )}
             {items.map((item) =>
@@ -48,7 +53,7 @@ function SideNav({ sections }: { sections: NavSection[] }) {
                 >
                   <span className="flex items-center gap-3">
                     <item.icon className="size-4.5" aria-hidden="true" />
-                    {item.label}
+                    {item.labelKey ? t(item.labelKey) : item.label}
                   </span>
                   <Badge tone="outline" className="text-[10px]">
                     {item.upcoming}
@@ -69,7 +74,7 @@ function SideNav({ sections }: { sections: NavSection[] }) {
                   }
                 >
                   <item.icon className="size-4.5" aria-hidden="true" />
-                  {item.label}
+                  {item.labelKey ? t(item.labelKey) : item.label}
                 </NavLink>
               ),
             )}
@@ -122,6 +127,7 @@ export function DashboardShell({ workspace, sections, homeLink, footer }: Dashbo
             </Link>
           </p>
           <div className="flex items-center gap-2">
+            <LanguageSwitcher />
             <ThemeToggle />
             <UserMenu />
           </div>

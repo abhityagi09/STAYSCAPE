@@ -5,6 +5,7 @@ import { Logo } from '@/components/brand/Logo';
 import { ButtonLink, Drawer, IconButton } from '@/components/ui';
 import { useAuth } from '@/features/auth/use-auth';
 import { ThemeToggle } from '@/features/ui/ThemeToggle';
+import { LanguageSwitcher } from '@/lib/i18n';
 import { cn } from '@/lib/cn';
 import { UserMenu } from './UserMenu';
 
@@ -61,6 +62,7 @@ export function SiteHeader({ overlay = false }: { overlay?: boolean }) {
           ))}
         </nav>
         <div className="flex items-center gap-2">
+          <LanguageSwitcher className="hidden sm:block" />
           <ThemeToggle variant={inverse ? 'inverse' : 'ghost'} />
           {status !== 'initializing' &&
             (isAuthenticated ? (
