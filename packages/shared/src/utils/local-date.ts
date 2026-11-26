@@ -56,13 +56,43 @@ export function dayOfWeek(date: LocalDate): number {
 }
 
 /** Today's calendar date in an IANA time zone (e.g. the property's). */
+// Building an Intl.DateTimeFormat is far more expensive than using one (it was the hottest
+// path in search pricing), so formatters are created once per time zone and reused.
+const dateFormatters = new Map<string, Intl.DateTimeFormat>();
+const partsFormatters = new Map<string, Intl.DateTimeFormat>();
+function dateFormatter(timeZone: string): Intl.DateTimeFormat {
+  let f = dateFormatters.get(timeZone);
+  if (!f) {
+    f = new Intl.DateTimeFormat('en-CA', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+    dateFormatters.set(timeZone, f);
+  }
+  return f;
+}
+function partsFormatter(timeZone: string): Intl.DateTimeFormat {
+  let f = partsFormatters.get(timeZone);
+  if (!f) {
+    f = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      hourCycle: 'h23',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+    partsFormatters.set(timeZone, f);
+  }
+  return f;
+}
+
 export function todayInTimeZone(timeZone: string, now: Date = new Date()): LocalDate {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(now);
+  return dateFormatter(timeZone).format(now);
 }
 
 export function isValidTimeZone(timeZone: string): boolean {
@@ -76,16 +106,7 @@ export function isValidTimeZone(timeZone: string): boolean {
 
 /** Offset (ms) of `timeZone` from UTC at the given instant (positive east of Greenwich). */
 function zoneOffsetMs(timeZone: string, instant: number): number {
-  const fields = new Intl.DateTimeFormat('en-US', {
-    timeZone,
-    hourCycle: 'h23',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  }).formatToParts(new Date(instant));
+  const fields = partsFormatter(timeZone).formatToParts(new Date(instant));
   const get = (type: string) => Number(fields.find((f) => f.type === type)?.value);
   const asUtc = Date.UTC(
     get('year'),

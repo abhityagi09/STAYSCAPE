@@ -186,7 +186,7 @@ export function PartnersLandingPage() {
           ],
         ].map(([title, body], index) => (
           <li key={title} className="rounded-2xl border border-border bg-surface p-6">
-            <p className="font-mono text-sm text-gold-600 dark:text-gold-400">0{index + 1}</p>
+            <p className="font-mono text-sm text-gold-700 dark:text-gold-400">0{index + 1}</p>
             <h2 className="mt-2 font-display text-lg font-semibold">{title}</h2>
             <p className="mt-1 text-sm text-fg-muted">{body}</p>
           </li>

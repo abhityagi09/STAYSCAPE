@@ -1,5 +1,6 @@
 import { TrustService } from '@/modules/trust/trust.service';
 import { HotelDailyStatModel } from '@/modules/analytics/hotel-stats.model';
+import { createHash } from 'node:crypto';
 import { Types, type PipelineStage } from 'mongoose';
 import {
   FILTER_AMENITIES,
@@ -87,6 +88,8 @@ export class SearchService {
     private readonly cache: CacheService,
     private readonly logger: Logger,
     private readonly trust?: TrustService,
+    /** Max age of cached priced search listings (0 = never cache prices). */
+    private readonly pricedSearchTtlSeconds = 0,
   ) {}
 
   /** Cities that currently have published stays (used by the deterministic assistant). */
@@ -203,11 +206,18 @@ export class SearchService {
   }
 
   async search(c: SearchCriteria): Promise<SearchResultDto> {
-    const { filter, center } = await this.buildFilter(c);
-    const result =
-      c.checkIn && c.checkOut
-        ? await this.searchWithDates(c, filter, center)
-        : await this.searchWithoutDates(c, filter, center);
+    const priced = Boolean(c.checkIn && c.checkOut);
+    const key = `search:${priced ? 'priced' : 'plain'}:${createHash('sha1').update(JSON.stringify(c)).digest('base64url')}`;
+    const result = await this.cache.getOrSet(
+      key,
+      async () => {
+        const { filter, center } = await this.buildFilter(c);
+        return priced
+          ? this.searchWithDates(c, filter, center)
+          : this.searchWithoutDates(c, filter, center);
+      },
+      priced ? this.pricedSearchTtlSeconds : undefined,
+    );
     void this.recordSearch(c, result.pagination.total);
     return result;
   }
@@ -486,19 +496,28 @@ export class SearchService {
     });
   }
 
+  /** Public property page data (no prices). Cached; view counters are recorded on every call. */
   async detail(idOrSlug: string): Promise<HotelDetailDto> {
-    const hotel = await this.findPublished(idOrSlug);
+    const dto = await this.cache.getOrSet(`detail:${idOrSlug.toLowerCase()}`, () =>
+      this.loadDetail(idOrSlug),
+    );
+    const hotelId = new Types.ObjectId(dto.id);
     // Anonymous popularity signal (a view counter) — no personal data involved.
-    void HotelModel.updateOne({ _id: hotel._id }, { $inc: { popularityScore: 1 } })
+    void HotelModel.updateOne({ _id: hotelId }, { $inc: { popularityScore: 1 } })
       .exec()
       .catch(() => undefined);
     void HotelDailyStatModel.updateOne(
-      { hotelId: hotel._id, date: todayInTimeZone(hotel.timeZone ?? 'Asia/Kolkata') },
+      { hotelId, date: todayInTimeZone(dto.timeZone ?? 'Asia/Kolkata') },
       { $inc: { views: 1 } },
       { upsert: true },
     )
       .exec()
       .catch(() => undefined);
+    return dto;
+  }
+
+  private async loadDetail(idOrSlug: string): Promise<HotelDetailDto> {
+    const hotel = await this.findPublished(idOrSlug);
     const [roomTypes, ratePlans, amenityRecords] = await Promise.all([
       RoomTypeModel.find({ hotelId: hotel._id, status: 'ACTIVE' }).lean<RoomTypeRecord[]>(),
       RatePlanModel.find({ hotelId: hotel._id, active: true }).lean<RatePlanRecord[]>(),
@@ -696,6 +715,10 @@ export class SearchService {
   }
 
   async suggestions(q: string): Promise<SuggestionDto[]> {
+    return this.cache.getOrSet(`suggest:${q.trim().toLowerCase()}`, () => this.loadSuggestions(q));
+  }
+
+  private async loadSuggestions(q: string): Promise<SuggestionDto[]> {
     const prefix = new RegExp(`^${escapeRegex(q)}`, 'i');
     const anywhere = new RegExp(escapeRegex(q), 'i');
     const [destinations, hotels] = await Promise.all([

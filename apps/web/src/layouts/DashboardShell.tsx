@@ -131,9 +131,12 @@ export function DashboardShell({ workspace, sections, homeLink, footer }: Dashbo
               {tr('← Back to STAYSCAPE')}
             </Link>
           </p>
-          <div className="flex items-center gap-2">
-            <LanguageSwitcher />
-            <ThemeToggle />
+          <div className="flex min-w-0 items-center gap-2">
+            {/* Phones: language and theme live in the navigation drawer to keep the bar narrow. */}
+            <div className="hidden items-center gap-2 sm:flex">
+              <LanguageSwitcher />
+              <ThemeToggle />
+            </div>
             <UserMenu />
           </div>
         </header>
@@ -145,6 +148,10 @@ export function DashboardShell({ workspace, sections, homeLink, footer }: Dashbo
       </div>
       <Drawer open={open} onClose={() => setOpen(false)} side="left" title={workspace}>
         <SideNav sections={sections} />
+        <div className="mt-6 flex items-center gap-2 border-t border-border pt-4 sm:hidden">
+          <LanguageSwitcher />
+          <ThemeToggle />
+        </div>
       </Drawer>
     </div>
   );

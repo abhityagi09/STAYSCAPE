@@ -37,6 +37,8 @@ const lines = {
   STORAGE_DRIVER: 'local',
   API_DOCS_ENABLED: 'false',
   IMAGE_TAG: 'staging',
+  BACKUP_MONGO_URI: 'mongodb://mongo:27017/?replicaSet=rs0',
+  BACKUP_PASSPHRASE: secret(),
   // Automated suites (e2e, k6) run from one IP; production keeps the lower defaults.
   RATE_LIMIT_MAX: '100000',
   AUTH_RATE_LIMIT_MAX: '5000',

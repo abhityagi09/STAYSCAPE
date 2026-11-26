@@ -36,6 +36,8 @@
   --color-gold-500: #c6a66b; /* brand: muted gold */
   --color-gold-600: #a8884f;
   --color-gold-700: #86693a;
+  /* Text on sand surfaces (≥ 4.5:1 on sand-100). */
+  --color-gold-800: #735a30;
 
   --color-charcoal: #222725; /* brand: charcoal */
   --color-ink-700: #3d4441;
@@ -144,7 +146,8 @@
   --surface-inverse: var(--color-forest-900);
   --fg: var(--color-charcoal);
   --fg-muted: var(--color-ink-600);
-  --fg-subtle: var(--color-ink-500);
+  /* Slightly darker than ink-500 so small text passes 4.5:1 on sand surfaces too. */
+  --fg-subtle: #626865;
   --fg-inverse: var(--color-ivory);
   --border: var(--color-sand-200);
   --border-strong: var(--color-sand-300);
@@ -269,7 +272,7 @@
     @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
   }
   .eyebrow {
-    @apply text-xs font-semibold tracking-[0.18em] text-gold-600 uppercase dark:text-gold-400;
+    @apply text-xs font-semibold tracking-[0.18em] text-gold-800 uppercase dark:text-gold-400;
   }
   .hero-texture {
     background-image:

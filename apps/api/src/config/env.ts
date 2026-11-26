@@ -72,6 +72,8 @@ const envSchema = z
     QUOTE_SIGNING_SECRET: z.string().min(32, 'QUOTE_SIGNING_SECRET must be at least 32 characters'),
     QUOTE_TTL_SECONDS: z.coerce.number().int().min(60).max(3600).default(900),
     SEARCH_CACHE_TTL_SECONDS: z.coerce.number().int().min(0).max(3600).default(60),
+    /** Priced search listings only (re-quoted on the property page and at hold time). Max 60. */
+    PRICED_SEARCH_CACHE_TTL_SECONDS: z.coerce.number().int().min(0).max(60).default(15),
     MEDIA_ORPHAN_TTL_HOURS: z.coerce.number().int().min(1).max(720).default(24),
 
     // ---- Reservations & payments (Phase 3)

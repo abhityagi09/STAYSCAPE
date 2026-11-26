@@ -52,15 +52,6 @@ function DayCell({
       onClick={onClick}
       disabled={past}
       aria-pressed={selected}
-      aria-label={trf('{0}: {1} available, {2} blocked, {3} booked, {4} held{5}{6}', [
-        day.date,
-        day.available,
-        day.blockedRooms,
-        day.bookedRooms,
-        day.heldRooms,
-        day.closedToArrival ? ', closed to arrival' : '',
-        day.closedToDeparture ? ', closed to departure' : '',
-      ])}
       className={cn(
         'flex min-h-20 flex-col items-start gap-0.5 rounded-lg border p-1.5 text-left text-[11px] transition-colors',
         selected ? 'border-primary bg-primary-soft' : 'border-border hover:border-border-strong',
@@ -68,7 +59,11 @@ function DayCell({
         past && 'cursor-not-allowed opacity-40',
       )}
     >
-      <span className="text-xs font-semibold">{Number(day.date.slice(8))}</span>
+      {/* The accessible name is the visible text plus the full date (WCAG 2.5.3 label in name). */}
+      <span className="sr-only">{day.date}</span>
+      <span className="text-xs font-semibold" aria-hidden="true">
+        {Number(day.date.slice(8))}
+      </span>
       <span className={cn('font-medium', soldOut ? 'text-danger' : 'text-success')}>
         {day.available} {tr('avail')}
       </span>
@@ -89,8 +84,18 @@ function DayCell({
       )}
       {(day.closedToArrival || day.closedToDeparture) && (
         <span className="text-info">
-          {day.closedToArrival ? tr('CTA ') : ''}
-          {day.closedToDeparture ? 'CTD' : ''}
+          <span aria-hidden="true">
+            {day.closedToArrival ? tr('CTA ') : ''}
+            {day.closedToDeparture ? 'CTD' : ''}
+          </span>
+          <span className="sr-only">
+            {[
+              day.closedToArrival ? tr('closed to arrival') : '',
+              day.closedToDeparture ? tr('closed to departure') : '',
+            ]
+              .filter(Boolean)
+              .join(', ')}
+          </span>
         </span>
       )}
       {day.minimumStay && (
@@ -272,13 +277,13 @@ export function InventoryPage() {
             ) : (
               <div
                 className="grid grid-cols-7 gap-1.5"
-                role="grid"
+                role="group"
                 aria-label={tr('Inventory by date')}
               >
                 {DOW.map((d) => (
                   <div
                     key={d}
-                    role="columnheader"
+                    aria-hidden="true"
                     className="pb-1 text-center text-xs font-semibold text-fg-subtle"
                   >
                     {d}

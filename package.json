@@ -2,7 +2,7 @@
   "name": "stayscape",
   "version": "0.1.0",
   "private": true,
-  "description": "STAYSCAPE \u2014 multi-vendor hotel discovery, booking and property management platform",
+  "description": "STAYSCAPE — multi-vendor hotel discovery, booking and property management platform",
   "type": "module",
   "workspaces": [
     "packages/config",
@@ -39,6 +39,7 @@
     "db:migrate": "npm run db:migrate -w @stayscape/api --"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.1",
     "@eslint/js": "^9.39.5",
     "@playwright/test": "^1.65.1",
     "@types/node": "^22.20.5",

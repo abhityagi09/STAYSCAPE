@@ -138,18 +138,18 @@ describe('inventory calendar', () => {
     });
     await user.click(await screen.findByRole('button', { name: 'Week' }));
     const today = todayIsoDate();
-    const grid = await screen.findByRole('grid', { name: 'Inventory by date' });
+    const grid = await screen.findByRole('group', { name: 'Inventory by date' });
     expect(
       within(grid).getByRole('button', {
-        name: new RegExp(`${addDays(today, 4)}: 0 available, 0 blocked, 5 booked`),
+        name: new RegExp(`^${addDays(today, 4)} 0 avail.*5 booked`),
       }),
     ).toBeInTheDocument();
 
     await user.click(
-      within(grid).getByRole('button', { name: new RegExp(`^${addDays(today, 1)}:`) }),
+      within(grid).getByRole('button', { name: new RegExp(`^${addDays(today, 1)} `) }),
     );
     await user.click(
-      within(grid).getByRole('button', { name: new RegExp(`^${addDays(today, 2)}:`) }),
+      within(grid).getByRole('button', { name: new RegExp(`^${addDays(today, 2)} `) }),
     );
     await user.type(screen.getByLabelText(/^Blocked rooms/), '1');
     await user.selectOptions(screen.getByRole('combobox', { name: 'Closed to arrival' }), 'on');
@@ -188,12 +188,12 @@ describe('inventory calendar', () => {
       user: owner,
     });
     await user.click(await screen.findByRole('button', { name: 'Week' }));
-    const grid = await screen.findByRole('grid');
+    const grid = await screen.findByRole('group', { name: 'Inventory by date' });
     await user.click(
-      within(grid).getByRole('button', { name: new RegExp(`^${addDays(todayIsoDate(), 1)}:`) }),
+      within(grid).getByRole('button', { name: new RegExp(`^${addDays(todayIsoDate(), 1)} `) }),
     );
     await user.click(
-      within(grid).getByRole('button', { name: new RegExp(`^${addDays(todayIsoDate(), 1)}:`) }),
+      within(grid).getByRole('button', { name: new RegExp(`^${addDays(todayIsoDate(), 1)} `) }),
     );
     await user.type(screen.getByLabelText(/^Blocked rooms/), '5');
     await user.click(screen.getByRole('button', { name: 'Apply to range' }));

@@ -1,0 +1,124 @@
+# Prometheus alert rules for STAYSCAPE (docs/monitoring.md has owners and runbooks).
+# Metrics come from GET /metrics on each API replica (bearer METRICS_TOKEN, private network only).
+groups:
+  - name: stayscape-availability
+    rules:
+      - alert: ApiDown
+        expr: up{job="stayscape-api"} == 0
+        for: 2m
+        labels: { severity: page, owner: platform-oncall }
+        annotations:
+          summary: 'API replica {{ $labels.instance }} is not responding to scrapes'
+          runbook: docs/monitoring.md#api-down
+      - alert: DatabaseUnavailable
+        expr: min(stayscape_mongo_up) < 1
+        for: 1m
+        labels: { severity: page, owner: platform-oncall }
+        annotations:
+          summary: MongoDB is unreachable from the API (bookings and payments are failing)
+          runbook: docs/monitoring.md#database-unavailable
+      - alert: RedisUnavailable
+        expr: min(stayscape_redis_up) < 1
+        for: 2m
+        labels: { severity: page, owner: platform-oncall }
+        annotations:
+          summary: Redis is unreachable (rate limits, cache and background jobs are degraded)
+          runbook: docs/monitoring.md#redis-unavailable
+
+  - name: stayscape-http
+    rules:
+      - alert: HighServerErrorRate
+        expr: |
+          sum(rate(stayscape_http_server_errors_total[5m]))
+            / clamp_min(sum(rate(stayscape_http_request_duration_seconds_count[5m])), 1) > 0.02
+        for: 5m
+        labels: { severity: page, owner: platform-oncall }
+        annotations:
+          summary: 'More than 2% of API requests are failing with 5xx'
+          runbook: docs/monitoring.md#high-error-rate
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.95, sum by (le) (rate(stayscape_http_request_duration_seconds_bucket{route!~"/health.*|/metrics"}[5m]))) > 1.5
+        for: 10m
+        labels: { severity: ticket, owner: platform-oncall }
+        annotations:
+          summary: 'API p95 latency above 1.5 s for 10 minutes'
+          runbook: docs/monitoring.md#high-latency
+      - alert: EventLoopBlocked
+        expr: max(stayscape_nodejs_eventloop_lag_p99_seconds) > 0.5
+        for: 5m
+        labels: { severity: ticket, owner: platform-oncall }
+        annotations:
+          summary: Node.js event loop lag p99 above 500 ms (CPU saturation; scale out)
+
+  - name: stayscape-money
+    rules:
+      - alert: PaymentWebhookFailures
+        expr: max(stayscape_payment_webhooks_failed) > 0
+        for: 10m
+        labels: { severity: page, owner: payments-oncall }
+        annotations:
+          summary: Verified payment webhooks failed to process
+          runbook: docs/monitoring.md#payment-webhook-failures
+      - alert: PaymentFailureSpike
+        expr: max(stayscape_payments_failed_last_hour) > 20
+        for: 15m
+        labels: { severity: ticket, owner: payments-oncall }
+        annotations:
+          summary: Unusually many failed payments in the last hour (gateway or issuer problem)
+      - alert: BookingReconciliationBacklog
+        expr: max(stayscape_bookings_reconciliation_required) > 0
+        for: 30m
+        labels: { severity: ticket, owner: payments-oncall }
+        annotations:
+          summary: Paid bookings awaiting manual reconciliation for over 30 minutes
+          runbook: docs/monitoring.md#reconciliation-backlog
+      - alert: StalePaymentProcessing
+        expr: max(stayscape_bookings_payment_processing_stale) > 0
+        for: 30m
+        labels: { severity: ticket, owner: payments-oncall }
+        annotations:
+          summary: Bookings stuck in PAYMENT_PROCESSING (reconciliation job not resolving them)
+      - alert: RefundFailures
+        expr: max(stayscape_refunds_failed) > 0
+        for: 30m
+        labels: { severity: ticket, owner: payments-oncall }
+        annotations:
+          summary: Refunds failed at the provider and are waiting for an operator retry
+          runbook: docs/refunds.md
+
+  - name: stayscape-inventory-and-jobs
+    rules:
+      - alert: InventoryInvariantViolated
+        expr: max(stayscape_inventory_invariant_violations) > 0
+        for: 1m
+        labels: { severity: page, owner: platform-oncall }
+        annotations:
+          summary: Held + booked + blocked rooms exceed total rooms on some nights (possible overbooking)
+          runbook: docs/inventory.md#invariant
+      - alert: HoldsNotExpiring
+        expr: max(stayscape_holds_overdue) > 0
+        for: 10m
+        labels: { severity: ticket, owner: platform-oncall }
+        annotations:
+          summary: Expired holds are not being released (maintenance worker down or stuck)
+          runbook: docs/monitoring.md#jobs
+      - alert: FailedBackgroundJobs
+        expr: max by (queue) (stayscape_queue_jobs{state="failed"}) > 0
+        for: 15m
+        labels: { severity: ticket, owner: platform-oncall }
+        annotations:
+          summary: 'Jobs exhausted their retries on queue {{ $labels.queue }}'
+          runbook: docs/monitoring.md#jobs
+      - alert: QueueBacklog
+        expr: max by (queue) (stayscape_queue_jobs{state="waiting"}) > 500
+        for: 15m
+        labels: { severity: ticket, owner: platform-oncall }
+        annotations:
+          summary: 'Queue {{ $labels.queue }} backlog above 500 jobs (worker down or too slow)'
+      - alert: OutboxEventsFailed
+        expr: max(stayscape_outbox_failed) > 0
+        for: 15m
+        labels: { severity: ticket, owner: platform-oncall }
+        annotations:
+          summary: Domain events (emails, invoices, refunds) exhausted their retries

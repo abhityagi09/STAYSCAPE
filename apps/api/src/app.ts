@@ -84,6 +84,16 @@ export interface AppOptions {
   rateLimiters?: RateLimiters;
 }
 
+/**
+ * Capability URLs (shared trips/wishlists, content previews) and token query parameters are
+ * secrets: anyone holding them gets access, so they never reach the logs.
+ */
+export function redactUrl(url: string): string {
+  return url
+    .replace(/\/(shared|preview)\/[^/?#]+/g, '/$1/[redacted]')
+    .replace(/([?&](?:token|code|signature)=)[^&#]*/gi, '$1[redacted]');
+}
+
 export function createApp(container: Container, options: AppOptions = {}): Express {
   const { config, logger } = container;
   const app = express();
@@ -104,7 +114,10 @@ export function createApp(container: Container, options: AppOptions = {}): Expre
       customProps: (req) => ({ requestId: (req as express.Request).requestId }),
       autoLogging: { ignore: (req) => req.url?.startsWith('/health') ?? false },
       serializers: {
-        req: (req: { method: string; url: string }) => ({ method: req.method, url: req.url }),
+        req: (req: { method: string; url: string }) => ({
+          method: req.method,
+          url: redactUrl(req.url),
+        }),
         res: (res: { statusCode: number }) => ({ statusCode: res.statusCode }),
       },
     }),

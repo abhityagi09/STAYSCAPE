@@ -236,7 +236,7 @@ export default function HomePage() {
           </p>
           <h1
             id="hero-title"
-            className="mt-5 max-w-3xl animate-rise-in font-display text-display-sm font-semibold tracking-tight [animation-delay:60ms] sm:text-display-md lg:text-display-lg"
+            className="mt-5 max-w-3xl font-display text-display-sm font-semibold tracking-tight sm:text-display-md lg:text-display-lg"
           >
             {tr('Stays worth the journey.')}
           </h1>
@@ -279,7 +279,7 @@ export default function HomePage() {
         ].map(({ icon: Icon, title, body }) => (
           <div key={title} className="flex items-start gap-3">
             <Icon
-              className="mt-0.5 size-5 shrink-0 text-gold-600 dark:text-gold-400"
+              className="mt-0.5 size-5 shrink-0 text-gold-700 dark:text-gold-400"
               aria-hidden="true"
             />
             <p className="text-sm">

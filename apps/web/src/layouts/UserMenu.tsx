@@ -69,10 +69,11 @@ export function UserMenu() {
         <button
           {...props}
           type="button"
-          aria-label={trf('Account menu for {0}', [name])}
           className="rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
-          <Avatar name={name} src={user.avatarUrl} size="md" />
+          {/* Name first, then the visible initials, so the label contains what is shown (WCAG 2.5.3). */}
+          <span className="sr-only">{trf('Account menu for {0}', [name])}</span>
+          <Avatar name={name} src={user.avatarUrl} size="md" decorative />
         </button>
       )}
       items={items}

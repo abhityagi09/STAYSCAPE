@@ -58,6 +58,11 @@ export default tseslint.config(
   },
   {
     // mongosh scripts run inside the MongoDB shell
+    // k6 load-test scripts run in the k6 JavaScript runtime.
+    files: ['tests/load/**/*.js'],
+    languageOptions: { globals: { __ENV: 'readonly', __VU: 'readonly', __ITER: 'readonly' } },
+  },
+  {
     files: ['infrastructure/mongo/**/*.js'],
     languageOptions: {
       sourceType: 'script',

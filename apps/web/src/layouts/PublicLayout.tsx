@@ -88,13 +88,13 @@ export function SiteHeader({ overlay = false }: { overlay?: boolean }) {
           ))}
         </nav>
         <div className="flex items-center gap-2">
-          <LanguageSwitcher className="hidden sm:block" />
+          <LanguageSwitcher className="hidden md:block" />
           <ThemeToggle variant={inverse ? 'inverse' : 'ghost'} />
           {status !== 'initializing' &&
             (isAuthenticated ? (
               <UserMenu />
             ) : (
-              <div className="hidden items-center gap-2 sm:flex">
+              <div className="hidden items-center gap-2 md:flex">
                 <ButtonLink
                   to="/login"
                   variant="ghost"
@@ -130,6 +130,9 @@ export function SiteHeader({ overlay = false }: { overlay?: boolean }) {
             </Link>
           ))}
         </nav>
+        <div className="mt-6 border-t border-border pt-6 md:hidden">
+          <LanguageSwitcher />
+        </div>
         {!isAuthenticated && (
           <div className="mt-6 flex flex-col gap-2 border-t border-border pt-6">
             <ButtonLink to="/login" variant="outline" fullWidth>
@@ -229,7 +232,8 @@ export function PublicLayout() {
         {tr('Skip to content')}
       </a>
       <SiteHeader overlay={isHome} />
-      <main id="main" className="flex-1">
+      {/* At least one viewport tall, so the footer never jumps when a page finishes loading. */}
+      <main id="main" className="min-h-[calc(100dvh-4rem)] flex-1">
         <Outlet />
       </main>
       <SiteFooter />

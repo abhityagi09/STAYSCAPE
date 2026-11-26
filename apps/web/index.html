@@ -21,10 +21,15 @@
     <script src="/theme-init.js"></script>
   </head>
   <body>
-    <noscript>STAYSCAPE requires JavaScript to run.</noscript>
-    <div id="root">
+    <!--
+      Crawlable summary for agents that do not run JavaScript (server-side include). Inside
+      <noscript> it never paints for people using the app, so it cannot cause layout shift.
+    -->
+    <noscript>
+      <p>STAYSCAPE requires JavaScript to run.</p>
       <!--# block name="seo_body_fallback" --><!--# endblock --><!--# include virtual="/__seo/body$request_uri" stub="seo_body_fallback" -->
-    </div>
+    </noscript>
+    <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

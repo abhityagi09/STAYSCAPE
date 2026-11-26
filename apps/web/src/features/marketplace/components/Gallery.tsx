@@ -96,7 +96,11 @@ export function Lightbox({
           </>
         )}
       </div>
-      <div className="flex gap-2 overflow-x-auto p-4" role="group" aria-label={tr('Thumbnails')}>
+      <div
+        className="relative flex gap-2 overflow-x-auto p-4"
+        role="group"
+        aria-label={tr('Thumbnails')}
+      >
         {images.map((img, i) => (
           <button
             key={img.id}

@@ -19,13 +19,21 @@ export function formatMinorUnits(
   assertMinorUnits(amountMinor);
   const exponent = CURRENCY_EXPONENT[currency];
   const major = amountMinor / 10 ** exponent;
-  return new Intl.NumberFormat(locale, {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: options.maximumFractionDigits ?? exponent,
-    maximumFractionDigits: options.maximumFractionDigits ?? exponent,
-  }).format(major);
+  const digits = options.maximumFractionDigits ?? exponent;
+  const key = `${locale}|${currency}|${digits}`;
+  let formatter = moneyFormatters.get(key);
+  if (!formatter) {
+    formatter = new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency,
+      minimumFractionDigits: digits,
+      maximumFractionDigits: digits,
+    });
+    moneyFormatters.set(key, formatter);
+  }
+  return formatter.format(major);
 }
+const moneyFormatters = new Map<string, Intl.NumberFormat>();
 
 /** Convert a user-entered decimal string ("1499.50") to minor units without float drift. */
 export function parseMajorToMinor(input: string, currency: CurrencyCode): number {

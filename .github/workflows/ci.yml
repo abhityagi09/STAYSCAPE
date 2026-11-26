@@ -1,22 +1,36 @@
-name: CI
+name: CI/CD
+
+# Stages: checkout → install → lint → typecheck → unit + integration tests → builds →
+# dependency audit → secret scan → Docker images (+ vulnerability scan) → production-mode
+# staging stack with end-to-end, accessibility and smoke tests → staging deploy → production
+# deploy behind a manual approval (GitHub environment protection). See docs/deployment.md.
 
 on:
   push:
     branches: [master, main]
   pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
+
+env:
+  REGISTRY: ghcr.io/${{ github.repository_owner }}/stayscape
 
 jobs:
   verify:
     name: Lint, typecheck, unit/integration tests, build
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
+    services:
+      redis:
+        image: redis:7.4-alpine
+        ports: ['6379:6379']
+        options: --health-cmd "redis-cli ping" --health-interval 5s --health-retries 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -30,16 +44,79 @@ jobs:
           key: mongodb-binaries-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - run: npm ci
       - run: npm run lint
+      - run: npm run format:check
       - run: npm run typecheck
       - run: npm run i18n:check
+      # API tests are integration tests: real MongoDB replica set (transactions) + real Redis.
       - run: npm run test
+        env:
+          REDIS_TEST_URL: redis://localhost:6379/15
       - run: npm run build
 
-  e2e:
-    name: End-to-end (Playwright)
+  security:
+    name: Dependency audit and secret scan
     runs-on: ubuntu-latest
-    needs: verify
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: npm audit (all dependencies, fail on high/critical)
+        run: npm audit --audit-level=high
+      - name: Secret scan (full history)
+        run: |
+          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.28.0 \
+            git /repo --config /repo/.gitleaks.toml --redact --no-banner --exit-code 1
+
+  images:
+    name: Build, scan and publish Docker images
+    runs-on: ubuntu-latest
+    needs: [verify, security]
     timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: tag
+        run: echo "tag=sha-${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v3
+      - name: Build images
+        run: |
+          docker build -f infrastructure/docker/api.Dockerfile -t "$REGISTRY/api:${{ steps.tag.outputs.tag }}" .
+          docker build -f infrastructure/docker/web.Dockerfile -t "$REGISTRY/web:${{ steps.tag.outputs.tag }}" .
+      - name: Vulnerability scan (fail on fixable critical)
+        run: |
+          for image in api web; do
+            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.67.2 image \
+              --severity CRITICAL --ignore-unfixed --exit-code 1 --no-progress "$REGISTRY/$image:${{ steps.tag.outputs.tag }}"
+          done
+      - name: Publish (main branch only)
+        if: github.event_name == 'push'
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          for image in api web; do docker push "$REGISTRY/$image:${{ steps.tag.outputs.tag }}"; done
+      - name: Save images for the staging test job
+        run: docker save "$REGISTRY/api:${{ steps.tag.outputs.tag }}" "$REGISTRY/web:${{ steps.tag.outputs.tag }}" | gzip > images.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: images
+          path: images.tar.gz
+          retention-days: 1
+
+  staging-e2e:
+    name: Production-mode stack — end-to-end, accessibility, smoke
+    runs-on: ubuntu-latest
+    needs: images
+    timeout-minutes: 45
+    env:
+      IMAGE_TAG: ${{ needs.images.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -49,31 +126,92 @@ jobs:
       - run: npm ci
         env:
           MONGOMS_DISABLE_POSTINSTALL: '1'
-      - run: cp .env.example .env
-      - name: Start MongoDB replica set, Redis and Mailpit
-        run: docker compose up -d --wait mongo redis mailpit
-      - run: npm run build:shared
-      - name: Seed development data and an e2e administrator
-        run: npm run seed && npm run bootstrap:admin
-        env:
-          SEED_USER_PASSWORD: Seed-Dev-Passw0rd
-          ADMIN_BOOTSTRAP_PASSWORD: E2e-Admin-Passw0rd
+      - uses: actions/download-artifact@v4
+        with:
+          name: images
+      - run: gunzip -c images.tar.gz | docker load
+      - name: Start the stack (NODE_ENV=production, DEPLOYMENT_ENV=staging, sandbox gateway)
+        run: |
+          node scripts/make-staging-env.mjs --url=http://localhost:8081 --force
+          echo "IMAGE_TAG=$IMAGE_TAG" >> .env.staging
+          echo "REGISTRY=$REGISTRY" >> .env.staging
+          docker compose -f docker-compose.prod.yml --env-file .env.staging --profile self-hosted up -d --wait --no-build
+          docker compose -f docker-compose.prod.yml --env-file .env.staging --profile release run --rm release
+      - name: Seed fictional staging data and the e2e administrator
+        run: |
+          C="docker compose -f docker-compose.prod.yml --env-file .env.staging"
+          $C exec -T -e SEED_USER_PASSWORD=Seed-Dev-Passw0rd api node dist/scripts/seed.js
+          $C exec -T -e ADMIN_BOOTSTRAP_EMAIL=admin@stayscape.local -e ADMIN_BOOTSTRAP_PASSWORD=E2e-Admin-Passw0rd api node dist/scripts/bootstrap-admin.js
+      - run: sh scripts/deploy/smoke.sh http://localhost:8081
       - run: npx playwright install --with-deps chromium
-      - run: npm run test:e2e
+      - name: End-to-end, responsive and accessibility suites
+        run: npx playwright test --trace off
+        env:
+          E2E_BASE_URL: http://localhost:8081
+          MAILPIT_URL: http://localhost:8026
+          E2E_SEED_PASSWORD: Seed-Dev-Passw0rd
+      - name: Backup and restore drill
+        run: |
+          C="docker compose -f docker-compose.prod.yml --env-file .env.staging"
+          $C --profile backup run --rm backup
+          $C --profile backup run --rm restore-drill
+      - name: Load smoke (k6)
+        run: |
+          docker run --rm --network stayscape-staging_edge -e BASE_URL=http://web:8080 \
+            -e MAILPIT_URL=http://mailpit:8025 -e PROFILE=smoke -e SEED_USER_PASSWORD=Seed-Dev-Passw0rd \
+            -v "$PWD/tests/load:/scripts" grafana/k6:1.3.0 run --quiet /scripts/stayscape.js
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
-          path: playwright-report
+          name: staging-reports
+          path: |
+            playwright-report
+            test-results
           retention-days: 7
       - if: always()
-        run: docker compose down -v
+        run: docker compose -f docker-compose.prod.yml --env-file .env.staging --profile self-hosted down -v
 
-  docker:
-    name: Docker images build
+  deploy-staging:
+    name: Deploy to staging
     runs-on: ubuntu-latest
-    needs: verify
+    needs: [images, staging-e2e]
+    if: github.event_name == 'push' && vars.STAGING_URL != ''
+    environment:
+      name: staging
+      url: ${{ vars.STAGING_URL }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - run: docker compose build api web
+      - name: Deploy over SSH (secrets scoped to the staging environment)
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          install -m 600 /dev/null ~/.ssh_key && printf '%s\n' "$SSH_KEY" > ~/.ssh_key
+          ssh -i ~/.ssh_key -o StrictHostKeyChecking=accept-new "$HOST" \
+            "cd /srv/stayscape && git fetch --depth 1 origin $GITHUB_SHA && git checkout $GITHUB_SHA && \
+             sh scripts/deploy/deploy.sh .env.staging ${{ needs.images.outputs.tag }} ${{ vars.STAGING_URL }}"
+      - run: sh scripts/deploy/smoke.sh "${{ vars.STAGING_URL }}"
+
+  deploy-production:
+    name: Deploy to production (requires approval)
+    runs-on: ubuntu-latest
+    needs: [images, deploy-staging]
+    if: github.event_name == 'push' && vars.PRODUCTION_URL != ''
+    # Configure required reviewers on the "production" environment: this job waits for approval.
+    environment:
+      name: production
+      url: ${{ vars.PRODUCTION_URL }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy over SSH (secrets scoped to the production environment)
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          install -m 600 /dev/null ~/.ssh_key && printf '%s\n' "$SSH_KEY" > ~/.ssh_key
+          ssh -i ~/.ssh_key -o StrictHostKeyChecking=accept-new "$HOST" \
+            "cd /srv/stayscape && git fetch --depth 1 origin $GITHUB_SHA && git checkout $GITHUB_SHA && \
+             sh scripts/deploy/deploy.sh .env.production ${{ needs.images.outputs.tag }} ${{ vars.PRODUCTION_URL }}"
+      - run: sh scripts/deploy/smoke.sh "${{ vars.PRODUCTION_URL }}"

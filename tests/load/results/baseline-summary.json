@@ -1,0 +1,478 @@
+{
+  "setup_data": {
+    "bookers": [
+      "load.mwxvgubq.0@example.com",
+      "load.mwxvgubq.1@example.com",
+      "load.mwxvgubq.2@example.com",
+      "load.mwxvgubq.3@example.com",
+      "load.mwxvgubq.4@example.com",
+      "load.mwxvgubq.5@example.com",
+      "load.mwxvgubq.6@example.com",
+      "load.mwxvgubq.7@example.com",
+      "load.mwxvgubq.8@example.com",
+      "load.mwxvgubq.9@example.com",
+      "load.mwxvgubq.10@example.com",
+      "load.mwxvgubq.11@example.com"
+    ],
+    "hotels": [
+      "opal-estate-udaipur",
+      "zephyr-farmstay-darjeeling",
+      "hearth-suites-varanasi",
+      "dune-estate-mumbai",
+      "neem-residency-bengaluru",
+      "emerald-apartments-jaipur",
+      "willow-city-hotel-manali",
+      "vetiver-residency-munnar",
+      "monsoon-inn-pondicherry",
+      "amber-homestay-goa",
+      "fern-residency-rishikesh",
+      "opal-villa-mumbai",
+      "kesar-villa-pondicherry",
+      "kesar-commons-manali",
+      "dune-residency-goa",
+      "banyan-cottage-jaipur",
+      "peacock-cottage-munnar",
+      "emerald-rest-house-munnar",
+      "quill-inn-rishikesh",
+      "kesar-apartments-mumbai",
+      "banyan-grand-hotel-bengaluru",
+      "zephyr-house-coorg",
+      "neem-city-hotel-jaipur",
+      "saffron-commons-munnar",
+      "willow-boutique-stay-pondicherry",
+      "emerald-villa-coorg",
+      "jasmine-residency-coorg",
+      "amber-homestay-mumbai",
+      "cedar-boutique-stay-udaipur",
+      "monsoon-homestay-goa",
+      "fern-residency-manali",
+      "vetiver-residency-varanasi",
+      "fern-hostel-goa",
+      "banyan-inn-varanasi",
+      "saffron-apartments-jaipur",
+      "amber-haveli-pondicherry",
+      "amber-city-hotel-manali",
+      "indigo-estate-udaipur",
+      "fern-resort-spa-udaipur",
+      "lotus-city-hotel-darjeeling",
+      "coral-residency-darjeeling",
+      "banyan-cottage-darjeeling",
+      "hearth-homestay-jaipur",
+      "indigo-grand-hotel-manali",
+      "jasmine-estate-varanasi",
+      "monsoon-residency-mumbai",
+      "cedar-villas-mumbai",
+      "zephyr-inn-varanasi",
+      "quill-grand-hotel-udaipur",
+      "cedar-villa-pondicherry"
+    ],
+    "partner": {
+      "roomTypeId": "6b08680b9549f380612cb635",
+      "email": "seed.partner1@stayscape.dev",
+      "hotelId": "6b0868079549f380612cb634"
+    },
+    "bookable": [
+      {
+        "roomTypeId": "6b08684b9549f380612cd0ec",
+        "slug": "opal-estate-udaipur",
+        "hotelId": "6b0868479549f380612cd0eb",
+        "ratePlanId": "6b08684b9549f380612cd0ed"
+      },
+      {
+        "hotelId": "6b0868679549f380612cdeff",
+        "ratePlanId": "6b08686a9549f380612cdf01",
+        "roomTypeId": "6b08686a9549f380612cdf00",
+        "slug": "zephyr-farmstay-darjeeling"
+      },
+      {
+        "hotelId": "6b0868299549f380612cc352",
+        "ratePlanId": "6b08682d9549f380612cc354",
+        "roomTypeId": "6b08682d9549f380612cc353",
+        "slug": "hearth-suites-varanasi"
+      },
+      {
+        "hotelId": "6b08693e9549f380612d3db1",
+        "ratePlanId": "6b0869429549f380612d3db3",
+        "roomTypeId": "6b0869429549f380612d3db2",
+        "slug": "dune-estate-mumbai"
+      },
+      {
+        "slug": "neem-residency-bengaluru",
+        "hotelId": "6b0868a59549f380612cf9b5",
+        "ratePlanId": "6b0868a99549f380612cf9b7",
+        "roomTypeId": "6b0868a89549f380612cf9b6"
+      },
+      {
+        "ratePlanId": "6b0868e79549f380612d14e9",
+        "roomTypeId": "6b0868e79549f380612d14e8",
+        "slug": "emerald-apartments-jaipur",
+        "hotelId": "6b0868e39549f380612d14e7"
+      },
+      {
+        "hotelId": "6b0868c59549f380612d07c9",
+        "ratePlanId": "6b0868c99549f380612d07cb",
+        "roomTypeId": "6b0868c99549f380612d07ca",
+        "slug": "willow-city-hotel-manali"
+      },
+      {
+        "slug": "vetiver-residency-munnar",
+        "hotelId": "6b0869209549f380612d3093",
+        "ratePlanId": "6b0869249549f380612d3095",
+        "roomTypeId": "6b0869249549f380612d3094"
+      },
+      {
+        "roomTypeId": "6b0869059549f380612d2280",
+        "slug": "monsoon-inn-pondicherry",
+        "hotelId": "6b0869019549f380612d227f",
+        "ratePlanId": "6b0869059549f380612d2281"
+      },
+      {
+        "slug": "amber-homestay-goa",
+        "hotelId": "6b0868079549f380612cb634",
+        "ratePlanId": "6b08680b9549f380612cb636",
+        "roomTypeId": "6b08680b9549f380612cb635"
+      },
+      {
+        "hotelId": "6b0868869549f380612cec1c",
+        "ratePlanId": "6b0868899549f380612cec1e",
+        "roomTypeId": "6b0868899549f380612cec1d",
+        "slug": "fern-residency-rishikesh"
+      },
+      {
+        "hotelId": "6b08690a9549f380612d2662",
+        "ratePlanId": "6b08690e9549f380612d2664",
+        "roomTypeId": "6b08690e9549f380612d2663",
+        "slug": "opal-villa-mumbai"
+      }
+    ]
+  },
+  "root_group": {
+    "id": "d41d8cd98f00b204e9800998ecf8427e",
+    "groups": {},
+    "checks": {
+      "suggest 200": {
+        "passes": 1680,
+        "fails": 0,
+        "name": "suggest 200",
+        "path": "::suggest 200",
+        "id": "d12e1779ef5753e7fcf08a5598f66553"
+      },
+      "offers 200": {
+        "name": "offers 200",
+        "path": "::offers 200",
+        "id": "641e0a02773664bb81d769dba11393e1",
+        "passes": 933,
+        "fails": 0
+      },
+      "inventory 200": {
+        "name": "inventory 200",
+        "path": "::inventory 200",
+        "id": "c30a897dbbdca55d013ed7274e2bbebb",
+        "passes": 127,
+        "fails": 0
+      },
+      "search 200": {
+        "name": "search 200",
+        "path": "::search 200",
+        "id": "f1430541508c538fdf29bbd85cfe5de5",
+        "passes": 1723,
+        "fails": 0
+      },
+      "detail 200": {
+        "path": "::detail 200",
+        "id": "981c52cabeb9f59acfcea75637140716",
+        "passes": 1723,
+        "fails": 0,
+        "name": "detail 200"
+      },
+      "hold 201/409": {
+        "name": "hold 201/409",
+        "path": "::hold 201/409",
+        "id": "16e1338e8630db0e6a306f105942d2d7",
+        "passes": 174,
+        "fails": 0
+      },
+      "dashboard 200": {
+        "fails": 0,
+        "name": "dashboard 200",
+        "path": "::dashboard 200",
+        "id": "834732e3e331ab0c1efa32a058e51217",
+        "passes": 64
+      },
+      "booking 201": {
+        "passes": 171,
+        "fails": 0,
+        "name": "booking 201",
+        "path": "::booking 201",
+        "id": "b126aae2dc7662b9772e00d359182276"
+      },
+      "payment order 201": {
+        "passes": 171,
+        "fails": 0,
+        "name": "payment order 201",
+        "path": "::payment order 201",
+        "id": "35f02cfcd8f22b65600f5dc31afdf19e"
+      }
+    },
+    "name": "",
+    "path": ""
+  },
+  "metrics": {
+    "iteration_duration": {
+      "min": 306.468655,
+      "med": 1659.171912,
+      "p(90)": 3152.662035,
+      "p(95)": 3498.854771,
+      "p(99)": 4635.993293,
+      "max": 7541.275995,
+      "count": 4701,
+      "avg": 1720.090892282279
+    },
+    "http_req_duration{name:admin_dashboard}": {
+      "p(99)": 796.7206766299998,
+      "max": 846.378284,
+      "count": 64,
+      "avg": 193.08253926562497,
+      "min": 20.806218,
+      "med": 152.017822,
+      "p(90)": 323.2489077,
+      "p(95)": 500.60604909999927,
+      "thresholds": {
+        "p(95)<2000": false
+      }
+    },
+    "http_req_duration{name:hold}": {
+      "p(90)": 937.6916579000002,
+      "p(95)": 1112.1419887499999,
+      "p(99)": 1557.2144690300013,
+      "max": 1815.244001,
+      "count": 174,
+      "avg": 427.5322950517243,
+      "min": 38.28466,
+      "med": 309.2596965,
+      "thresholds": {
+        "p(95)<1500": false
+      }
+    },
+    "http_req_waiting": {
+      "min": 1.316489,
+      "med": 65.991244,
+      "p(90)": 378.2575604000004,
+      "p(95)": 539.8278804000005,
+      "p(99)": 919.8869696000014,
+      "max": 1937.652724,
+      "count": 10649,
+      "avg": 143.15398664954463
+    },
+    "http_req_connecting": {
+      "max": 10.609246,
+      "count": 10649,
+      "avg": 0.005209630763451967,
+      "min": 0,
+      "med": 0,
+      "p(90)": 0,
+      "p(95)": 0,
+      "p(99)": 0
+    },
+    "booking_flow_duration": {
+      "p(99)": 4532.800000000002,
+      "max": 4645,
+      "count": 171,
+      "avg": 1772.1286549707602,
+      "min": 313,
+      "med": 1533,
+      "p(90)": 3368,
+      "p(95)": 3563
+    },
+    "http_req_duration{name:payment_order}": {
+      "count": 171,
+      "avg": 346.8509257076024,
+      "min": 43.945232,
+      "med": 254.115061,
+      "p(90)": 690.514405,
+      "p(95)": 852.04267,
+      "p(99)": 1342.7799354000012,
+      "max": 1749.248222,
+      "thresholds": {
+        "p(95)<1500": false
+      }
+    },
+    "http_reqs": {
+      "rate": 83.82448826081814,
+      "count": 10649
+    },
+    "http_req_duration": {
+      "p(95)": 540.3333376000006,
+      "p(99)": 920.1001340800013,
+      "max": 1937.917029,
+      "count": 10649,
+      "avg": 143.52186277575302,
+      "min": 1.42085,
+      "med": 66.336278,
+      "p(90)": 378.6268448000004
+    },
+    "http_req_duration{name:inventory_update}": {
+      "med": 272.718301,
+      "p(90)": 631.4230752,
+      "p(95)": 758.5869279999998,
+      "p(99)": 959.9360729399997,
+      "max": 1199.949819,
+      "count": 127,
+      "avg": 335.5872247401577,
+      "min": 34.209338,
+      "thresholds": {
+        "p(95)<1500": false
+      }
+    },
+    "http_req_tls_handshaking": {
+      "p(99)": 0,
+      "max": 0,
+      "count": 10649,
+      "avg": 0,
+      "min": 0,
+      "med": 0,
+      "p(90)": 0,
+      "p(95)": 0
+    },
+    "http_req_sending": {
+      "avg": 0.0618093318621467,
+      "min": 0.010147,
+      "med": 0.03567,
+      "p(90)": 0.0945534,
+      "p(95)": 0.11530560000000002,
+      "p(99)": 0.3234481200000003,
+      "max": 8.950649,
+      "count": 10649
+    },
+    "http_req_duration{name:search_dates}": {
+      "count": 1723,
+      "avg": 193.7841876001165,
+      "min": 3.988987,
+      "med": 127.910189,
+      "p(90)": 468.0191615999999,
+      "p(95)": 588.8140425999998,
+      "p(99)": 933.4505990399999,
+      "max": 1402.267157,
+      "thresholds": {
+        "p(95)<1500": false
+      }
+    },
+    "http_req_blocked": {
+      "avg": 0.020676878580148314,
+      "min": 0.003221,
+      "med": 0.011106,
+      "p(90)": 0.015911800000000004,
+      "p(95)": 0.02044320000000002,
+      "p(99)": 0.1489700000000011,
+      "max": 10.975503,
+      "count": 10649
+    },
+    "http_req_failed": {
+      "passes": 3,
+      "fails": 10646,
+      "thresholds": {
+        "rate<0.01": false
+      },
+      "value": 0.000281716593107334
+    },
+    "http_req_duration{name:suggest}": {
+      "min": 2.761626,
+      "med": 26.915917999999998,
+      "p(90)": 210.42682690000004,
+      "p(95)": 308.8215789999998,
+      "p(99)": 569.95073914,
+      "max": 876.608255,
+      "count": 1680,
+      "avg": 73.13659696011918,
+      "thresholds": {
+        "p(95)<300": true
+      }
+    },
+    "http_req_duration{name:search}": {
+      "med": 29.827538,
+      "p(90)": 212.78923799999998,
+      "p(95)": 300.83740539999957,
+      "p(99)": 630.2938942799999,
+      "max": 915.053381,
+      "count": 1723,
+      "avg": 76.69568816889146,
+      "min": 3.381377,
+      "thresholds": {
+        "p(95)<800": false
+      }
+    },
+    "data_received": {
+      "count": 76495166,
+      "rate": 602138.054688359
+    },
+    "checks": {
+      "passes": 6766,
+      "fails": 0,
+      "value": 1
+    },
+    "http_req_duration{name:offers}": {
+      "p(99)": 883.751851719999,
+      "max": 1241.49196,
+      "count": 933,
+      "avg": 197.55945347052517,
+      "min": 15.758331,
+      "med": 137.476192,
+      "p(90)": 443.26695100000006,
+      "p(95)": 602.6715841999999,
+      "thresholds": {
+        "p(95)<1000": false
+      }
+    },
+    "vus": {
+      "value": 1,
+      "min": 0,
+      "max": 76
+    },
+    "iterations": {
+      "count": 4701,
+      "rate": 37.00431207757593
+    },
+    "data_sent": {
+      "count": 1864399,
+      "rate": 14675.771630104337
+    },
+    "http_req_duration{name:hotel_detail}": {
+      "min": 3.984159,
+      "med": 30.460988,
+      "p(90)": 244.32563959999993,
+      "p(95)": 330.55262919999984,
+      "p(99)": 549.8685779199998,
+      "max": 883.104793,
+      "count": 1723,
+      "avg": 81.49466653395233,
+      "thresholds": {
+        "p(95)<500": false
+      }
+    },
+    "http_req_duration{expected_response:true}": {
+      "count": 10646,
+      "avg": 143.53028172487262,
+      "min": 1.42085,
+      "med": 66.3191655,
+      "p(90)": 378.78510500000004,
+      "p(95)": 540.57318325,
+      "p(99)": 920.1917466999978,
+      "max": 1937.917029
+    },
+    "http_req_receiving": {
+      "count": 10649,
+      "avg": 0.3060667943468877,
+      "min": 0.055835,
+      "med": 0.213775,
+      "p(90)": 0.39962240000000004,
+      "p(95)": 0.6690520000000008,
+      "p(99)": 2.2981563600000188,
+      "max": 16.031923
+    },
+    "vus_max": {
+      "value": 76,
+      "min": 76,
+      "max": 76
+    }
+  }
+}

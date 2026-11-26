@@ -91,7 +91,7 @@ function StarInput({
               aria-label={trf('{0}: {1} of 5', [label, n])}
             />
             <Star
-              className={`size-6 peer-focus-visible:outline-2 peer-focus-visible:outline-ring ${n <= value ? 'fill-gold-500 text-gold-500' : 'text-border-strong'}`}
+              className={`size-6 peer-focus-visible:outline-2 peer-focus-visible:outline-ring ${n <= value ? 'fill-gold-600 text-gold-600' : 'text-border-strong'}`}
               aria-hidden="true"
             />
           </label>

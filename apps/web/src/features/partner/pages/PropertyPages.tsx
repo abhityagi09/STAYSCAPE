@@ -194,7 +194,7 @@ export function PropertyLayout() {
       />
       <nav
         aria-label={tr('Property sections')}
-        className="-mt-2 flex gap-1 overflow-x-auto border-b border-border"
+        className="relative -mt-2 flex gap-1 overflow-x-auto border-b border-border"
       >
         {tabs.map((t) => (
           <NavLink

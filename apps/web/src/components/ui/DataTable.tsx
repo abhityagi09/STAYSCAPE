@@ -56,7 +56,7 @@ export function DataTable<T>({
       role="region"
       aria-label={caption}
       tabIndex={0}
-      className="overflow-x-auto rounded-2xl border border-border bg-surface"
+      className="relative overflow-x-auto rounded-2xl border border-border bg-surface"
     >
       <table
         className="w-full min-w-[640px] border-collapse text-sm"

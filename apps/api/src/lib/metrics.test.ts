@@ -45,3 +45,17 @@ describe('metrics endpoint', () => {
     expect(res.text).toMatch(/stayscape_bookings_reconciliation_required 1/);
   });
 });
+
+describe('log redaction', () => {
+  it('removes capability tokens from logged URLs', async () => {
+    const { redactUrl } = await import('@/app');
+    expect(redactUrl('/api/v1/trips/shared/abcDEF123?x=1')).toBe(
+      '/api/v1/trips/shared/[redacted]?x=1',
+    );
+    expect(redactUrl('/api/v1/content/preview/tok_123')).toBe('/api/v1/content/preview/[redacted]');
+    expect(redactUrl('/verify-email?token=secret&next=/')).toBe(
+      '/verify-email?token=[redacted]&next=/',
+    );
+    expect(redactUrl('/api/v1/hotels?destination=goa')).toBe('/api/v1/hotels?destination=goa');
+  });
+});

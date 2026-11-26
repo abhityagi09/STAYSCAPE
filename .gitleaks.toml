@@ -1,0 +1,21 @@
+# gitleaks configuration (CI secret scan: .github/workflows/ci.yml).
+# Extends the default rules. The allowlist below covers only reviewed, fictional values:
+#  - passwords of throwaway accounts created by automated tests against ephemeral databases;
+#  - documented example commands that ask the operator to choose their own password.
+# Real credentials never live in the repository; see docs/security.md ("Secrets").
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Reviewed test fixtures and documentation placeholders (2026-11-27)"
+paths = [
+  '''(^|/)tests/e2e/''',
+  '''\.test\.tsx?$''',
+  '''^apps/api/src/test/''',
+]
+# Documentation and script headers show the variable an operator must set, never a real value.
+regexTarget = "line"
+regexes = [
+  '''^\s*(\*\s*)?(SEED_USER_PASSWORD|ADMIN_BOOTSTRAP_PASSWORD)='[^']+'\s''',
+  '''^\s*(\*\s*)?ADMIN_BOOTSTRAP_EMAIL=\S+\s+ADMIN_BOOTSTRAP_PASSWORD='[^']+'\s''',
+]

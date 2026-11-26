@@ -123,7 +123,7 @@ export function ComparePage() {
         <ErrorState description={errorMessage(query.error)} onRetry={() => void query.refetch()} />
       ) : (
         <div
-          className="overflow-x-auto rounded-2xl border border-border bg-surface"
+          className="relative overflow-x-auto rounded-2xl border border-border bg-surface"
           role="region"
           aria-label={tr('Comparison table')}
           tabIndex={0}

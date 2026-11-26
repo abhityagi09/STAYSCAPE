@@ -144,6 +144,38 @@ services:
     security_opt: ['no-new-privileges:true']
     networks: [backend, egress]
 
+  # Encrypted logical backup (cron/scheduler runs it nightly; docs/backup-recovery.md).
+  backup:
+    image: mongo:8.0
+    profiles: [backup]
+    entrypoint: ['sh', '/scripts/backup.sh']
+    environment:
+      MONGO_URI: ${BACKUP_MONGO_URI:?BACKUP_MONGO_URI (cluster URI without a database) is required}
+      MONGO_DB: ${MONGO_DB:-stayscape}
+      BACKUP_PASSPHRASE: ${BACKUP_PASSPHRASE:?}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
+      BACKUP_OPLOG: ${BACKUP_OPLOG:-true}
+    volumes:
+      - ./infrastructure/backup:/scripts:ro
+      - backups:/backups
+      - api-uploads:/media/uploads:ro
+      - api-private:/media/private:ro
+    networks: [backend]
+
+  # Restore drill: restores the newest backup into a scratch database and verifies it.
+  restore-drill:
+    image: mongo:8.0
+    profiles: [backup]
+    entrypoint: ['sh', '/scripts/verify-restore.sh']
+    environment:
+      MONGO_URI: ${BACKUP_MONGO_URI:?}
+      MONGO_DB: ${MONGO_DB:-stayscape}
+      BACKUP_PASSPHRASE: ${BACKUP_PASSPHRASE:?}
+    volumes:
+      - ./infrastructure/backup:/scripts:ro
+      - backups:/backups
+    networks: [backend]
+
   # ---------------------------------------------------------------- self-hosted (staging only)
   mongo:
     image: mongo:8.0
@@ -208,6 +240,7 @@ networks:
   edge: {}
 
 volumes:
+  backups:
   api-uploads:
   api-private:
   mongo-data:

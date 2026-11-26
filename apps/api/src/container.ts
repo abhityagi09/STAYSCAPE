@@ -172,7 +172,14 @@ export function buildContainer(core: CoreDependencies) {
   const inventoryBlocks = new InventoryBlocksService({ access: partnerAccess, inventory, audit });
   const quotes = new QuoteService(inventory, config);
   const trust = new TrustService({ access: partnerAccess, audit, cache });
-  const search = new SearchService(quotes, media, cache, logger, trust);
+  const search = new SearchService(
+    quotes,
+    media,
+    cache,
+    logger,
+    trust,
+    config.PRICED_SEARCH_CACHE_TTL_SECONDS,
+  );
   const assistant = new AssistantService({ config, search, quotes, logger });
   const currency = new CurrencyService({
     provider: config.FX_PROVIDER === 'ecb' ? new EcbRatesProvider() : null,

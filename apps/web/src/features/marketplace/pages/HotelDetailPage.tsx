@@ -363,28 +363,28 @@ function Overview({ hotel }: { hotel: HotelDetailDto }) {
           {tr('House policies')}
         </h2>
         <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2">
-          <div className="flex gap-2">
-            <Clock className="mt-0.5 size-4 text-fg-subtle" aria-hidden="true" />
-            <div>
-              <dt className="font-medium">{tr('Check-in / check-out')}</dt>
-              <dd className="text-fg-muted">
-                {tr('From')} {hotel.checkInTime} {tr('· Until')} {hotel.checkOutTime}{' '}
-                {tr('(property local time)')}
-              </dd>
-            </div>
+          <div>
+            <dt className="flex items-center gap-2 font-medium">
+              <Clock className="size-4 text-fg-subtle" aria-hidden="true" />
+              {tr('Check-in / check-out')}
+            </dt>
+            <dd className="pl-6 text-fg-muted">
+              {tr('From')} {hotel.checkInTime} {tr('· Until')} {hotel.checkOutTime}{' '}
+              {tr('(property local time)')}
+            </dd>
           </div>
-          <div className="flex gap-2">
-            <ShieldCheck className="mt-0.5 size-4 text-fg-subtle" aria-hidden="true" />
-            <div>
-              <dt className="font-medium">{tr('Guests')}</dt>
-              <dd className="text-fg-muted">
-                {tr('Minimum check-in age')} {hotel.policies.minimumCheckInAge}.{' '}
-                {hotel.policies.petsAllowed ? tr('Pets welcome.') : tr('No pets.')}{' '}
-                {hotel.policies.smokingAllowed
-                  ? tr('Smoking allowed in designated areas.')
-                  : tr('Non-smoking.')}
-              </dd>
-            </div>
+          <div>
+            <dt className="flex items-center gap-2 font-medium">
+              <ShieldCheck className="size-4 text-fg-subtle" aria-hidden="true" />
+              {tr('Guests')}
+            </dt>
+            <dd className="pl-6 text-fg-muted">
+              {tr('Minimum check-in age')} {hotel.policies.minimumCheckInAge}.{' '}
+              {hotel.policies.petsAllowed ? tr('Pets welcome.') : tr('No pets.')}{' '}
+              {hotel.policies.smokingAllowed
+                ? tr('Smoking allowed in designated areas.')
+                : tr('Non-smoking.')}
+            </dd>
           </div>
           {hotel.policies.cancellationSummary && (
             <div>

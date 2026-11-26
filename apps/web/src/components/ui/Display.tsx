@@ -332,11 +332,14 @@ export function Avatar({
   name,
   size = 'md',
   className,
+  decorative = false,
 }: {
   src?: string | null;
   name: string;
   size?: keyof typeof avatarSizes;
   className?: string;
+  /** The surrounding control already names the person (e.g. an account menu button). */
+  decorative?: boolean;
 }) {
   const [failed, setFailed] = useState(false);
   const showImage = src && !failed;
@@ -351,12 +354,12 @@ export function Avatar({
       {showImage ? (
         <img
           src={src}
-          alt={name}
+          alt={decorative ? '' : name}
           className="size-full object-cover"
           onError={() => setFailed(true)}
         />
       ) : (
-        <span role="img" aria-label={name}>
+        <span {...(decorative ? {} : { role: 'img', 'aria-label': name })}>
           {initials(name) || '?'}
         </span>
       )}

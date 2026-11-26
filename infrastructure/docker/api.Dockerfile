@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 # ---------------------------------------------------------------- build
-FROM node:22.17-alpine AS build
+FROM node:22.21.1-alpine3.22 AS build
 WORKDIR /app
 ENV MONGOMS_DISABLE_POSTINSTALL=1 \
     PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
@@ -15,16 +15,22 @@ COPY apps/api ./apps/api
 RUN npm run build -w @stayscape/shared && npm run build -w @stayscape/api
 
 # ---------------------------------------------------------------- runtime
-FROM node:22.17-alpine AS runtime
+FROM node:22.21.1-alpine3.22 AS runtime
 ENV NODE_ENV=production \
     MONGOMS_DISABLE_POSTINSTALL=1
 WORKDIR /app
+# Pick up OS security fixes published after the base image was built.
+RUN apk upgrade --no-cache
 COPY package.json package-lock.json ./
 COPY packages/config/package.json packages/config/
 COPY packages/shared/package.json packages/shared/
 COPY apps/api/package.json apps/api/
 COPY apps/web/package.json apps/web/
-RUN npm ci --omit=dev -w @stayscape/api && npm cache clean --force
+# Package managers are not needed at runtime; removing them shrinks the attack surface.
+RUN npm ci --omit=dev -w @stayscape/api && npm cache clean --force \
+  && rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack \
+     /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /opt/yarn* \
+     /usr/local/bin/yarn /usr/local/bin/yarnpkg
 COPY --from=build /app/apps/api/dist ./apps/api/dist
 WORKDIR /app/apps/api
 RUN mkdir -p var/uploads var/private && chown -R node:node var
