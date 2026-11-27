@@ -16,6 +16,7 @@ import {
   BookingModel,
   CancellationModel,
 } from '@/modules/bookings/booking.models';
+import { BookingNoteModel } from '@/modules/bookings/partner-reservations.service';
 import { InvoiceModel } from '@/modules/documents/invoice.model';
 import { NotificationDeliveryModel, OutboxEventModel } from '@/modules/outbox/outbox.models';
 import {
@@ -27,6 +28,18 @@ import {
 import { ReviewModel, ReviewReportModel } from '@/modules/reviews/review.models';
 import { SupportTicketModel, TicketMessageModel } from '@/modules/support/support.models';
 import { WishlistModel } from '@/modules/wishlists/wishlist.model';
+import { CouponModel, CouponRedemptionModel, CouponUsageModel } from '@/modules/coupons/coupons.models';
+import { HotelDailyStatModel } from '@/modules/analytics/hotel-stats.model';
+import { BookingEscalationModel, PropertyCategoryModel } from '@/modules/admin/admin.models';
+import { ContentEntryModel, ContentRevisionModel } from '@/modules/content/content.models';
+import { InventoryBlockModel } from '@/modules/inventory/inventory.models';
+import { TrustSnapshotModel } from '@/modules/trust/trust.service';
+import { PriceAlertModel, PriceObservationModel } from '@/modules/intelligence/intelligence.service';
+import { LoyaltyAccountModel, LoyaltyEntryModel, ReferralCodeModel, ReferralModel } from '@/modules/rewards/rewards.service';
+import { TripModel } from '@/modules/trips/trips.service';
+import { AssistantUsageModel } from '@/modules/assistant/assistant.service';
+import { OrgInvitationModel, OrgMemberModel, OrganizationModel, TravelRequestModel } from '@/modules/corporate/corporate.service';
+import { CommissionRuleModel, LedgerEntryModel, SettlementAllocationModel, SettlementModel } from '@/modules/finance/finance.models';
 import { MediaAssetModel } from '@/modules/media/media-asset.model';
 import { PartnerModel, PartnerStaffModel } from '@/modules/partners/partner.model';
 import { PricingRuleModel, RatePlanModel, RoomTypeModel } from '@/modules/rooms/room.models';
@@ -54,6 +67,7 @@ export const ALL_MODELS = [
   BookingHoldModel,
   BookingModel,
   CancellationModel,
+  BookingNoteModel,
   PaymentModel,
   PaymentEventModel,
   RefundModel,
@@ -62,6 +76,32 @@ export const ALL_MODELS = [
   NotificationDeliveryModel,
   InvoiceModel,
   WishlistModel,
+  CommissionRuleModel,
+  LedgerEntryModel,
+  SettlementModel,
+  SettlementAllocationModel,
+  CouponModel,
+  CouponUsageModel,
+  CouponRedemptionModel,
+  HotelDailyStatModel,
+  PropertyCategoryModel,
+  BookingEscalationModel,
+  ContentEntryModel,
+  ContentRevisionModel,
+  InventoryBlockModel,
+  TrustSnapshotModel,
+  PriceObservationModel,
+  PriceAlertModel,
+  LoyaltyAccountModel,
+  LoyaltyEntryModel,
+  ReferralCodeModel,
+  ReferralModel,
+  TripModel,
+  AssistantUsageModel,
+  OrganizationModel,
+  OrgMemberModel,
+  OrgInvitationModel,
+  TravelRequestModel,
   ReviewModel,
   ReviewReportModel,
   SupportTicketModel,

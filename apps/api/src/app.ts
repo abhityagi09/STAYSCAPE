@@ -1,3 +1,15 @@
+import { createAdminCouponsRouter, createCouponsRouter } from '@/modules/coupons/coupons.routes';
+import { createAdminFinanceRouter, createPartnerFinanceRouter } from '@/modules/finance/finance.routes';
+import { createAdminAnalyticsRouter, createPartnerAnalyticsRouter } from '@/modules/analytics/analytics.routes';
+import { createAdminSupportRouter, createPartnerSupportRouter } from '@/modules/support/support-console.routes';
+import { createAdminManagementRouter, createCategoriesRouter } from '@/modules/admin/admin-management.routes';
+import { createAdminContentRouter, createPublicContentRouter } from '@/modules/content/content.routes';
+import { createIntelligenceRouters } from '@/modules/intelligence/intelligence.routes';
+import { createRewardsRouter } from '@/modules/rewards/rewards.routes';
+import { createAssistantRouter } from '@/modules/assistant/assistant.routes';
+import { createTripsRouter } from '@/modules/trips/trips.routes';
+import { createAdminCorporateRouter, createCorporateRouter } from '@/modules/corporate/corporate.routes';
+import { scopeMiddleware } from '@/lib/scope';
 import express, { type Express } from 'express';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
@@ -54,6 +66,7 @@ export function createApp(container: Container, options: AppOptions = {}): Expre
   app.set('query parser', 'simple');
 
   app.use(requestId);
+  app.use(scopeMiddleware);
   app.use(
     pinoHttp({
       logger,
@@ -137,6 +150,28 @@ export function createApp(container: Container, options: AppOptions = {}): Expre
   api.use('/support', createSupportRouter(container));
   api.use('/partner/hotels', createPartnerBookingsRouter(container));
   api.use('/admin', createAdminOperationsRouter(container));
+  api.use('/admin', createAdminFinanceRouter(container));
+  api.use('/admin', createAdminCouponsRouter(container));
+  api.use('/coupons', createCouponsRouter(container));
+  api.use('/partner/finance', createPartnerFinanceRouter(container));
+  api.use('/partner/analytics', createPartnerAnalyticsRouter(container));
+  api.use('/partner/support', createPartnerSupportRouter(container));
+  api.use('/admin/support', createAdminSupportRouter(container));
+  api.use('/admin', createAdminManagementRouter(container));
+  api.use('/categories', createCategoriesRouter(container));
+  api.use('/admin/content', createAdminContentRouter(container));
+  api.use('/content', createPublicContentRouter(container));
+  const intelligenceRouters = createIntelligenceRouters(container);
+  api.use('/recommendations', intelligenceRouters.recommendations);
+  api.use('/price-intelligence', intelligenceRouters.prices);
+  api.use('/price-alerts', intelligenceRouters.alerts);
+  api.use('/deals', intelligenceRouters.deals);
+  api.use('/rewards', createRewardsRouter(container));
+  api.use('/trips', createTripsRouter(container));
+  api.use('/assistant', createAssistantRouter(container));
+  api.use('/corporate', createCorporateRouter(container));
+  api.use('/admin/organizations', createAdminCorporateRouter(container));
+  api.use('/admin', createAdminAnalyticsRouter(container));
   api.use('/partner/hotels', createPartnerHotelsRouter(container));
   api.use('/partner', createPartnerApplicationRouter(container, limiters));
   api.use('/admin/partners', createAdminPartnersRouter(container));

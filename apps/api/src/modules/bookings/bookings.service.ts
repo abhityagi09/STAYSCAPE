@@ -1,3 +1,4 @@
+import type { CouponsService } from '@/modules/coupons/coupons.service';
 import { Types, type ClientSession } from 'mongoose';
 import {
   formatMinorUnits,
@@ -66,6 +67,7 @@ interface Deps {
   quotes: QuoteService;
   inventory: InventoryService;
   outbox: OutboxService;
+  coupons: CouponsService;
   media: MediaService;
   audit: AuditService;
   logger: Logger;
@@ -262,9 +264,22 @@ export class BookingsService {
       hold = await withTransaction(async (session) => {
         // All nights or none: a single conditional update across the stay, inside the transaction.
         await this.deps.inventory.reserveHeld(roomType, nights, item.rooms, session);
+        // Coupon (optional): validated and its use reserved atomically in the same transaction.
+        const holdId = new Types.ObjectId();
+        let finalPrice: typeof price & { coupon?: { code: string; discountMinor: number } | null } = price;
+        if (input.couponCode) {
+          const applied = await this.deps.coupons.reserve(
+            input.couponCode,
+            { userId: auth.userId, hotelId: hotel._id.toString(), city: hotel.city, currency, subtotalMinor: quote.totals.subtotalMinor, totalMinor: quote.totals.totalMinor, hasRateDiscounts: quote.totals.discountsMinor !== 0 },
+            holdId,
+            session,
+          );
+          finalPrice = { ...price, coupon: applied, totals: { ...price.totals, totalMinor: price.totals.totalMinor - applied.discountMinor } };
+        }
         const [doc] = await BookingHoldModel.create(
           [
             {
+              _id: holdId,
               holdReference: newHoldReference(),
               customerId: new Types.ObjectId(auth.userId),
               hotelId: hotel._id,
@@ -272,7 +287,7 @@ export class BookingsService {
               startDate: input.checkIn,
               endDate: input.checkOut,
               propertyTimezone: hotel.timeZone,
-              price,
+              price: finalPrice,
               hotelSnapshot: hotelSnapshot(hotel),
               expiresAt: new Date(Date.now() + this.deps.config.BOOKING_HOLD_TTL_MINUTES * 60_000),
               status: 'ACTIVE',
@@ -361,6 +376,7 @@ export class BookingsService {
       if (!hold) return null;
       for (const item of hold.items)
         await this.deps.inventory.releaseHeld(item.roomTypeId, item.nights, item.rooms, s);
+      await this.deps.coupons.release(hold._id, s);
       return hold;
     };
     return session ? work(session) : withTransaction(work);

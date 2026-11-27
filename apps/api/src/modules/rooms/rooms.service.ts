@@ -139,7 +139,7 @@ export class RoomsService {
     hotelId: string,
     includeArchived = false,
   ): Promise<PartnerRoomTypeDto[]> {
-    const { hotel } = await this.deps.access.resolveHotel(auth, hotelId, 'ROOMS_MANAGE');
+    const { hotel } = await this.deps.access.resolveHotel(auth, hotelId, 'rooms:manage');
     const filter: Record<string, unknown> = { hotelId: hotel._id };
     if (!includeArchived) filter.status = { $ne: 'ARCHIVED' };
     return this.toRoomDtos(
@@ -152,7 +152,7 @@ export class RoomsService {
     hotelId: string,
     roomTypeId: string,
   ): Promise<PartnerRoomTypeDto> {
-    const { hotel } = await this.deps.access.resolveHotel(auth, hotelId, 'ROOMS_MANAGE');
+    const { hotel } = await this.deps.access.resolveHotel(auth, hotelId, 'rooms:manage');
     return (await this.toRoomDtos([await this.roomTypeOf(hotel, roomTypeId)]))[0]!;
   }
 
@@ -162,7 +162,7 @@ export class RoomsService {
     input: RoomTypeInput,
     context: RequestContext,
   ): Promise<PartnerRoomTypeDto> {
-    const { hotel, partner } = await this.deps.access.resolveHotel(auth, hotelId, 'ROOMS_MANAGE');
+    const { hotel, partner } = await this.deps.access.resolveHotel(auth, hotelId, 'rooms:manage');
     if (hotel.publicationStatus === 'ARCHIVED')
       throw new AppError(409, 'CONFLICT', 'Archived listings cannot be changed.');
     const parsed = roomTypeSchema.parse(input);
@@ -194,7 +194,7 @@ export class RoomsService {
     input: RoomTypeInput,
     context: RequestContext,
   ): Promise<PartnerRoomTypeDto> {
-    const { hotel, partner } = await this.deps.access.resolveHotel(auth, hotelId, 'ROOMS_MANAGE');
+    const { hotel, partner } = await this.deps.access.resolveHotel(auth, hotelId, 'rooms:manage');
     const current = await this.roomTypeOf(hotel, roomTypeId);
     if (current.status === 'ARCHIVED')
       throw new AppError(409, 'CONFLICT', 'Archived room categories cannot be edited.');
@@ -243,7 +243,7 @@ export class RoomsService {
     roomTypeId: string,
     context: RequestContext,
   ): Promise<{ archived: boolean }> {
-    const { hotel } = await this.deps.access.resolveHotel(auth, hotelId, 'ROOMS_MANAGE');
+    const { hotel } = await this.deps.access.resolveHotel(auth, hotelId, 'rooms:manage');
     const roomType = await this.roomTypeOf(hotel, roomTypeId);
     const archived = await this.deps.inventory.hasCommitments(roomType._id);
     if (archived) {
@@ -270,7 +270,7 @@ export class RoomsService {
 
   // ------------------------------------------------------------------ rate plans
   async listRatePlans(auth: AuthContext, hotelId: string): Promise<RatePlanDto[]> {
-    const { hotel } = await this.deps.access.resolveHotel(auth, hotelId, 'RATES_MANAGE');
+    const { hotel } = await this.deps.access.resolveHotel(auth, hotelId, 'pricing:manage');
     return (
       await RatePlanModel.find({ hotelId: hotel._id })
         .sort({ createdAt: 1 })
@@ -285,7 +285,7 @@ export class RoomsService {
     input: RatePlanInput & { roomTypeId: string },
     context: RequestContext,
   ): Promise<RatePlanDto> {
-    const { hotel } = await this.deps.access.resolveHotel(auth, hotelId, 'RATES_MANAGE');
+    const { hotel } = await this.deps.access.resolveHotel(auth, hotelId, 'pricing:manage');
     const roomType = await this.roomTypeOf(hotel, input.roomTypeId);
     if (roomType.status === 'ARCHIVED')
       throw new AppError(409, 'CONFLICT', 'Archived room categories cannot have rate plans.');
@@ -328,7 +328,7 @@ export class RoomsService {
     ratePlanId: string,
     context: RequestContext,
   ): Promise<void> {
-    const { hotel } = await this.deps.access.resolveHotel(auth, hotelId, 'RATES_MANAGE');
+    const { hotel } = await this.deps.access.resolveHotel(auth, hotelId, 'pricing:manage');
     if (!Types.ObjectId.isValid(ratePlanId)) throw Errors.notFound('Rate plan');
     const result = await RatePlanModel.deleteOne({ _id: ratePlanId, hotelId: hotel._id });
     if (result.deletedCount === 0) throw Errors.notFound('Rate plan');
@@ -344,7 +344,7 @@ export class RoomsService {
 
   // ------------------------------------------------------------------ pricing rules
   async listRules(auth: AuthContext, hotelId: string): Promise<PricingRuleDto[]> {
-    const { hotel } = await this.deps.access.resolveHotel(auth, hotelId, 'RATES_MANAGE');
+    const { hotel } = await this.deps.access.resolveHotel(auth, hotelId, 'pricing:manage');
     return (
       await PricingRuleModel.find({ hotelId: hotel._id })
         .sort({ priority: -1, createdAt: 1 })
@@ -359,7 +359,7 @@ export class RoomsService {
     input: PricingRuleInput,
     context: RequestContext,
   ): Promise<PricingRuleDto> {
-    const { hotel } = await this.deps.access.resolveHotel(auth, hotelId, 'RATES_MANAGE');
+    const { hotel } = await this.deps.access.resolveHotel(auth, hotelId, 'pricing:manage');
     if (input.roomTypeId) await this.roomTypeOf(hotel, input.roomTypeId);
     if (
       input.ratePlanId &&
@@ -400,7 +400,7 @@ export class RoomsService {
     ruleId: string,
     context: RequestContext,
   ): Promise<void> {
-    const { hotel } = await this.deps.access.resolveHotel(auth, hotelId, 'RATES_MANAGE');
+    const { hotel } = await this.deps.access.resolveHotel(auth, hotelId, 'pricing:manage');
     if (!Types.ObjectId.isValid(ruleId)) throw Errors.notFound('Pricing rule');
     const result = await PricingRuleModel.deleteOne({ _id: ruleId, hotelId: hotel._id });
     if (result.deletedCount === 0) throw Errors.notFound('Pricing rule');
@@ -419,7 +419,7 @@ export class RoomsService {
     hotelId: string,
     query: { roomTypeId: string; from: string; to: string },
   ) {
-    const { hotel } = await this.deps.access.resolveHotel(auth, hotelId, 'INVENTORY_MANAGE');
+    const { hotel } = await this.deps.access.resolveHotel(auth, hotelId, 'inventory:view');
     const roomType = await this.roomTypeOf(hotel, query.roomTypeId);
     return this.deps.inventory.getCalendar(roomType, query.from, query.to);
   }
@@ -430,7 +430,7 @@ export class RoomsService {
     input: Parameters<InventoryService['bulkUpdate']>[2],
     context: RequestContext,
   ) {
-    const { hotel } = await this.deps.access.resolveHotel(auth, hotelId, 'INVENTORY_MANAGE');
+    const { hotel } = await this.deps.access.resolveHotel(auth, hotelId, 'inventory:manage');
     const roomType = await this.roomTypeOf(hotel, input.roomTypeId);
     if (roomType.status === 'ARCHIVED')
       throw new AppError(409, 'CONFLICT', 'Archived room categories cannot be changed.');

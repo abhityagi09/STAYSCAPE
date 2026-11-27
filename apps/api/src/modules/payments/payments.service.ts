@@ -1,3 +1,5 @@
+import type { CouponsService } from '@/modules/coupons/coupons.service';
+import type { FinanceService } from '@/modules/finance/finance.service';
 import { createHash } from 'node:crypto';
 import type { ClientSession, Types } from 'mongoose';
 import type {
@@ -53,6 +55,8 @@ interface Deps {
   bookings: BookingsService;
   inventory: InventoryService;
   refunds: RefundsService;
+  finance: FinanceService;
+  coupons: CouponsService;
   outbox: OutboxService;
   audit: AuditService;
   logger: Logger;
@@ -364,6 +368,7 @@ export class PaymentsService {
       }).session(session);
       if (otherPaid || !AWAITING_ALLOCATION.includes(booking.bookingStatus)) {
         // Paid twice, or paid after cancelling: never allocate again — return this payment in full.
+        await this.deps.finance.onUnallocatedCapture(payment, booking, session);
         await this.deps.refunds.createApproved(
           {
             booking,
@@ -423,6 +428,9 @@ export class PaymentsService {
       { session },
     );
     await syncBookingPaymentStatus(booking._id, session);
+    // Commission snapshot + ledger postings, in the same transaction as the confirmation.
+    await this.deps.coupons.redeem(booking.holdId, booking._id, session);
+    await this.deps.finance.onBookingConfirmed(booking._id, session);
     await this.deps.outbox.add(
       {
         eventId: `booking.confirmed.${booking._id}`,
@@ -508,6 +516,7 @@ export class PaymentsService {
         { session, new: true },
       ).lean<BookingRecord>();
       if (!booking) return;
+      await this.deps.finance.onUnallocatedCapture(payment, booking, session);
       const refund = await this.deps.refunds.createApproved(
         {
           booking,

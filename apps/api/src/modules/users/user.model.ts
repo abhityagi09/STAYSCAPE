@@ -24,6 +24,7 @@ export interface UserPreferences {
   language: Language;
   currency: CurrencyCode;
   notifications: NotificationPreferences;
+  personalization?: { recommendations: boolean; consentedAt: Date | null };
 }
 
 export interface UserAttrs {
@@ -68,6 +69,10 @@ const preferencesSchema = new Schema<UserPreferences>(
       emailSecurityAlerts: { type: Boolean, default: true },
       smsBookingUpdates: { type: Boolean, default: false },
       pushEnabled: { type: Boolean, default: false },
+    },
+    personalization: {
+      recommendations: { type: Boolean, default: false },
+      consentedAt: { type: Date, default: null },
     },
   },
   { _id: false },

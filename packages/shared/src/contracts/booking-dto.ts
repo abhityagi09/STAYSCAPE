@@ -9,6 +9,8 @@ import type {
   ReviewReportReason,
   ReviewStatus,
   TicketCategory,
+  TicketChannel,
+  TicketPriority,
   TicketStatus,
 } from '../constants/booking';
 import type { CurrencyCode } from '../constants/account';
@@ -44,6 +46,8 @@ export interface PriceSnapshotDto {
   taxes: MoneyLineDto[];
   fees: MoneyLineDto[];
   totals: PriceTotalsDto;
+  /** Platform-funded coupon applied to the payable total (Phase 4). */
+  coupon?: { code: string; discountMinor: number } | null;
 }
 
 export interface CancellationPolicySnapshotDto {
@@ -361,7 +365,7 @@ export interface AdminReviewDto extends PartnerReviewDto {
 // ---------------------------------------------------------------- support
 export interface TicketMessageDto {
   id: string;
-  author: 'CUSTOMER' | 'AGENT' | 'SYSTEM';
+  author: 'CUSTOMER' | 'AGENT' | 'PARTNER' | 'SYSTEM';
   authorName: string;
   body: string;
   attachments: Array<{ id: string; fileName: string; contentType: string; size: number }>;
@@ -377,6 +381,39 @@ export interface TicketDto {
   bookingReference: string | null;
   lastMessageAt: string;
   createdAt: string;
+  messages?: TicketMessageDto[];
+}
+
+export interface AgentTicketMessageDto extends TicketMessageDto {
+  channel: TicketChannel;
+}
+
+/** Agent console view. Customer contact details are included only for support agents. */
+export interface AgentTicketDto extends Omit<TicketDto, 'messages'> {
+  priority: TicketPriority;
+  assignee: { id: string; name: string } | null;
+  customer: { id: string; name: string; email: string };
+  hotel: { id: string; name: string } | null;
+  partnerVisible: boolean;
+  escalated: boolean;
+  escalationReason: string | null;
+  firstResponseAt: string | null;
+  resolvedAt: string | null;
+  resolution: string | null;
+  statusHistory: Array<{ status: TicketStatus; at: string; by: string | null }>;
+  messages?: AgentTicketMessageDto[];
+}
+
+/** What a property sees of a ticket shared with it: no customer contact details, no internal notes. */
+export interface PartnerTicketDto {
+  id: string;
+  ticketNumber: string;
+  subject: string;
+  category: TicketCategory;
+  status: TicketStatus;
+  bookingReference: string | null;
+  hotel: { id: string; name: string };
+  lastMessageAt: string;
   messages?: TicketMessageDto[];
 }
 
@@ -400,6 +437,22 @@ export interface PartnerBookingDto {
   currency: CurrencyCode;
   createdAt: string;
   actions: { canCheckIn: boolean; canCheckOut: boolean; canMarkNoShow: boolean };
+}
+
+export interface PartnerBookingDetailDto extends PartnerBookingDto {
+  items: BookingItemDto[];
+  guestDetails: GuestDetailsDto;
+  price: PriceSnapshotDto;
+  payments: Array<{ status: PaymentStatus; amountMinor: number; refundedMinor: number; currency: CurrencyCode; createdAt: string }>;
+  refunds: Array<{ status: RefundStatus; amountMinor: number; currency: CurrencyCode; reason: string; requestedAt: string }>;
+  cancellation: CancellationDto | null;
+  roomAssignments: Array<{ roomTypeId: string; roomNumbers: string[] }>;
+  notes: Array<{ id: string; authorName: string; body: string; createdAt: string }>;
+  checkedInAt: string | null;
+  checkedInBy: string | null;
+  checkedOutAt: string | null;
+  checkedOutBy: string | null;
+  timeline: BookingEventDto[];
 }
 
 export interface OperationsBookingDto {

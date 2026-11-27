@@ -6,7 +6,12 @@ export interface DailyInventoryAttrs {
   /** Property-local calendar date, "YYYY-MM-DD". Never interpreted in the server's time zone. */
   localDate: string;
   totalRooms: number;
+  /** Total rooms out of sale: manual blocks + maintenanceRooms. */
   blockedRooms: number;
+  /** Portion of blockedRooms placed by maintenance/renovation blocks (see InventoryBlock). */
+  maintenanceRooms: number;
+  /** Closed for sale (stop-sell): no new holds or bookings, existing reservations unaffected. */
+  stopSell: boolean;
   heldRooms: number;
   bookedRooms: number;
   closedToArrival: boolean;
@@ -31,6 +36,8 @@ const dailyInventorySchema = new Schema<DailyInventoryAttrs>(
     localDate: { type: String, required: true, match: /^\d{4}-\d{2}-\d{2}$/ },
     totalRooms: nonNegativeInt,
     blockedRooms: { ...nonNegativeInt, default: 0 },
+    maintenanceRooms: { ...nonNegativeInt, default: 0 },
+    stopSell: { type: Boolean, default: false },
     heldRooms: { ...nonNegativeInt, default: 0 },
     bookedRooms: { ...nonNegativeInt, default: 0 },
     closedToArrival: { type: Boolean, default: false },
@@ -82,3 +89,47 @@ export async function ensureInventoryValidator(): Promise<void> {
     validationAction: 'error',
   });
 }
+
+/**
+ * A maintenance / renovation / owner-use block taking `rooms` out of sale for [from, to] (inclusive
+ * property-local dates). Applied atomically to DailyInventory.maintenanceRooms + blockedRooms.
+ * Releasing returns only future nights, so past occupancy history stays accurate.
+ */
+export const INVENTORY_BLOCK_REASONS = ['MAINTENANCE', 'RENOVATION', 'OWNER_USE', 'OTHER'] as const;
+export interface InventoryBlockAttrs {
+  hotelId: Types.ObjectId;
+  roomTypeId: Types.ObjectId;
+  from: string;
+  to: string;
+  rooms: number;
+  reason: (typeof INVENTORY_BLOCK_REASONS)[number];
+  note: string;
+  status: 'ACTIVE' | 'RELEASED';
+  createdBy: Types.ObjectId;
+  releasedBy: Types.ObjectId | null;
+  releasedAt: Date | null;
+  /** First date returned to sale on release (dates before it stay blocked in history). */
+  releasedFrom: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+export type InventoryBlockRecord = InventoryBlockAttrs & { _id: Types.ObjectId };
+const blockSchema = new Schema<InventoryBlockAttrs>(
+  {
+    hotelId: { type: Schema.Types.ObjectId, ref: 'Hotel', required: true },
+    roomTypeId: { type: Schema.Types.ObjectId, ref: 'RoomType', required: true },
+    from: { type: String, required: true, match: /^\d{4}-\d{2}-\d{2}$/ },
+    to: { type: String, required: true, match: /^\d{4}-\d{2}-\d{2}$/ },
+    rooms: { type: Number, required: true, min: 1 },
+    reason: { type: String, enum: INVENTORY_BLOCK_REASONS, required: true },
+    note: { type: String, default: '', maxlength: 300 },
+    status: { type: String, enum: ['ACTIVE', 'RELEASED'], default: 'ACTIVE' },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    releasedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    releasedAt: { type: Date, default: null },
+    releasedFrom: { type: String, default: null },
+  },
+  { timestamps: true, versionKey: false },
+);
+blockSchema.index({ hotelId: 1, status: 1, from: 1 }, { name: 'hotel_status_from' });
+export const InventoryBlockModel = model<InventoryBlockAttrs>('InventoryBlock', blockSchema);

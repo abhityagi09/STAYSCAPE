@@ -51,7 +51,8 @@ export class SupportService {
   }
 
   private async messages(ticketId: Types.ObjectId): Promise<TicketMessageDto[]> {
-    const rows = await TicketMessageModel.find({ ticketId })
+    // Customers only ever see the customer thread (never internal notes or the property thread).
+    const rows = await TicketMessageModel.find({ ticketId, channel: { $nin: ['INTERNAL', 'PARTNER'] } })
       .sort({ createdAt: 1 })
       .lean<TicketMessageRecord[]>();
     const files = await MediaAssetModel.find({
@@ -146,6 +147,8 @@ export class SupportService {
             status: 'OPEN',
             statusHistory: [{ status: 'OPEN', at: now, by: new Types.ObjectId(auth.userId) }],
             lastMessageAt: now,
+            hotelId: booking?.hotelId ?? null,
+            partnerId: booking?.partnerId ?? null,
           })
         ).toObject() as SupportTicketRecord;
       } catch (error) {
@@ -221,7 +224,7 @@ export class SupportService {
     await SupportTicketModel.updateOne(
       { _id: ticket._id },
       {
-        $set: { lastMessageAt: new Date(), status: next },
+        $set: { lastMessageAt: new Date(), status: next, ...(next === 'OPEN' && ticket.status === 'RESOLVED' ? { resolvedAt: null } : {}) },
         ...(next !== ticket.status
           ? {
               $push: {
@@ -268,6 +271,7 @@ export class SupportService {
       !Types.ObjectId.isValid(mediaId) ||
       !(await TicketMessageModel.exists({
         ticketId: ticket._id,
+        channel: { $nin: ['INTERNAL', 'PARTNER'] },
         attachmentIds: new Types.ObjectId(mediaId),
       }))
     )

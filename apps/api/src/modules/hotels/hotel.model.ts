@@ -97,6 +97,16 @@ export interface HotelAttrs extends HotelContent {
   partnerId: Types.ObjectId;
   slug: string;
   verificationStatus: HotelVerificationStatus;
+  /** Accessibility features with provenance (see modules/hotels/accessibility.service). */
+  accessibilityFeatures: Array<{
+    code: string;
+    note: string;
+    source: 'PARTNER_DECLARED' | 'ADMIN_VERIFIED';
+    declaredAt: Date;
+    verifiedAt: Date | null;
+    verifiedBy: Types.ObjectId | null;
+    evidence: string | null;
+  }>;
   publicationStatus: PublicationStatus;
   featuredStatus: 'NONE' | 'FEATURED';
   ratingSummary: { average: number; count: number; source: 'REVIEWS' | 'DEVELOPMENT_SEED' };
@@ -239,6 +249,7 @@ const hotelSchema = new Schema<HotelAttrs>(
       },
     },
     verificationStatus: { type: String, enum: HOTEL_VERIFICATION_STATUSES, default: 'PENDING' },
+    accessibilityFeatures: { type: Schema.Types.Mixed, default: [] },
     publicationStatus: { type: String, enum: PUBLICATION_STATUSES, default: 'DRAFT' },
     featuredStatus: { type: String, enum: ['NONE', 'FEATURED'], default: 'NONE' },
     ratingSummary: {
@@ -266,6 +277,7 @@ const hotelSchema = new Schema<HotelAttrs>(
   { timestamps: true, versionKey: false, minimize: false },
 );
 
+hotelSchema.index({ 'accessibilityFeatures.code': 1, publicationStatus: 1 }, { name: 'accessibility' });
 hotelSchema.index({ slug: 1 }, { unique: true, name: 'uniq_slug' });
 hotelSchema.index({ location: '2dsphere' }, { name: 'geo' });
 hotelSchema.index({ partnerId: 1, publicationStatus: 1 }, { name: 'partner_status' });

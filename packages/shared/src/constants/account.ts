@@ -55,6 +55,11 @@ export const NOTIFICATION_TYPES = [
   'REVIEW_RESPONSE',
   'SUPPORT_UPDATE',
   'OPERATIONS_ALERT',
+  'PRICE_ALERT',
+  'LOYALTY_UPDATE',
+  'REFERRAL_REWARD',
+  'TRIP_INVITATION',
+  'CORPORATE_APPROVAL',
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import {
   ADJUSTMENT_RULE_TYPES,
+  ACCESSIBILITY_FEATURES,
   AMENITY_CATEGORIES,
   BED_TYPES,
   BUSINESS_TYPES,
@@ -136,6 +137,11 @@ export const listPartnersQuerySchema = paginationQuerySchema.extend({
   search: z.string().trim().max(100).optional(),
 });
 export const documentTypeSchema = z.enum(PARTNER_DOCUMENT_TYPES);
+
+export const updateStaffSchema = z.strictObject({
+  assignedProperties: z.array(objectIdSchema).max(200).default([]),
+  permissions: z.array(z.enum(STAFF_PERMISSIONS)).min(1, 'Choose at least one permission'),
+});
 
 export const inviteStaffSchema = z.strictObject({
   email: emailSchema,
@@ -383,6 +389,12 @@ export const pricingRuleSchema = z
         minNights: z.number().int().min(1).max(MAX_STAY_NIGHTS).optional(),
         minDaysBeforeArrival: z.number().int().min(0).max(730).optional(),
         maxDaysBeforeArrival: z.number().int().min(0).max(730).optional(),
+        /** OCCUPANCY: basis points of sellable rooms already held or booked (inclusive bounds). */
+        minOccupancyBp: z.number().int().min(0).max(10_000).optional(),
+        maxOccupancyBp: z.number().int().min(0).max(10_000).optional(),
+        /** PROMOTIONAL: property-local booking window. */
+        bookFrom: localDateSchema.optional(),
+        bookTo: localDateSchema.optional(),
       })
       .default({}),
     active: z.boolean().default(true),
@@ -449,11 +461,20 @@ export const pricingRuleSchema = z
         path: ['conditions', 'maxDaysBeforeArrival'],
         message: 'Last-minute discounts need a booking window',
       });
+    if (r.ruleType === 'OCCUPANCY' && r.conditions.minOccupancyBp === undefined && r.conditions.maxOccupancyBp === undefined)
+      ctx.addIssue({ code: 'custom', path: ['conditions', 'minOccupancyBp'], message: 'Occupancy rules need an occupancy range' });
+    if (r.conditions.minOccupancyBp !== undefined && r.conditions.maxOccupancyBp !== undefined && r.conditions.maxOccupancyBp < r.conditions.minOccupancyBp)
+      ctx.addIssue({ code: 'custom', path: ['conditions', 'maxOccupancyBp'], message: 'Maximum occupancy must be at least the minimum' });
+    if (r.ruleType === 'PROMOTIONAL' && (!r.conditions.bookFrom || !r.conditions.bookTo))
+      ctx.addIssue({ code: 'custom', path: ['conditions', 'bookFrom'], message: 'Promotions need a booking window' });
+    if (r.conditions.bookFrom && r.conditions.bookTo && r.conditions.bookTo < r.conditions.bookFrom)
+      ctx.addIssue({ code: 'custom', path: ['conditions', 'bookTo'], message: 'The booking window must end on or after it starts' });
     if (
       (ADJUSTMENT_RULE_TYPES as readonly string[]).includes(r.ruleType) &&
       r.ruleType !== 'DATE_OVERRIDE' &&
       r.ruleType !== 'WEEKDAY' &&
       r.ruleType !== 'WEEKEND' &&
+      r.ruleType !== 'OCCUPANCY' &&
       (!r.startDate || !r.endDate)
     )
       ctx.addIssue({
@@ -486,6 +507,7 @@ export const inventoryUpdateSchema = z
           .min(0, 'Blocked rooms cannot be negative')
           .max(5000)
           .optional(),
+        stopSell: z.boolean().optional(),
         closedToArrival: z.boolean().optional(),
         closedToDeparture: z.boolean().optional(),
         minimumStay: z.number().int().min(1).max(MAX_STAY_NIGHTS).nullable().optional(),
@@ -574,6 +596,8 @@ export const searchCriteriaObject = z.object({
   wifi: z.boolean().default(false),
   petFriendly: z.boolean().default(false),
   accessible: z.boolean().default(false),
+  accessibilityFeatures: z.array(z.enum(ACCESSIBILITY_FEATURES)).max(ACCESSIBILITY_FEATURES.length).default([]),
+  accessibilityVerifiedOnly: z.boolean().default(false),
   freeCancellation: z.boolean().default(false),
   instantConfirmation: z.boolean().default(false),
   bbox: z
@@ -644,6 +668,8 @@ export const searchQuerySchema = searchCriteriaObject
     wifi: flag.default(false),
     petFriendly: flag.default(false),
     accessible: flag.default(false),
+    accessibilityFeatures: csv(z.enum(ACCESSIBILITY_FEATURES)).default([]),
+    accessibilityVerifiedOnly: flag.default(false),
     freeCancellation: flag.default(false),
     instantConfirmation: flag.default(false),
     bbox: z
@@ -717,4 +743,27 @@ export const amenitySchema = z.object({
   code: z.string().regex(/^[a-z0-9-]{2,40}$/),
   name: text(60, 'Name'),
   category: z.enum(AMENITY_CATEGORIES),
+});
+
+export const inventoryBlockSchema = z
+  .strictObject({
+    roomTypeId: objectIdSchema,
+    from: localDateSchema,
+    to: localDateSchema,
+    rooms: z.number().int().min(1).max(5000),
+    reason: z.enum(['MAINTENANCE', 'RENOVATION', 'OWNER_USE', 'OTHER']),
+    note: z.string().trim().max(300).default(''),
+  })
+  .refine((u) => diffDays(u.from, u.to) >= 0 && diffDays(u.from, u.to) <= 365, { message: 'Blocks can cover up to one year', path: ['to'] });
+
+export const accessibilityDeclarationSchema = z.strictObject({
+  features: z
+    .array(z.strictObject({ code: z.enum(ACCESSIBILITY_FEATURES), note: z.string().trim().max(200).default('') }))
+    .max(ACCESSIBILITY_FEATURES.length)
+    .refine((f) => new Set(f.map((x) => x.code)).size === f.length, 'Each feature once'),
+});
+export const accessibilityVerificationSchema = z.strictObject({
+  codes: z.array(z.enum(ACCESSIBILITY_FEATURES)).min(1).max(ACCESSIBILITY_FEATURES.length),
+  verified: z.boolean(),
+  evidence: z.string().trim().min(5).max(300),
 });

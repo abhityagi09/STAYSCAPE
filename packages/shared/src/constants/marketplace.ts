@@ -59,16 +59,59 @@ export const DOCUMENT_MAX_BYTES = 5 * 1024 * 1024;
 export const IMAGE_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'] as const;
 export const IMAGE_MAX_BYTES = 10 * 1024 * 1024;
 
+/**
+ * Property-level staff permissions (Phase 4). Every partner API checks the specific permission for
+ * the specific property; owners hold all of them for their own properties.
+ */
 export const STAFF_PERMISSIONS = [
-  'CONTENT_EDIT',
-  'ROOMS_MANAGE',
-  'INVENTORY_MANAGE',
-  'RATES_MANAGE',
-  /** View reservations and record check-in, check-out and no-shows; respond to reviews. */
-  'BOOKINGS_MANAGE',
+  'property:edit',
+  'rooms:manage',
+  'inventory:view',
+  'inventory:manage',
+  'pricing:manage',
+  'bookings:view',
+  'bookings:check-in',
+  'bookings:check-out',
+  'bookings:no-show',
+  'bookings:notes',
+  'reviews:respond',
+  'analytics:view',
+  'financials:view',
 ] as const;
 export type StaffPermission = (typeof STAFF_PERMISSIONS)[number];
-export const STAFF_INVITATION_STATUSES = ['PENDING', 'ACCEPTED', 'REVOKED'] as const;
+export const STAFF_PERMISSION_LABELS: Record<StaffPermission, string> = {
+  'property:edit': 'Edit property content and photos',
+  'rooms:manage': 'Manage room categories',
+  'inventory:view': 'View inventory calendar',
+  'inventory:manage': 'Change inventory, closures and restrictions',
+  'pricing:manage': 'Manage rate plans and pricing rules',
+  'bookings:view': 'View reservations and guest details',
+  'bookings:check-in': 'Record check-in',
+  'bookings:check-out': 'Record check-out',
+  'bookings:no-show': 'Record no-shows and decline bookings',
+  'bookings:notes': 'Add internal reservation notes',
+  'reviews:respond': 'Respond to guest reviews',
+  'analytics:view': 'View analytics and KPIs',
+  'financials:view': 'View revenue, commissions and settlements',
+};
+/** Phase 2–3 permission codes, still accepted on stored staff records. */
+export const LEGACY_STAFF_PERMISSIONS: Record<string, readonly StaffPermission[]> = {
+  CONTENT_EDIT: ['property:edit'],
+  ROOMS_MANAGE: ['rooms:manage'],
+  INVENTORY_MANAGE: ['inventory:view', 'inventory:manage'],
+  RATES_MANAGE: ['pricing:manage'],
+  BOOKINGS_MANAGE: ['bookings:view', 'bookings:check-in', 'bookings:check-out', 'bookings:no-show', 'bookings:notes', 'reviews:respond'],
+};
+/** Expand legacy codes and drop unknown values. */
+export function normalizeStaffPermissions(values: readonly string[]): StaffPermission[] {
+  const out = new Set<StaffPermission>();
+  for (const v of values) {
+    if ((STAFF_PERMISSIONS as readonly string[]).includes(v)) out.add(v as StaffPermission);
+    for (const mapped of LEGACY_STAFF_PERMISSIONS[v] ?? []) out.add(mapped);
+  }
+  return [...out];
+}
+export const STAFF_INVITATION_STATUSES = ['PENDING', 'ACCEPTED', 'SUSPENDED', 'REVOKED'] as const;
 export type StaffInvitationStatus = (typeof STAFF_INVITATION_STATUSES)[number];
 
 export const PROPERTY_TYPES = [
@@ -145,8 +188,11 @@ export const ADJUSTMENT_RULE_TYPES = [
   'WEEKEND',
   'SEASONAL',
   'EVENT',
+  /** Applies on nights whose occupancy (committed / sellable rooms) is inside a range. */
+  'OCCUPANCY',
 ] as const;
-export const DISCOUNT_RULE_TYPES = ['LONG_STAY', 'EARLY_BIRD', 'LAST_MINUTE'] as const;
+/** PROMOTIONAL: a discount bookable only inside a booking window (conditions.bookFrom/bookTo). */
+export const DISCOUNT_RULE_TYPES = ['LONG_STAY', 'EARLY_BIRD', 'LAST_MINUTE', 'PROMOTIONAL'] as const;
 export const PRICING_RULE_TYPES = [...ADJUSTMENT_RULE_TYPES, ...DISCOUNT_RULE_TYPES] as const;
 export type PricingRuleType = (typeof PRICING_RULE_TYPES)[number];
 export const PRICING_ADJUSTMENT_TYPES = ['PERCENT', 'AMOUNT', 'FIXED_PRICE'] as const;
@@ -212,5 +258,40 @@ export const MEDIA_PURPOSES = [
   'REVIEW_IMAGE',
   'SUPPORT_ATTACHMENT',
   'BOOKING_DOCUMENT',
+  'SETTLEMENT_EVIDENCE',
+  'CONTENT_IMAGE',
 ] as const;
 export type MediaPurpose = (typeof MEDIA_PURPOSES)[number];
+
+/** Property accessibility features. Each listing records who stated it (partner) and who checked it (admin). */
+export const ACCESSIBILITY_FEATURES = [
+  'STEP_FREE_ENTRANCE',
+  'ELEVATOR',
+  'ACCESSIBLE_PARKING',
+  'WIDE_DOORWAYS',
+  'ACCESSIBLE_BATHROOM',
+  'ROLL_IN_SHOWER',
+  'GRAB_BARS',
+  'LOWERED_BED',
+  'VISUAL_ALARMS',
+  'HEARING_LOOP',
+  'BRAILLE_SIGNAGE',
+  'SERVICE_ANIMALS_WELCOME',
+] as const;
+export type AccessibilityFeature = (typeof ACCESSIBILITY_FEATURES)[number];
+export const ACCESSIBILITY_FEATURE_LABELS: Record<AccessibilityFeature, string> = {
+  STEP_FREE_ENTRANCE: 'Step-free entrance',
+  ELEVATOR: 'Elevator to all guest floors',
+  ACCESSIBLE_PARKING: 'Accessible parking',
+  WIDE_DOORWAYS: 'Doorways at least 81 cm wide',
+  ACCESSIBLE_BATHROOM: 'Accessible bathroom',
+  ROLL_IN_SHOWER: 'Roll-in shower',
+  GRAB_BARS: 'Grab bars by toilet and shower',
+  LOWERED_BED: 'Bed height suitable for transfers',
+  VISUAL_ALARMS: 'Visual fire alarms',
+  HEARING_LOOP: 'Hearing loop at reception',
+  BRAILLE_SIGNAGE: 'Braille or tactile signage',
+  SERVICE_ANIMALS_WELCOME: 'Service animals welcome',
+};
+export const ACCESSIBILITY_SOURCES = ['PARTNER_DECLARED', 'ADMIN_VERIFIED'] as const;
+export type AccessibilitySource = (typeof ACCESSIBILITY_SOURCES)[number];

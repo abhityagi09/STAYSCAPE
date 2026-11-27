@@ -1,3 +1,5 @@
+import { TrustService } from '@/modules/trust/trust.service';
+import { HotelDailyStatModel } from '@/modules/analytics/hotel-stats.model';
 import { Types, type PipelineStage } from 'mongoose';
 import {
   FILTER_AMENITIES,
@@ -84,7 +86,13 @@ export class SearchService {
     private readonly media: MediaService,
     private readonly cache: CacheService,
     private readonly logger: Logger,
+    private readonly trust?: TrustService,
   ) {}
+
+  /** Cities that currently have published stays (used by the deterministic assistant). */
+  async destinationsForAssistant(): Promise<string[]> {
+    return this.cache.getOrSet('assistant:cities', async () => (await HotelModel.distinct('city', { publicationStatus: 'PUBLISHED' })).sort());
+  }
 
   /** Build public hotel cards (shared with wishlists). */
   async cards(
@@ -147,6 +155,13 @@ export class SearchService {
     if (c.petFriendly) amenities.add(FILTER_AMENITIES.petFriendly);
     if (c.accessible) amenities.add(FILTER_AMENITIES.accessible);
     if (amenities.size) filter.amenities = { $all: [...amenities] };
+    // Accessibility features, optionally only those checked by Stayscape staff (provenance).
+    if (c.accessibilityFeatures?.length)
+      filter.accessibilityFeatures = {
+        $all: c.accessibilityFeatures.map((code) => ({
+          $elemMatch: { code, ...(c.accessibilityVerifiedOnly ? { source: 'ADMIN_VERIFIED' } : {}) },
+        })),
+      };
 
     // Without dates, rate-plan-level filters are answered from the hotel's active rate plans.
     if (!c.checkIn && (c.breakfast || c.freeCancellation)) {
@@ -472,6 +487,9 @@ export class SearchService {
     void HotelModel.updateOne({ _id: hotel._id }, { $inc: { popularityScore: 1 } })
       .exec()
       .catch(() => undefined);
+    void HotelDailyStatModel.updateOne({ hotelId: hotel._id, date: todayInTimeZone(hotel.timeZone ?? 'Asia/Kolkata') }, { $inc: { views: 1 } }, { upsert: true })
+      .exec()
+      .catch(() => undefined);
     const [roomTypes, ratePlans, amenityRecords] = await Promise.all([
       RoomTypeModel.find({ hotelId: hotel._id, status: 'ACTIVE' }).lean<RoomTypeRecord[]>(),
       RatePlanModel.find({ hotelId: hotel._id, active: true }).lean<RatePlanRecord[]>(),
@@ -513,6 +531,8 @@ export class SearchService {
           ratePlans.filter((p) => p.roomTypeId.equals(r._id)),
         ),
       ),
+      accessibility: TrustService.toAccessibilityDtos(hotel),
+      trustScore: this.trust ? await this.trust.forHotel(hotel).catch(() => null) : null,
     };
   }
 

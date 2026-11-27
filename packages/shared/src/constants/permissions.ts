@@ -29,6 +29,15 @@ export const PERMISSIONS = [
   'reports:view',
   'reviews:moderate',
   'support:create',
+  // Phase 4 administration
+  'support:manage',
+  'commissions:manage',
+  'settlements:manage',
+  'coupons:manage',
+  'content:manage',
+  'catalog:manage',
+  'bookings:manage',
+  'analytics:platform',
   'audit:read',
   'roles:assign-privileged',
   'system:configure',
@@ -54,7 +63,7 @@ const HOTEL_OWNER: Permission[] = [
   'reports:view',
 ];
 
-const SUPPORT: Permission[] = ['admin:access', 'users:read', 'bookings:read-all', 'payments:read'];
+const SUPPORT: Permission[] = ['admin:access', 'users:read', 'bookings:read-all', 'payments:read', 'support:manage'];
 
 const ADMIN: Permission[] = [
   ...SUPPORT,
@@ -65,6 +74,13 @@ const ADMIN: Permission[] = [
   'reports:view',
   'reviews:moderate',
   'audit:read',
+  'commissions:manage',
+  'settlements:manage',
+  'coupons:manage',
+  'content:manage',
+  'catalog:manage',
+  'bookings:manage',
+  'analytics:platform',
 ];
 
 export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {

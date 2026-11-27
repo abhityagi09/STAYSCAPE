@@ -423,7 +423,7 @@ export class ReviewsService {
 
   // ------------------------------------------------------------------ property side
   async partnerList(auth: AuthContext, hotelId: string): Promise<PartnerReviewDto[]> {
-    const access = await this.deps.access.resolveHotel(auth, hotelId, 'BOOKINGS_MANAGE');
+    const access = await this.deps.access.resolveHotel(auth, hotelId, 'reviews:respond');
     const reviews = await ReviewModel.find({ hotelId: access.hotel._id })
       .sort({ createdAt: -1 })
       .limit(100)
@@ -449,7 +449,7 @@ export class ReviewsService {
     body: string,
     context: RequestContext,
   ): Promise<void> {
-    const access = await this.deps.access.resolveHotel(auth, hotelId, 'BOOKINGS_MANAGE');
+    const access = await this.deps.access.resolveHotel(auth, hotelId, 'reviews:respond');
     if (!Types.ObjectId.isValid(reviewId)) throw Errors.notFound('Review');
     const updated = await ReviewModel.findOneAndUpdate(
       { _id: reviewId, hotelId: access.hotel._id, status: { $in: VISIBLE } },

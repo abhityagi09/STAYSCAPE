@@ -61,7 +61,7 @@ export class MediaService {
     partnerId: string | null;
     hotelId: string | null;
     uploadedBy: string;
-    purpose: Extract<MediaPurpose, 'HOTEL_IMAGE' | 'ROOM_IMAGE' | 'REVIEW_IMAGE'>;
+    purpose: Extract<MediaPurpose, 'HOTEL_IMAGE' | 'ROOM_IMAGE' | 'REVIEW_IMAGE' | 'CONTENT_IMAGE'>;
     file: UploadedFile | undefined;
   }): Promise<MediaAssetRecord> {
     const { file } = params;
@@ -198,7 +198,7 @@ export class MediaService {
   /** Private customer upload (support attachments): PDF/JPEG/PNG, content-checked, never public. */
   async uploadPrivateFile(params: {
     uploadedBy: string;
-    purpose: 'SUPPORT_ATTACHMENT';
+    purpose: 'SUPPORT_ATTACHMENT' | 'SETTLEMENT_EVIDENCE';
     file: UploadedFile | undefined;
   }): Promise<MediaAssetRecord> {
     const { file } = params;
@@ -207,7 +207,7 @@ export class MediaService {
       throw Errors.tooLarge('Attachments must be 5 MB or smaller.');
     const type = detectFileType(file.buffer, DOCUMENT_MIME_TYPES);
     if (!type) throw Errors.unsupportedMedia('Attachments must be PDF, JPEG or PNG.');
-    const key = `support/${params.uploadedBy}/${randomUUID()}.${type.ext}`;
+    const key = `${params.purpose === 'SUPPORT_ATTACHMENT' ? 'support' : 'settlements'}/${params.uploadedBy}/${randomUUID()}.${type.ext}`;
     await this.privateStorage.put(key, file.buffer, type.mime);
     const doc = await MediaAssetModel.create({
       uploadedBy: new Types.ObjectId(params.uploadedBy),

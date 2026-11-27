@@ -224,6 +224,7 @@ export class QuoteService {
       children: occupancy.children,
       extraBeds: stay.extraBeds ?? 0,
       taxConfig: { taxes: ctx.hotel.taxConfig?.taxes ?? [], fees: ctx.hotel.taxConfig?.fees ?? [] },
+      occupancyBp: Object.fromEntries(nights.map((d) => [d, days.get(d)?.occupancyBp ?? 0])),
     });
     return { ok: true, result, roomsLeft };
   }

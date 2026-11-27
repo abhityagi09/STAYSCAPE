@@ -32,6 +32,10 @@ import { InlineJobQueue, type JobHandler, type JobQueue } from '@/infrastructure
 import { createDomainEventHandlers } from '@/jobs/domain-events.jobs';
 import { BookingsService } from '@/modules/bookings/bookings.service';
 import { CancellationsService } from '@/modules/bookings/cancellations.service';
+import { PartnerReservationsService } from '@/modules/bookings/partner-reservations.service';
+import { CouponsService } from '@/modules/coupons/coupons.service';
+import { FinanceService } from '@/modules/finance/finance.service';
+import { AnalyticsService } from '@/modules/analytics/analytics.service';
 import { LifecycleService } from '@/modules/bookings/lifecycle.service';
 import { DocumentsService } from '@/modules/documents/documents.service';
 import { BookingNotificationsService } from '@/modules/notifications/booking-notifications.service';
@@ -48,6 +52,16 @@ import { SandboxPaymentProvider } from '@/modules/payments/providers/sandbox.pro
 import { RefundsService } from '@/modules/payments/refunds.service';
 import { ReviewsService } from '@/modules/reviews/reviews.service';
 import { SupportService } from '@/modules/support/support.service';
+import { SupportConsoleService } from '@/modules/support/support-console.service';
+import { TrustService } from '@/modules/trust/trust.service';
+import { IntelligenceService } from '@/modules/intelligence/intelligence.service';
+import { RewardsService } from '@/modules/rewards/rewards.service';
+import { AssistantService } from '@/modules/assistant/assistant.service';
+import { TripsService } from '@/modules/trips/trips.service';
+import { CorporateService } from '@/modules/corporate/corporate.service';
+import { AdminManagementService } from '@/modules/admin/admin-management.service';
+import { InventoryBlocksService } from '@/modules/inventory/blocks.service';
+import { ContentService } from '@/modules/content/content.service';
 import { WishlistsService } from '@/modules/wishlists/wishlists.service';
 
 export interface CoreDependencies {
@@ -148,21 +162,32 @@ export function buildContainer(core: CoreDependencies) {
     cache,
   });
   const rooms = new RoomsService({ access: partnerAccess, inventory, media, audit, cache });
+  const inventoryBlocks = new InventoryBlocksService({ access: partnerAccess, inventory, audit });
   const quotes = new QuoteService(inventory, config);
-  const search = new SearchService(quotes, media, cache, logger);
+  const trust = new TrustService({ access: partnerAccess, audit, cache });
+  const search = new SearchService(quotes, media, cache, logger, trust);
+  const assistant = new AssistantService({ config, search, quotes, logger });
+  const intelligence = new IntelligenceService({ quotes, search, notifications, logger });
 
   // ---- Phase 3: reservations, payments, refunds, customer experience
   const lateQueue = core.domainEventQueue ? null : new LateBoundInlineQueue();
   const outbox = new OutboxService(core.domainEventQueue ?? lateQueue!, logger);
   const paymentProvider = core.paymentProvider ?? createPaymentProvider(config, logger);
-  const bookings = new BookingsService({ config, quotes, inventory, outbox, media, audit, logger });
-  const refunds = new RefundsService({ provider: paymentProvider, outbox, audit, logger });
+  const finance = new FinanceService({ config, audit, logger });
+  const coupons = new CouponsService({ audit });
+  const rewards = new RewardsService({ coupons, notifications, audit });
+  const analytics = new AnalyticsService({ access: partnerAccess, finance, coupons });
+  const bookings = new BookingsService({ config, quotes, inventory, outbox,
+    coupons, media, audit, logger });
+  const refunds = new RefundsService({ provider: paymentProvider, finance, outbox, audit, logger });
   const payments = new PaymentsService({
     config,
     provider: paymentProvider,
     bookings,
     inventory,
     refunds,
+    finance,
+    coupons,
     outbox,
     audit,
     logger,
@@ -177,6 +202,8 @@ export function buildContainer(core: CoreDependencies) {
   });
   const bookingNotifications = new BookingNotificationsService(core.mailer, config, logger);
   const documents = new DocumentsService(core.privateStorage, config, logger);
+  const trips = new TripsService({ audit, notifications });
+  const corporate = new CorporateService({ quotes, documents, notifications, audit });
   const wishlists = new WishlistsService({ config, search, quotes, encryptor });
   const reviews = new ReviewsService({
     config,
@@ -187,7 +214,11 @@ export function buildContainer(core: CoreDependencies) {
     cache,
   });
   const support = new SupportService(media, audit);
+  const supportConsole = new SupportConsoleService({ media, audit, access: partnerAccess });
+  const adminManagement = new AdminManagementService({ audit, cache });
+  const content = new ContentService({ media, audit });
   const lifecycle = new LifecycleService({ bookings, outbox, reviews, wishlists, support, logger });
+  const partnerReservations = new PartnerReservationsService({ access: partnerAccess, audit, cancellations });
   const operations = new OperationsService({
     refunds,
     notifications: bookingNotifications,
@@ -238,8 +269,22 @@ export function buildContainer(core: CoreDependencies) {
       wishlists,
       reviews,
       support,
+      supportConsole,
+      adminManagement,
+      trust,
+      intelligence,
+      rewards,
+      trips,
+      assistant,
+      corporate,
+      inventoryBlocks,
+      content,
       lifecycle,
       operations,
+      partnerReservations,
+      finance,
+      coupons,
+      analytics,
     },
     authenticate,
   };

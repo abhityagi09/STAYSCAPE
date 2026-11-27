@@ -1,5 +1,6 @@
+import { setScope } from '@/lib/scope';
 import { Types } from 'mongoose';
-import { hasPermission, type StaffPermission } from '@stayscape/shared';
+import { hasPermission, normalizeStaffPermissions, type StaffPermission } from '@stayscape/shared';
 import { AppError, Errors } from '@/lib/errors';
 import type { AuthContext } from '@/types/express';
 import { HotelModel, type HotelRecord } from '@/modules/hotels/hotel.model';
@@ -43,6 +44,7 @@ export class PartnerAccessService {
         'Your partner account must be approved before managing properties.',
       );
     if (!hasPermission(auth.roles, 'hotels:update')) throw Errors.forbidden();
+    setScope({ partnerId: partner._id.toString() });
     return partner;
   }
 
@@ -64,6 +66,7 @@ export class PartnerAccessService {
     if (!partner || partner.verificationStatus !== 'APPROVED') throw Errors.notFound('Property');
 
     if (partner.ownerId.toString() === auth.userId && hasPermission(auth.roles, 'hotels:update')) {
+      setScope({ partnerId: partner._id.toString(), hotelId: hotel._id.toString() });
       return { hotel, partner, role: 'OWNER' };
     }
     if (hasPermission(auth.roles, 'partner:access')) {
@@ -72,9 +75,10 @@ export class PartnerAccessService {
       );
       if (
         staff &&
-        staff.permissions.includes(need) &&
+        normalizeStaffPermissions(staff.permissions).includes(need) &&
         staff.assignedProperties.some((id) => id.equals(hotel._id))
       ) {
+        setScope({ partnerId: partner._id.toString(), hotelId: hotel._id.toString() });
         return { hotel, partner, role: 'STAFF' };
       }
     }
@@ -82,7 +86,7 @@ export class PartnerAccessService {
   }
 
   async requireOwnerOfHotel(auth: AuthContext, hotelId: string): Promise<HotelAccess> {
-    const access = await this.resolveHotel(auth, hotelId, 'CONTENT_EDIT');
+    const access = await this.resolveHotel(auth, hotelId, 'property:edit');
     if (access.role !== 'OWNER') throw Errors.forbidden('Only the property owner can do this.');
     return access;
   }
@@ -96,5 +100,21 @@ export class PartnerAccessService {
     const staff = await this.staffRecords(auth.userId);
     const ids = staff.flatMap((s) => s.assignedProperties);
     return ids.length ? { _id: { $in: ids } } : null;
+  }
+
+  /**
+   * Hotels this user may see for a given staff permission: every hotel of an owner's approved
+   * partner, or a staff member's assigned hotels where that permission is granted.
+   */
+  async hotelIdsWithPermission(auth: AuthContext, need: StaffPermission): Promise<Types.ObjectId[]> {
+    const partner = await this.findOwnedPartner(auth.userId);
+    if (partner?.verificationStatus === 'APPROVED' && hasPermission(auth.roles, 'hotels:update')) {
+      const hotels = await HotelModel.find({ partnerId: partner._id }, { _id: 1 }).lean<Array<{ _id: Types.ObjectId }>>();
+      setScope({ partnerId: partner._id.toString() });
+      return hotels.map((h) => h._id);
+    }
+    if (!hasPermission(auth.roles, 'partner:access')) return [];
+    const staff = await this.staffRecords(auth.userId);
+    return staff.filter((s) => normalizeStaffPermissions(s.permissions).includes(need)).flatMap((s) => s.assignedProperties);
   }
 }
