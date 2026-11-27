@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Download, Trash2 } from 'lucide-react';
 import {
@@ -84,7 +83,6 @@ function DeleteAccountDialog({ onClose }: { onClose: () => void }) {
   const [pending, setPending] = useState(false);
   const dispatch = useAppDispatch();
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
   const blockers = useQuery({
     queryKey: ['privacy', 'deletion'],
     queryFn: () => unwrap<{ blockers: string[] }>(http.get('/users/me/deletion')),
@@ -97,10 +95,12 @@ function DeleteAccountDialog({ onClose }: { onClose: () => void }) {
     setError(null);
     try {
       await http.post('/users/me/deletion', { password, confirm });
+      // Every session was revoked server-side: drop local state and reload outside the
+      // protected area (a full navigation avoids racing the account route's auth guard).
       tokenStore.clear();
       queryClient.clear();
       dispatch(signedOut());
-      void navigate('/', { replace: true, state: { notice: 'account-deleted' } });
+      window.location.replace('/login?reason=account-deleted');
     } catch (e) {
       const apiError = normalizeApiError(e);
       setError(apiError.message);

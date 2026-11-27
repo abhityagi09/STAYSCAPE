@@ -47,6 +47,7 @@ jobs:
       - run: npm run format:check
       - run: npm run typecheck
       - run: npm run i18n:check
+      - run: node scripts/env-docs.mjs --check
       # API tests are integration tests: real MongoDB replica set (transactions) + real Redis.
       - run: npm run test
         env:

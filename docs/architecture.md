@@ -118,7 +118,31 @@ Tokens live in `apps/web/src/styles/index.css`:
 
 ## Deployment shape
 
-The production web image is nginx serving the SPA and reverse-proxying `/api/` to the API, so the
-refresh cookie is first-party and `SameSite=Strict` works. nginx sets a strict CSP
-(`script-src 'self'`), frame denial and related headers. See `docs/development.md` →
-"Production configuration".
+The production web image is unprivileged nginx serving the SPA and reverse-proxying `/api/` to
+the API, so the refresh cookie is first-party and `SameSite=Strict` works. nginx sets a strict
+CSP (`script-src 'self'` plus Razorpay Checkout), frame denial and related headers, injects
+per-page SEO metadata with server-side includes, and blocks `/metrics` at the edge. API replicas
+run HTTP only (`RUN_WORKERS=false`); a separate worker process runs BullMQ consumers and the
+scheduled maintenance jobs. Full topology, CI/CD and operations: docs/deployment.md.
+
+## Request lifecycle
+
+```
+nginx (X-Request-Id) → requestId → metrics timer → scope → pino-http (redacted URL) → helmet → CORS
+  → rate limit (Redis) → body parser (100 KB) → router → authenticate → requirePermission
+  → validate (strict Zod) → controller → service (transaction, idempotency, resource checks)
+  → mapper (whitelisted DTO) → { success, data } | error handler → { success: false, error }
+```
+
+## Cross-cutting modules (Phase 5)
+
+| Concern                         | Where                                                           |
+| ------------------------------- | --------------------------------------------------------------- |
+| Metrics (Prometheus)            | `apps/api/src/lib/metrics.ts`, `GET /metrics`                   |
+| Job inspection                  | `apps/api/src/lib/job-inspector.ts`, Admin → Operations         |
+| Financial reconciliation        | `apps/api/src/modules/finance/reconciliation.service.ts`        |
+| Privacy (export, deletion)      | `apps/api/src/modules/privacy`                                  |
+| SEO (metadata, sitemap, robots) | `apps/api/src/modules/seo`, `infrastructure/nginx/default.conf` |
+| Migrations                      | `apps/api/src/migrations`, `scripts/migrate.ts`                 |
+| Backups                         | `infrastructure/backup`                                         |
+| Alerts                          | `infrastructure/monitoring`                                     |

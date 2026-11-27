@@ -109,11 +109,12 @@ describe('support console', () => {
     ]);
     expect(JSON.stringify(partnerView)).not.toContain(customer.email);
     expect(JSON.stringify(partnerView)).not.toContain('repeat guest');
+    // Not a partner at all: refused by the partner-workspace gate before any lookup.
     const outsider = await registerUser(app);
     await request(app)
       .get(`/api/v1/partner/support/tickets/${ticketId}`)
       .set(bearer(outsider.accessToken))
-      .expect(404);
+      .expect(403);
 
     // Customer reply from the agent: first response recorded, ball in the customer's court.
     const replied = (

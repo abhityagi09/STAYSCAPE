@@ -109,10 +109,10 @@ const envSchema = z
     SETTLEMENT_HOLD_DAYS: z.coerce.number().int().min(0).max(90).default(1),
     /** Automated partner payouts: disabled until a payout provider is onboarded. */
     PAYOUT_PROVIDER: z.enum(['disabled']).default('disabled'),
-    // ---- AI travel assistant (Phase 4). Backend only: the key is never sent to the browser.
-    /** anthropic: Claude via the official SDK. rules: deterministic, no-AI dev/test assistant. */
     /** Display-only currency conversion source: ecb (published reference rates) or disabled. */
     FX_PROVIDER: z.enum(['ecb', 'disabled']).default('ecb'),
+    // ---- AI travel assistant (Phase 4). Backend only: the key is never sent to the browser.
+    /** anthropic: Claude via the official SDK. rules: deterministic, no-AI dev/test assistant. */
     AI_PROVIDER: z.enum(['anthropic', 'rules']).default('rules'),
     ANTHROPIC_API_KEY: optionalString,
     AI_MODEL: z.string().default('claude-opus-5-5'),
@@ -159,7 +159,9 @@ const envSchema = z
     LOG_PRETTY: bool(false),
     API_DOCS_ENABLED: bool(true),
     /** Bearer token for GET /metrics (Prometheus). Unset = endpoint disabled. */
-    METRICS_TOKEN: z.string().min(24, 'METRICS_TOKEN must be at least 24 characters').optional(),
+    METRICS_TOKEN: optionalString.refine((v) => v === undefined || v.length >= 24, {
+      message: 'METRICS_TOKEN must be at least 24 characters',
+    }),
   })
   .superRefine((env, ctx) => {
     if (env.PAYMENT_PROVIDER === 'razorpay') {

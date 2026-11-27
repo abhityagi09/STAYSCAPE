@@ -147,8 +147,16 @@ const PUBLIC = [
   'POST /api/v1/availability/quote/revalidate',
   'POST /api/v1/availability/search',
   'POST /api/v1/newsletter/subscriptions',
+  // SEO metadata, sitemap and robots: published, non-personal data only.
+  'GET /api/v1/seo/body,/body/*path',
+  'GET /api/v1/seo/head,/head/*path',
+  'GET /robots.txt',
+  'GET /sitemap.xml',
 ];
 
+/** 503 SERVICE_UNAVAILABLE is the documented answer of optional infrastructure (job queues without Redis). */
+const isServerError = (res: { status: number; body?: { error?: { code?: string } } }) =>
+  res.status >= 500 && !(res.status === 503 && res.body?.error?.code === 'SERVICE_UNAVAILABLE');
 const partnerScoped = (path: string) => /^\/api\/v1\/partner(\/|$)/.test(path);
 const isWebhook = (path: string) => path.includes('/webhooks/');
 /** Partner onboarding and staff invitations: any signed-in person acts on their own record. */
@@ -204,7 +212,7 @@ describe('authorisation matrix', () => {
       for (const r of routes) {
         const key = `${r.method} ${r.path}`;
         const res = await call(r.method, r.path, superAdmin);
-        if (res.status >= 500)
+        if (isServerError(res))
           serverErrors.push(`super admin ${key} → ${res.status} ${res.text.slice(0, 120)}`);
         // Partner workspace routes are scoped to partner membership (resource ownership), and
         // signed webhooks authenticate by signature — neither is granted by platform roles.
@@ -224,7 +232,7 @@ describe('authorisation matrix', () => {
         for (const r of routes) {
           const key = `${r.method} ${r.path}`;
           const res = await call(r.method, r.path, role.user);
-          if (res.status >= 500) {
+          if (isServerError(res)) {
             serverErrors.push(`${role.name} ${key} → ${res.status}`);
             continue;
           }

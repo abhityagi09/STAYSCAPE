@@ -24,6 +24,12 @@ const notices: Record<string, { tone: 'info' | 'success' | 'warning'; text: stri
       return tr('Your password has been reset. Sign in with your new password.');
     },
   },
+  'account-deleted': {
+    tone: 'success',
+    get text() {
+      return tr('Your account has been deleted. Thank you for travelling with STAYSCAPE.');
+    },
+  },
 };
 
 export default function LoginPage() {

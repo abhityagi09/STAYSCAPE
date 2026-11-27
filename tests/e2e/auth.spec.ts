@@ -144,3 +144,36 @@ test('protected and role-restricted routes', async ({ page }) => {
   const status = await page.evaluate(async () => (await fetch('/api/v1/users')).status);
   expect(status).toBe(401);
 });
+
+test('downloads a copy of my data and deletes the account', async ({ page }) => {
+  test.slow();
+  const email = uniqueEmail('privacy');
+  await register(page, email);
+  await page.goto('/account/settings');
+  const card = page.getByRole('heading', { name: 'Your data' });
+  await expect(card).toBeVisible();
+
+  const download = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Download my data' }).click();
+  const file = await download;
+  expect(file.suggestedFilename()).toMatch(/^stayscape-data-\d{4}-\d{2}-\d{2}\.json$/);
+  const body = JSON.parse(
+    await (await file.createReadStream()).toArray().then((c) => Buffer.concat(c).toString('utf8')),
+  );
+  expect(body.account.email).toBe(email);
+  expect(JSON.stringify(body)).not.toMatch(/passwordHash|argon2/);
+
+  await page.getByRole('button', { name: 'Delete account…' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Delete your account?' });
+  const confirm = dialog.getByRole('button', { name: 'Delete account' });
+  await dialog.getByLabel('Current password').fill(PASSWORD);
+  await expect(confirm).toBeDisabled();
+  await dialog.getByLabel('Type DELETE to confirm').fill('DELETE');
+  await confirm.click();
+  await expect(page).toHaveURL(/\/login\?reason=account-deleted$/);
+  await expect(page.getByText(/Your account has been deleted\./)).toBeVisible();
+
+  // The old credentials no longer work.
+  await signIn(page, email, PASSWORD);
+  await expect(page.getByRole('alert').filter({ hasText: /incorrect|invalid/i })).toBeVisible();
+});

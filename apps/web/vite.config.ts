@@ -49,6 +49,14 @@ export default defineConfig(({ mode, command }) => {
               return 'data';
             if (/node_modules\/(react-hook-form|@hookform|zod)\//.test(id)) return 'forms';
             if (/node_modules\/(tailwind-merge|clsx|lucide-react)\//.test(id)) return 'ui';
+            // The map stack is large and only used on map views: keep it out of the shared chunk
+            // so it downloads only when a map is shown (MapView imports it dynamically).
+            if (
+              /node_modules\/(maplibre-gl|@maplibre|@mapbox|earcut|kdbush|gl-matrix|pbf|potpack|quickselect|tinyqueue|supercluster|murmurhash-js|geojson-vt|@turf|bidi-js)\//.test(
+                id,
+              )
+            )
+              return 'maplibre';
             return 'vendor';
           },
         },

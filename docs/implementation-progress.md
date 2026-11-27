@@ -5,6 +5,39 @@ re-verified with Phase 4 (the full unit, API and end-to-end suites).
 
 Legend: ✅ done and tested · 🟡 done, not verifiable without external credentials · ⏳ planned for a later phase
 
+## Phase 5 — QA, security, performance and production readiness (2026-11-27)
+
+Outcome: **READY FOR STAGING** — full report: [release-report.md](release-report.md);
+requirement-by-requirement status: [traceability.md](traceability.md).
+
+| Task                       | Result                                | Evidence                                                                                               |
+| -------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| 1 Requirements audit       | ✅                                    | traceability.md (73 requirements: 65 PASS, 6 PASS with an external part, 1 PARTIAL/BLOCKED, 1 BLOCKED) |
+| 2 Architecture audit       | ✅                                    | dependencies upgraded; cross-cutting modules documented (architecture.md)                              |
+| 3 Authentication security  | ✅                                    | auth suite; authorisation matrix; smoke                                                                |
+| 4 Authorisation matrix     | ✅                                    | `authorization-matrix.test.ts`: 300 routes × 7 roles; 3 routers hardened                               |
+| 5 Concurrency and recovery | ✅                                    | `reservation-resilience.test.ts` + existing suites; post-load integrity 0 violations                   |
+| 6 Payments and refunds     | ✅ sandbox / ⛔ Razorpay keys         | payment, refund and failure-path tests                                                                 |
+| 7 Financial reconciliation | ✅                                    | `GET /admin/finance/reconciliation` + CSV; 0 exceptions on staging                                     |
+| 8 Frontend QA              | ✅                                    | web 98 tests; e2e 23 tests                                                                             |
+| 9 Responsive               | ✅                                    | nine widths + screenshots; overflow defects fixed                                                      |
+| 10 Accessibility           | ✅ automated / 🟡 manual SR audit     | axe WCAG 2.2 AA on public + workspaces; keyboard, motion, 200 % text, targets                          |
+| 11 Performance             | ✅                                    | 4× pricing CPU; caches; home JS −51 %; LCP ≤ 1.3 s                                                     |
+| 12 Load/stress             | ✅ staging                            | k6 baseline 84 req/s (3 replicas), stress 0 errors (testing.md)                                        |
+| 13 Security hardening      | ✅                                    | npm audit 0; gitleaks clean; Trivy clean; security.md                                                  |
+| 14 Job reliability         | ✅                                    | retries, dead letters, inspector + retry UI, metrics, alerts                                           |
+| 15 Docker/infrastructure   | ✅                                    | docker-compose.prod.yml; non-root read-only images; staging verified                                   |
+| 16 CI/CD                   | ✅ defined / ⛔ not yet run on GitHub | ci.yml (actionlint), deploy/smoke/rollback scripts                                                     |
+| 17 Monitoring              | ✅                                    | /metrics; 16 alert rules; Prometheus scrape verified                                                   |
+| 18 Backup/DR               | ✅                                    | encrypted backups; restore drill passed; RPO/RTO                                                       |
+| 19 SEO                     | ✅                                    | SSI metadata, JSON-LD, sitemap, robots, noindex                                                        |
+| 20 Privacy/compliance      | ✅ product / ⛔ legal review          | export + deletion; compliance-india.md                                                                 |
+| 21 Documentation           | ✅                                    | all required docs                                                                                      |
+| 22 Seeds/migrations        | ✅                                    | migration runner; bootstrap-first-admin; seed refuses production                                       |
+| 23 Acceptance              | ✅                                    | `acceptance.test.ts` (30 steps) + e2e                                                                  |
+| 24 Defect resolution       | ✅                                    | all critical/high fixed (release-report.md)                                                            |
+| 25 Release report          | ✅                                    | release-report.md                                                                                      |
+
 ## Phase 1 modules
 
 | Module                                                                                                                             | Status                   | Notes                                                                                                      |
@@ -401,8 +434,8 @@ Design and business rules: [marketplace.md](marketplace.md). Endpoints: [api.md]
 - Access tokens cannot be revoked mid-lifetime by signature alone. Each request checks the session store instead (one extra indexed query per request). Add a Redis cache if this becomes a hotspot.
 - Newsletter signup is single opt-in.
 
-## Upcoming phases
+## Next steps
 
-- **Phase 5**: to be specified. Candidates from Phase 4: a third-party channel-manager adapter (with
-  API access), a payout provider, the live Claude API (with a key), mobile
-  push.
+Provision production infrastructure and accounts (known-limitations.md), run the CI/CD pipeline
+on GitHub, verify Razorpay test mode, complete the legal and tax review, then start a
+controlled production pilot.

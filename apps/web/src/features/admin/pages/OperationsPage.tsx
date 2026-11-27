@@ -24,6 +24,7 @@ import {
 } from '@/features/bookings/components';
 import { normalizeApiError } from '@/lib/api/errors';
 import { tr, trf } from '@/lib/tr';
+import { BackgroundJobsCard } from '../components/BackgroundJobsCard';
 
 function RequestDecision({ refund, onDone }: { refund: RefundDto; onDone: () => void }) {
   const [amount, setAmount] = useState(String(refund.amountMinor / 100));
@@ -297,6 +298,7 @@ export function OperationsPage() {
           ))}
         </CardContent>
       </Card>
+      <BackgroundJobsCard />
     </div>
   );
 }

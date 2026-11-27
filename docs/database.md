@@ -195,8 +195,69 @@ date-wise inventory. Re-running it produces identical counts (verified). Ratings
 carry `source: DEVELOPMENT_SEED` and are labelled "Sample data" in the UI — never presented as
 verified reviews. Images are generated placeholders labelled "DEVELOPMENT IMAGE".
 
-## Backups and data
+## Relationships
 
-Docker volumes: `mongo-data`, `mongo-config`, `redis-data`, `api-uploads`, `api-private`
-(verification documents). `docker compose down -v` deletes them. Seed data exists only through the
-explicit development seed above and the optional admin bootstrap.
+```
+User ──1:1── Partner (owner) ──1:n── Hotel ──1:n── RoomType ──1:n── RatePlan
+ │              │                      │             └──1:n── DailyInventory (per local night)
+ │              └──1:n── PartnerStaff ─┘ (assigned hotels + permissions)
+ │                                     ├──1:n── PricingRule, InventoryBlock, MediaAsset
+ │                                     └──1:n── Review ──1:n── ReviewReport
+ ├──1:n── BookingHold ──1:1── Booking ──1:n── Payment ──1:n── Refund
+ │                              │   └──1:n── PaymentEvent (webhooks, deduplicated)
+ │                              ├──1:n── Cancellation, BookingNote, Invoice
+ │                              └──1:n── LedgerEntry ──n:1── Settlement (per Partner)
+ ├──1:n── RefreshSession, VerificationToken, Notification
+ ├──1:n── Wishlist, PriceAlert, Trip (owner/collaborators), SupportTicket ──1:n── TicketMessage
+ ├──1:1── LoyaltyAccount ──1:n── LoyaltyEntry; ReferralCode, Referral
+ └──n:1── OrgMember ── Organization ──1:n── TravelRequest
+AuditLog, OutboxEvent/NotificationDelivery, ContentEntry/ContentRevision, catalogue
+(Amenity, Destination, PropertyCategory), CommissionRule, Coupon(+Usage/Redemption),
+ExchangeRateSnapshot, PriceObservation, TrustSnapshot, analytics stats, schema_migrations.
+```
+
+All money is integer minor units; all stay dates are property-local `YYYY-MM-DD` strings;
+instants are UTC `Date`s.
+
+## Migrations
+
+Versioned data migrations live in `apps/api/src/migrations/index.ts` and are applied by the
+release task (`node dist/scripts/migrate.js`, `npm run db:migrate`; `--dry-run` lists pending
+ones). Applied ids are recorded in `schema_migrations` with their time and result, under a
+database lock so concurrent release jobs cannot run them twice.
+
+Rules for every migration:
+
+- immutable, sortable ids (`YYYYMMDD-NNN-slug`); never edit or reorder an applied one;
+- idempotent, and **backward compatible** with the version currently deployed
+  (expand → deploy → contract): add fields/collections first; remove them only in a later
+  release, after the rollback window;
+- never rewrite or delete financial history (ledger, payments, refunds, invoices) — corrections
+  are new auditable entries.
+
+Indexes are declared on the models and synchronised by `node dist/scripts/sync-indexes.js`
+(production runs with `autoIndex` disabled). Build large new indexes on Atlas with rolling
+index builds before deploying code that depends on them.
+
+## Seed data and production
+
+The development seed (`npm run seed`, fictional listings labelled as such) and the development
+admin bootstrap refuse to run in production; staging may run them only against the stack's own
+local database. Production starts empty: catalogue data is entered by administrators and the
+first super administrator is created once with `bootstrap-first-admin` (docs/deployment.md).
+
+## Backups and retention
+
+Docker volumes (self-hosted): `mongo-data`, `mongo-config`, `redis-data`, `api-uploads`,
+`api-private` (verification documents), `backups`. `docker compose down -v` deletes them.
+Backup, restore and retention procedures: docs/backup-recovery.md.
+
+| Data                                                       | Retention                                                             |
+| ---------------------------------------------------------- | --------------------------------------------------------------------- |
+| Bookings, payments, refunds, invoices, ledger, settlements | kept (statutory accounting/tax periods; retained on account deletion) |
+| Audit log                                                  | kept (security and dispute evidence)                                  |
+| Refresh sessions                                           | expire with the session (TTL)                                         |
+| Verification/reset tokens                                  | single use; expire (24 h / 30 min)                                    |
+| Assistant usage counters                                   | TTL index                                                             |
+| Failed background jobs (Redis)                             | 7 days                                                                |
+| Personal lists, alerts, notifications                      | until the person deletes them or the account                          |

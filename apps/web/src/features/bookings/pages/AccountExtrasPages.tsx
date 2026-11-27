@@ -47,6 +47,7 @@ import {
 import { useAuth } from '@/features/auth/use-auth';
 import { PreferencesForm } from '@/features/account/components/PreferencesForm';
 import { ChangePasswordCard, SessionsCard } from '@/features/account/components/SecuritySettings';
+import { PrivacyCard } from '@/features/account/components/PrivacyCard';
 import { HotelCard, ResponsiveImage } from '@/features/marketplace/components/HotelCard';
 import { normalizeApiError } from '@/lib/api/errors';
 import {
@@ -1037,6 +1038,7 @@ export function SettingsPage() {
       <PreferencesForm user={user} />
       <ChangePasswordCard />
       <SessionsCard />
+      <PrivacyCard />
     </div>
   );
 }

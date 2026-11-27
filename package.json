@@ -36,7 +36,8 @@
     "check:env": "node scripts/check-env.mjs",
     "i18n:check": "npm run build:shared && node scripts/i18n-keys.mjs",
     "seed": "npm run seed -w @stayscape/api",
-    "db:migrate": "npm run db:migrate -w @stayscape/api --"
+    "db:migrate": "npm run db:migrate -w @stayscape/api --",
+    "docs:env": "node scripts/env-docs.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.1",

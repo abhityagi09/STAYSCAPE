@@ -241,6 +241,61 @@ permission checked against the specific property.
 | GET                       | /hotels?accessibilityFeatures=…&accessibilityVerifiedOnly=true                                                                                                              | public             | Accessibility filters                                                                                |
 | POST                      | /channels/webhooks/:connectionId                                                                                                                                            | HMAC signature     | Raw body. `x-stayscape-channel-signature: t=…,v1=…`                                                  |
 
+## Phase 5 — privacy, operations, SEO and observability
+
+| Method | Path                                       | Auth                   | Description                                                                                                                                       |
+| ------ | ------------------------------------------ | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | /users/me/export                           | B                      | JSON copy of the account's personal data (`Content-Disposition: attachment`, `Cache-Control: no-store`); audited                                  |
+| GET    | /users/me/deletion                         | B                      | `{ blockers: string[] }` — reasons deletion is not possible yet (empty = allowed)                                                                 |
+| POST   | /users/me/deletion                         | B                      | `{ password, confirm: "DELETE" }`; 401 wrong password, 409 `NOT_ELIGIBLE` with `details.formErrors`; anonymises, revokes sessions, clears cookies |
+| GET    | /admin/finance/reconciliation              | B `payments:read`      | `?from&to` (ISO); bookings, provider payments, refunds, ledger, partner balances and exceptions; `&format=csv` exports exceptions                 |
+| GET    | /admin/operations/jobs                     | B `payments:read`      | Per-queue counts and dead-lettered jobs (no payloads); 503 when queues are not configured                                                         |
+| POST   | /admin/operations/jobs/:queue/:jobId/retry | B `system:configure`   | Retry a failed job (audited); 409 if it is not failed                                                                                             |
+| GET    | /admin/promotions                          | B `coupons:manage`     | Partner discounts across the marketplace with property-local state                                                                                |
+| GET    | /seo/head/*path                            | —                      | `<head>` fragment (title, description, robots, canonical, Open Graph, JSON-LD) for a web path; used by the nginx SSI include                      |
+| GET    | /seo/body/*path                            | —                      | Crawlable HTML summary for hotel and content pages (inside `<noscript>`)                                                                          |
+| GET    | /sitemap.xml, /robots.txt                  | —                      | Served at the site root (published hotels, destinations, guides, blog, legal pages)                                                               |
+| GET    | /metrics                                   | Bearer `METRICS_TOKEN` | Prometheus metrics; only when `METRICS_TOKEN` is set; blocked at the public edge                                                                  |
+
+### Examples
+
+Sign in and search with dates (prices are server-computed quotes, minor units):
+
+```sh
+curl -s -X POST https://www.example.com/api/v1/auth/login   -H 'Content-Type: application/json'   -d '{"email":"guest@example.com","password":"…"}'
+# → { "success": true, "data": { "accessToken": "eyJ…", "user": { … } } }   (+ HttpOnly refresh cookie)
+
+curl -s 'https://www.example.com/api/v1/hotels?destination=Udaipur&checkIn=2026-12-12&checkOut=2026-12-14&adults=2&rooms=1&sort=price_asc'
+# → { "success": true, "data": { "items": [ { "id": "…", "name": "…", "price": { "totalMinor": 1050000, "nightlyAverageMinor": 525000, "currency": "INR", … } } ], "availabilityChecked": true, "nights": 2, "pagination": { … } } }
+```
+
+Hold rooms, create the booking and start payment (each write takes an `Idempotency-Key`):
+
+```sh
+curl -s -X POST https://www.example.com/api/v1/bookings/holds   -H "Authorization: Bearer $TOKEN" -H "Idempotency-Key: $(uuidgen)" -H 'Content-Type: application/json'   -d '{"hotelId":"…","checkIn":"2026-12-12","checkOut":"2026-12-14","items":[{"roomTypeId":"…","ratePlanId":"…","rooms":1,"adults":2,"childrenAges":[],"extraBeds":0}]}'
+# → 201 { "data": { "reference": "HLD-…", "expiresAt": "…", "price": { "totals": { "totalMinor": 1050000, … } } } }
+# → 409 INVENTORY_UNAVAILABLE when another guest took the last room
+
+curl -s -X POST https://www.example.com/api/v1/bookings   -H "Authorization: Bearer $TOKEN" -H "Idempotency-Key: $(uuidgen)" -H 'Content-Type: application/json'   -d '{"holdReference":"HLD-…","acceptTerms":true,"guestDetails":{"primaryGuest":{"firstName":"Meera","lastName":"Iyer","email":"meera@example.com","phone":"+919811111111"},"additionalGuests":[]}}'
+
+curl -s -X POST https://www.example.com/api/v1/bookings/SS-XXXXXXXX/payments   -H "Authorization: Bearer $TOKEN" -H "Idempotency-Key: $(uuidgen)"
+# → { "data": { "provider": "razorpay", "keyId": "rzp_…", "providerOrderId": "order_…", "amountMinor": 1050000, "currency": "INR", … } }
+```
+
+Errors always look like:
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Some fields are invalid.",
+    "details": { "fieldErrors": { "checkOut": ["Check-out must be after check-in"] } },
+    "requestId": "b7f0ba5f…"
+  }
+}
+```
+
 ## Error codes
 
 `VALIDATION_ERROR` (422, with `details.fieldErrors`), `BAD_REQUEST` (400), `AUTH_REQUIRED`,
