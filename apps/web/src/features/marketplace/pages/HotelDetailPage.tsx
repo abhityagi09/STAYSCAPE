@@ -476,6 +476,7 @@ export default function HotelDetailPage() {
       <div className="container-page py-16">
         {err.status === 404 ? (
           <EmptyState
+            headingLevel={1}
             title={tr('This property is not available')}
             description={tr('It may have been unpublished or the link is incorrect.')}
             action={<Button onClick={() => navigate('/hotels')}>{tr('Browse stays')}</Button>}

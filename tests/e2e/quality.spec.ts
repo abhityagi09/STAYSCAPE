@@ -238,6 +238,29 @@ test.describe('quality gates', () => {
     await expect(trigger).toBeFocused();
   });
 
+  test('form errors are announced and linked to their fields', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto('/login');
+    await page.getByRole('button', { name: 'Sign in' }).click();
+    const email = page.getByLabel(/^Email/);
+    await expect(email).toHaveAttribute('aria-invalid', 'true');
+    const describedBy = (await email.getAttribute('aria-describedby')) ?? '';
+    const messages = await Promise.all(
+      describedBy
+        .split(' ')
+        .filter(Boolean)
+        .map((id) => page.locator(`[id="${id}"]`).textContent()),
+    );
+    expect(messages.join(' ')).toMatch(/required/i);
+    // Focus moves to the first invalid field so keyboard and screen-reader users land on it.
+    await expect(email).toBeFocused();
+    // Server-side errors are announced through an alert.
+    await email.fill('nobody@example.com');
+    await page.getByLabel(/^Password/).fill('Wrong-Passw0rd-123');
+    await page.getByRole('button', { name: 'Sign in' }).click();
+    await expect(page.getByRole('alert')).toContainText(/incorrect/i);
+  });
+
   test('reduced motion and 200% text size are respected', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.setViewportSize({ width: 1280, height: 900 });

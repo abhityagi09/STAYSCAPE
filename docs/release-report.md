@@ -45,19 +45,19 @@ None FAIL.
 
 ## Technical verification (all commands run on 2026-11-27)
 
-| Check                                                                   | Result                                                                                                                                            |
-| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run lint` (incl. jsx-a11y), `format:check`, `typecheck`            | clean                                                                                                                                             |
-| `npm run i18n:check`, `node scripts/env-docs.mjs --check`               | 0 missing translations; env reference up to date                                                                                                  |
-| Unit + integration tests (`npm test`, MongoDB replica set + real Redis) | **334 passed**: shared 10, API 226 (39 files), web 98 (12 files)                                                                                  |
-| Authorisation matrix                                                    | 300 routes × 7 roles, 0 violations, 0 server errors, 44 pinned public routes                                                                      |
-| Acceptance scenario (30 steps, one flow)                                | passed                                                                                                                                            |
-| Production build                                                        | passed (API tsup, web Vite)                                                                                                                       |
-| End-to-end (Playwright) on the production-mode staging stack            | **23 passed**: functional journeys, privacy, responsive (9 widths), axe WCAG 2.2 AA, keyboard, motion, text size, targets, Web Vitals             |
-| End-to-end on the development stack                                     | 23 passed                                                                                                                                         |
-| Docker                                                                  | API and web images build; non-root (uid 1000 / 101), read-only, capabilities dropped; health checks pass; release task (migrations + indexes) ran |
-| Smoke test (`scripts/deploy/smoke.sh`)                                  | passed                                                                                                                                            |
-| CI/CD workflow                                                          | `actionlint` clean; **not yet executed on GitHub**                                                                                                |
+| Check                                                                   | Result                                                                                                                                                                                                    |
+| ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run lint` (incl. jsx-a11y), `format:check`, `typecheck`            | clean                                                                                                                                                                                                     |
+| `npm run i18n:check`, `node scripts/env-docs.mjs --check`               | 0 missing translations; env reference up to date                                                                                                                                                          |
+| Unit + integration tests (`npm test`, MongoDB replica set + real Redis) | **335 passed**: shared 10, API 227 (39 files), web 98 (12 files)                                                                                                                                          |
+| Authorisation matrix                                                    | 300 routes × 7 roles, 0 violations, 0 server errors, 44 pinned public routes                                                                                                                              |
+| Acceptance scenario (30 steps, one flow)                                | passed                                                                                                                                                                                                    |
+| Production build                                                        | passed (API tsup, web Vite)                                                                                                                                                                               |
+| End-to-end (Playwright) on the production-mode staging stack            | **28 passed**: functional journeys, privacy, resilience (deep links, back/forward, network loss, ended session), responsive (9 widths), axe WCAG 2.2 AA, keyboard, motion, text size, targets, Web Vitals |
+| End-to-end on the development stack                                     | 28 passed                                                                                                                                                                                                 |
+| Docker                                                                  | API and web images build; non-root (uid 1000 / 101), read-only, capabilities dropped; health checks pass; release task (migrations + indexes) ran                                                         |
+| Smoke test (`scripts/deploy/smoke.sh`)                                  | passed                                                                                                                                                                                                    |
+| CI/CD workflow                                                          | `actionlint` clean; **not yet executed on GitHub**                                                                                                                                                        |
 
 ## Security
 
@@ -136,6 +136,14 @@ All critical and high defects are fixed; regression tests were re-run after the 
 | 13  | Medium   | home LCP delayed by the hero animation (2.1 s); CLS 0.37 from the footer while the property page loaded; MapLibre in the shared vendor chunk                                | animation removed from the LCP element; main area kept at least one viewport tall; map chunk split |
 | 14  | Medium   | no metrics, alerts, reconciliation report, job inspection, migrations, production-safe admin bootstrap, backups, SEO, production compose or CD pipeline                     | all implemented and verified (see above)                                                           |
 | 15  | Low      | empty `METRICS_TOKEN=` from `.env.example` would have failed config validation; `.env.example` lacked 4 variables; React Router hydrate warning; a misplaced config comment | fixed                                                                                              |
+
+## Post-release audit (2026-11-27)
+
+A second audit found and fixed 8 issues: 1 high (a secret-scan allowlist gap that would have failed
+CI) and several medium (provider-side reconciliation, missing ledger indexes, an expensive metrics
+query, heading structure, missing resilience tests). Details and the requirement-by-requirement
+table: [implementation-progress.md](implementation-progress.md) ("Phase 5 audit"). The
+recommendation is unchanged.
 
 ## Known limitations
 

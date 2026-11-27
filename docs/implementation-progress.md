@@ -19,7 +19,7 @@ requirement-by-requirement status: [traceability.md](traceability.md).
 | 5 Concurrency and recovery | ✅                                    | `reservation-resilience.test.ts` + existing suites; post-load integrity 0 violations                   |
 | 6 Payments and refunds     | ✅ sandbox / ⛔ Razorpay keys         | payment, refund and failure-path tests                                                                 |
 | 7 Financial reconciliation | ✅                                    | `GET /admin/finance/reconciliation` + CSV; 0 exceptions on staging                                     |
-| 8 Frontend QA              | ✅                                    | web 98 tests; e2e 23 tests                                                                             |
+| 8 Frontend QA              | ✅                                    | web 98 tests; e2e 28 tests (incl. resilience)                                                          |
 | 9 Responsive               | ✅                                    | nine widths + screenshots; overflow defects fixed                                                      |
 | 10 Accessibility           | ✅ automated / 🟡 manual SR audit     | axe WCAG 2.2 AA on public + workspaces; keyboard, motion, 200 % text, targets                          |
 | 11 Performance             | ✅                                    | 4× pricing CPU; caches; home JS −51 %; LCP ≤ 1.3 s                                                     |
@@ -37,6 +37,63 @@ requirement-by-requirement status: [traceability.md](traceability.md).
 | 23 Acceptance              | ✅                                    | `acceptance.test.ts` (30 steps) + e2e                                                                  |
 | 24 Defect resolution       | ✅                                    | all critical/high fixed (release-report.md)                                                            |
 | 25 Release report          | ✅                                    | release-report.md                                                                                      |
+
+### Phase 5 audit (2026-11-27)
+
+Method: re-read every Phase 5 task against the code; inspected the indexes behind the new
+reconciliation and metrics queries; probed the nginx SSI path; ran axe best-practice rules
+(heading order, landmarks) in addition to the WCAG rule set; re-ran the whole verification.
+
+#### Defects found and fixed
+
+| #   | Severity | Finding                                                                                                                                                            | Fix                                                                                                                                 |
+| --- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | High     | CI secret scan would fail on the first push: two documented `docker compose exec -e …PASSWORD='…'` placeholders in docs/setup.md were not covered by the allowlist | allowlist pattern for that documented form; gitleaks: no leaks                                                                      |
+| 2   | Medium   | Reconciliation compared internal records only; provider-reported payments were never checked (task 7, "provider payment records")                                  | `?provider=true` re-fetches captured payments from the gateway: PROVIDER_PAYMENT_MISSING / STATUS_MISMATCH / AMOUNT_MISMATCH; tests |
+| 3   | Medium   | Ledger had no indexes on `refundId`, `settlementId`, `paymentId`: reconciliation lookups were collection scans                                                     | three indexes, synchronised by the release task                                                                                     |
+| 4   | Medium   | The inventory-invariant gauge scanned all future inventory nights on every scrape of every replica                                                                 | computed at most every 5 minutes per replica (the database validator still enforces the invariant)                                  |
+| 5   | Medium   | The unavailable-property page had no `<h1>`; the FAQ empty state skipped a heading level                                                                           | `EmptyState` heading level (default h2, level 1 for full-page states)                                                               |
+| 6   | Medium   | Task 8 cases without automated coverage: deep links + refresh, back/forward, network interruption, ended session                                                   | `tests/e2e/resilience.spec.ts` (4 tests)                                                                                            |
+| 7   | Low      | No automated check that form errors are announced (task 10)                                                                                                        | quality test: `aria-invalid`, `aria-describedby` message, focus on the first invalid field, alert for server errors                 |
+| 8   | Low      | SEO subrequests forwarded cookies/authorization; the cache key was implicit                                                                                        | headers cleared, explicit per-fragment cache key (encoded-traversal probes confirmed no SSI escape)                                 |
+
+#### Requirement-by-requirement result
+
+| Task                               | Result                                                                               | Verified by                                                                        |
+| ---------------------------------- | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
+| 1 Requirements traceability        | PASS                                                                                 | traceability.md                                                                    |
+| 2 Repository/architecture audit    | PASS                                                                                 | index review above; architecture.md                                                |
+| 3 Authentication security          | PASS                                                                                 | auth suite (registration through rate limiting), smoke                             |
+| 4 Authorisation + tenant isolation | PASS                                                                                 | 300 routes × 7 roles; ownership tests                                              |
+| 5 Concurrency and recovery         | PASS                                                                                 | resilience + bookings suites; post-load integrity 0                                |
+| 6 Payments and refunds             | PASS (sandbox) · BLOCKED (Razorpay test mode: keys)                                  | payment/refund suites                                                              |
+| 7 Financial reconciliation         | PASS                                                                                 | internal + provider checks, CSV, 0 exceptions on staging                           |
+| 8 Frontend functional QA           | PASS                                                                                 | web 98 tests; e2e 28 incl. resilience                                              |
+| 9 Responsive                       | PASS                                                                                 | nine widths, screenshots                                                           |
+| 10 Accessibility                   | PASS (automated) · PARTIAL (manual screen-reader audit)                              | axe WCAG + best-practice, keyboard, motion, text size, targets, error announcement |
+| 11 Performance                     | PASS                                                                                 | budgets, Web Vitals, bundle split                                                  |
+| 12 Load and stress                 | PASS (staging)                                                                       | k6 baseline/stress; smoke re-run 298/298 checks, 0 % errors                        |
+| 13 Security hardening              | PASS                                                                                 | npm audit 0, gitleaks clean, Trivy clean                                           |
+| 14 Background jobs                 | PASS                                                                                 | retries, dead letters, inspector + retry UI, alerts                                |
+| 15 Docker/infrastructure           | PASS                                                                                 | production compose verified on staging                                             |
+| 16 CI/CD                           | PASS (defined, actionlint) · BLOCKED (a live run needs a push + GitHub environments) | ci.yml                                                                             |
+| 17 Monitoring                      | PASS                                                                                 | /metrics, 16 rules, Prometheus scrape                                              |
+| 18 Backup/DR                       | PASS                                                                                 | restore drill passed (66 collections, 0 mismatches)                                |
+| 19 SEO                             | PASS                                                                                 | SSI metadata, JSON-LD, sitemap, robots, heading hierarchy                          |
+| 20 Privacy/compliance              | PASS (product) · BLOCKED (legal/tax review)                                          | export + deletion e2e; compliance-india.md                                         |
+| 21 Documentation                   | PASS                                                                                 | all required documents                                                             |
+| 22 Seeds/migrations                | PASS                                                                                 | migration runner, bootstrap-first-admin, seed refuses production                   |
+| 23 Acceptance                      | PASS                                                                                 | 30-step flow + e2e journeys                                                        |
+| 24 Defect resolution               | PASS                                                                                 | no open critical/high                                                              |
+| 25 Release report                  | PASS                                                                                 | release-report.md                                                                  |
+
+#### Commands run for the audit (all passed)
+
+`prettier --check`, `npm run lint`, `npm run typecheck`, `npm run i18n:check`,
+`node scripts/env-docs.mjs --check`, `npm audit` (0), `npm test` with Redis (shared 10, API 227,
+web 98), `npm run build`, production-mode staging rebuild + release task + `smoke.sh`, Playwright
+28/28 on staging and 28/28 on the development stack, backup + restore drill, k6 smoke, Trivy (both
+images clean), gitleaks (no leaks), actionlint (clean).
 
 ## Phase 1 modules
 

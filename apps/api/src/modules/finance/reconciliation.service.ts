@@ -2,6 +2,7 @@ import type { Types } from 'mongoose';
 import { BookingModel } from '@/modules/bookings/booking.models';
 import { PaymentModel, RefundModel } from '@/modules/payments/payment.models';
 import { PAID_FAMILY } from '@/modules/payments/payment-status';
+import type { PaymentProvider } from '@/modules/payments/providers/payment-provider';
 import { LedgerEntryModel, SettlementModel } from './finance.models';
 
 /** Booking states in which a stay was (or still is) owed to the guest after payment. */
@@ -17,7 +18,10 @@ export type ReconciliationCheck =
   | 'REFUND_EXCEEDS_CAPTURE'
   | 'UNBALANCED_LEDGER_TRANSACTION'
   | 'UNALLOCATED_FUNDS_OPEN'
-  | 'SETTLEMENT_PAID_WITHOUT_LEDGER';
+  | 'SETTLEMENT_PAID_WITHOUT_LEDGER'
+  | 'PROVIDER_PAYMENT_MISSING'
+  | 'PROVIDER_STATUS_MISMATCH'
+  | 'PROVIDER_AMOUNT_MISMATCH';
 
 export interface ReconciliationException {
   check: ReconciliationCheck;
@@ -41,8 +45,13 @@ const byCurrency = (rows: Array<{ _id: string } & Sums>) =>
  * amounts so finance can investigate and, where needed, post an auditable correcting entry
  * (docs/payments.md "Reconciliation").
  */
+/** Upper bound on provider API calls per report (each is one request to the gateway). */
+const PROVIDER_CHECK_LIMIT = 200;
+
 export class ReconciliationService {
-  async report(from: Date, to: Date) {
+  constructor(private readonly provider?: PaymentProvider) {}
+
+  async report(from: Date, to: Date, options: { verifyProvider?: boolean } = {}) {
     const [bookingTotals, providerTotals, refundTotals, ledgerTotals, partnerBalances, exceptions] =
       await Promise.all([
         this.bookingTotals(from, to),
@@ -52,6 +61,8 @@ export class ReconciliationService {
         this.partnerBalances(),
         this.exceptions(),
       ]);
+    const provider = options.verifyProvider ? await this.providerCheck(from, to) : null;
+    if (provider) exceptions.push(...provider.exceptions);
     return {
       from: from.toISOString(),
       to: to.toISOString(),
@@ -61,6 +72,7 @@ export class ReconciliationService {
       refunds: refundTotals,
       ledger: ledgerTotals,
       partnerBalances,
+      provider: provider ? provider.summary : null,
       exceptions,
       mismatchCount: exceptions.length,
       truncated: exceptions.length >= EXCEPTION_LIMIT,
@@ -177,6 +189,78 @@ export class ReconciliationService {
       { $sort: { balanceMinor: -1 } },
       { $limit: 500 },
     ]);
+  }
+
+  /**
+   * Provider-side check: re-fetches each captured payment in the period from the gateway and
+   * compares status, amount and currency with STAYSCAPE's records (opt-in: it calls the provider).
+   */
+  async providerCheck(from: Date, to: Date) {
+    const exceptions: ReconciliationException[] = [];
+    const summary = { checked: 0, providerCapturedMinor: 0, truncated: false, available: true };
+    if (!this.provider) return { exceptions, summary: { ...summary, available: false } };
+    const payments = await PaymentModel.find(
+      { verifiedAt: { $gte: from, $lt: to }, status: { $in: [...PAID_FAMILY] } },
+      { providerOrderId: 1, providerPaymentId: 1, amountMinor: 1, currency: 1, status: 1 },
+    )
+      .sort({ verifiedAt: 1 })
+      .limit(PROVIDER_CHECK_LIMIT + 1)
+      .lean<
+        Array<{
+          providerOrderId: string;
+          providerPaymentId: string | null;
+          amountMinor: number;
+          currency: string;
+          status: string;
+        }>
+      >();
+    summary.truncated = payments.length > PROVIDER_CHECK_LIMIT;
+    for (const p of payments.slice(0, PROVIDER_CHECK_LIMIT)) {
+      summary.checked += 1;
+      const base = { reference: p.providerOrderId, expectedMinor: p.amountMinor };
+      if (!p.providerPaymentId) {
+        exceptions.push({
+          ...base,
+          check: 'PROVIDER_PAYMENT_MISSING',
+          severity: 'HIGH',
+          actualMinor: null,
+          detail: 'Captured payment has no provider payment id.',
+        });
+        continue;
+      }
+      let remote;
+      try {
+        remote = await this.provider.fetchPayment(p.providerPaymentId);
+      } catch {
+        exceptions.push({
+          ...base,
+          check: 'PROVIDER_PAYMENT_MISSING',
+          severity: 'HIGH',
+          actualMinor: null,
+          detail: 'The provider could not return this payment.',
+        });
+        continue;
+      }
+      if (remote.status === 'captured' || remote.status === 'refunded')
+        summary.providerCapturedMinor += remote.amount;
+      if (remote.status !== 'captured' && remote.status !== 'refunded')
+        exceptions.push({
+          ...base,
+          check: 'PROVIDER_STATUS_MISMATCH',
+          severity: 'HIGH',
+          actualMinor: remote.amount,
+          detail: `STAYSCAPE records ${p.status}; the provider reports ${remote.status}.`,
+        });
+      else if (remote.amount !== p.amountMinor || remote.currency !== p.currency)
+        exceptions.push({
+          ...base,
+          check: 'PROVIDER_AMOUNT_MISMATCH',
+          severity: 'HIGH',
+          actualMinor: remote.amount,
+          detail: `Provider amount ${remote.amount} ${remote.currency} differs from the recorded capture.`,
+        });
+    }
+    return { exceptions, summary };
   }
 
   /** All-time consistency checks between sources. Bounded to keep the report responsive. */

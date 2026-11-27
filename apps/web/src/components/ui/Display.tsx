@@ -234,6 +234,7 @@ export function EmptyState({
   action,
   className,
   compact,
+  headingLevel = 2,
 }: {
   icon?: ReactNode;
   title: ReactNode;
@@ -241,7 +242,10 @@ export function EmptyState({
   action?: ReactNode;
   className?: string;
   compact?: boolean;
+  /** h2 by default: never skips a level below a page h1 (WCAG 1.3.1 / heading order). */
+  headingLevel?: 1 | 2 | 3 | 4;
 }) {
+  const Heading = `h${headingLevel}` as const;
   return (
     <div
       className={cn(
@@ -258,7 +262,7 @@ export function EmptyState({
           {icon}
         </div>
       )}
-      <h3 className="font-display text-lg font-semibold text-fg">{title}</h3>
+      <Heading className="font-display text-lg font-semibold text-fg">{title}</Heading>
       {description && <p className="max-w-md text-sm text-fg-muted">{description}</p>}
       {action && <div className="mt-2">{action}</div>}
     </div>

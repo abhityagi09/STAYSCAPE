@@ -17,6 +17,18 @@ import { PaymentEventModel, PaymentModel, RefundModel } from '@/modules/payments
  * database and Redis at scrape time, so every API replica reports the same shared state.
  * Alert rules that consume these live in infrastructure/monitoring/alerts.yml.
  */
+/** Memoise an expensive collector for ttlMs (errors are not cached). */
+function cached(ttlMs: number, fn: () => Promise<number>): () => Promise<number> {
+  let value: number | null = null;
+  let at = 0;
+  return async () => {
+    if (value !== null && Date.now() - at < ttlMs) return value;
+    value = await fn();
+    at = Date.now();
+    return value;
+  };
+}
+
 export class Metrics {
   readonly registry = new Registry();
   private readonly httpDuration = new Histogram({
@@ -112,30 +124,35 @@ export class Metrics {
           expiresAt: { $lt: new Date(Date.now() - 5 * 60_000) },
         }),
     );
+    // This check scans every current and future inventory night, so it is computed at most every
+    // five minutes per replica (the invariant is also enforced by a database validator).
     gauge(
       'stayscape_inventory_invariant_violations',
       'Inventory days where held + booked + blocked exceeds total rooms (must always be 0).',
-      async () =>
-        (
-          await DailyInventoryModel.aggregate<{ n: number }>([
-            // Only current and future nights matter; past days are immutable history.
-            {
-              $match: {
-                localDate: {
-                  $gte: new Date(Date.now() - 2 * 86_400_000).toISOString().slice(0, 10),
+      cached(
+        5 * 60_000,
+        async () =>
+          (
+            await DailyInventoryModel.aggregate<{ n: number }>([
+              // Only current and future nights matter; past days are immutable history.
+              {
+                $match: {
+                  localDate: {
+                    $gte: new Date(Date.now() - 2 * 86_400_000).toISOString().slice(0, 10),
+                  },
                 },
               },
-            },
-            {
-              $match: {
-                $expr: {
-                  $gt: [{ $add: ['$heldRooms', '$bookedRooms', '$blockedRooms'] }, '$totalRooms'],
+              {
+                $match: {
+                  $expr: {
+                    $gt: [{ $add: ['$heldRooms', '$bookedRooms', '$blockedRooms'] }, '$totalRooms'],
+                  },
                 },
               },
-            },
-            { $count: 'n' },
-          ])
-        )[0]?.n ?? 0,
+              { $count: 'n' },
+            ])
+          )[0]?.n ?? 0,
+      ),
     );
     gauge('stayscape_payments_failed_last_hour', 'Payments that failed in the last hour.', () =>
       PaymentModel.countDocuments({

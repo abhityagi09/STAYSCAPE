@@ -191,7 +191,9 @@ export function createAdminFinanceRouter(container: Container): Router {
     validate({ query: periodQuerySchema }),
     async (req, res) => {
       const { from, to } = periodFrom(validatedQuery(req));
-      const report = await container.services.reconciliation.report(from, to);
+      const report = await container.services.reconciliation.report(from, to, {
+        verifyProvider: req.query.provider === 'true',
+      });
       if (req.query.format === 'csv') {
         res.setHeader('Content-Type', 'text/csv; charset=utf-8');
         res.setHeader(

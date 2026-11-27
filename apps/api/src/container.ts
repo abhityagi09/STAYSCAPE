@@ -323,7 +323,7 @@ export function buildContainer(core: CoreDependencies) {
       coupons,
       analytics,
       privacy,
-      reconciliation: new ReconciliationService(),
+      reconciliation: new ReconciliationService(paymentProvider),
       jobs: new JobInspector(core.redis),
       seo: new SeoService({ search, content, webAppUrl: config.WEB_APP_URL }),
     },

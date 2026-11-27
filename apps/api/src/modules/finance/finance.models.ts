@@ -130,6 +130,10 @@ ledgerSchema.index({ entryKey: 1 }, { unique: true, name: 'uniq_entry_key' });
 ledgerSchema.index({ partnerId: 1, account: 1, occurredAt: 1 }, { name: 'partner_account_time' });
 ledgerSchema.index({ account: 1, occurredAt: 1 }, { name: 'account_time' });
 ledgerSchema.index({ bookingId: 1 }, { name: 'booking' });
+// Reconciliation lookups (refund, settlement and unallocated-payment checks).
+ledgerSchema.index({ refundId: 1 }, { name: 'refund' });
+ledgerSchema.index({ settlementId: 1 }, { name: 'settlement' });
+ledgerSchema.index({ paymentId: 1, account: 1 }, { name: 'payment_account' });
 // Ledger rows are immutable: block updates at the model level (defence in depth).
 for (const op of [
   'updateOne',

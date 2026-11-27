@@ -52,6 +52,10 @@ records, refund records and the append-only ledger, plus partner payable balance
 | `UNALLOCATED_FUNDS_OPEN`             | captured money not tied to a stay and not yet refunded |
 | `SETTLEMENT_PAID_WITHOUT_LEDGER`     | settlement marked paid without its payout entry        |
 
+Add `&provider=true` to re-fetch each captured payment in the period from the gateway (up to
+200 calls): `PROVIDER_PAYMENT_MISSING`, `PROVIDER_STATUS_MISMATCH`, `PROVIDER_AMOUNT_MISMATCH`,
+and the provider-reported captured total.
+
 The report never changes data. Corrections are posted as new, auditable ledger entries; historical
 records are never edited. Last staging run after load testing: **0 exceptions**; ledger cash =
 captured − refunded; cash = partner payable + platform revenue.

@@ -2,7 +2,7 @@ import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { bearer, createUserWithRoles } from '@/test/helpers';
 import { bookingWorld, holdAndBook, idem, payInFull } from '@/test/booking-fixtures';
-import { PaymentModel } from '@/modules/payments/payment.models';
+import { PaymentModel, SandboxRecordModel } from '@/modules/payments/payment.models';
 import { LedgerEntryModel } from './finance.models';
 
 const URL = '/api/v1/admin/finance/reconciliation';
@@ -63,6 +63,43 @@ describe('financial reconciliation report', () => {
     // Reading the report changed nothing.
     expect(await LedgerEntryModel.countDocuments({ entryKey: { $regex: /\.commission$/ } })).toBe(
       0,
+    );
+  });
+
+  it('checks captured payments against the provider when asked', async () => {
+    const { app, admin, customer, hotel } = await bookingWorld();
+    for (const nights of [
+      [10, 12],
+      [14, 15],
+    ] as Array<[number, number]>) {
+      const { booking } = await holdAndBook(app, customer, hotel, nights);
+      await payInFull(app, customer, booking.reference);
+    }
+    const clean = (
+      await request(app).get(`${URL}?provider=true`).set(bearer(admin.accessToken)).expect(200)
+    ).body.data;
+    expect(clean.provider).toMatchObject({ checked: 2, available: true, truncated: false });
+    expect(clean.provider.providerCapturedMinor).toBe(clean.providerPayments.INR.capturedMinor);
+    expect(clean.exceptions).toEqual([]);
+    // Without the flag the provider is not called.
+    expect(
+      (await request(app).get(URL).set(bearer(admin.accessToken))).body.data.provider,
+    ).toBeNull();
+
+    const [first, second] = await PaymentModel.find({ status: 'SUCCESS' })
+      .sort({ createdAt: 1 })
+      .lean();
+    await PaymentModel.updateOne({ _id: first!._id }, { $inc: { amountMinor: 100 } });
+    await SandboxRecordModel.updateOne(
+      { entityId: second!.providerPaymentId },
+      { $set: { status: 'failed' } },
+    );
+    const dirty = (
+      await request(app).get(`${URL}?provider=true`).set(bearer(admin.accessToken)).expect(200)
+    ).body.data;
+    const checks = dirty.exceptions.map((e: { check: string }) => e.check);
+    expect(checks).toEqual(
+      expect.arrayContaining(['PROVIDER_AMOUNT_MISMATCH', 'PROVIDER_STATUS_MISMATCH']),
     );
   });
 
